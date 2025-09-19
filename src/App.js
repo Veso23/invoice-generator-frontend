@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Plus, Edit, Trash2, Calculator, Users, Building, FileContract, LogIn, LogOut, Eye, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, Download, Plus, Edit, Trash2, Calculator, Users, Building, LogIn, LogOut, Eye, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import './App.css';
 
 // API Configuration
@@ -579,7 +579,7 @@ const InvoiceGeneratorApp = () => {
               {[
                 { label: 'Consultants', value: consultants.length, icon: Users, color: 'blue' },
                 { label: 'Clients', value: clients.length, icon: Building, color: 'green' },
-                { label: 'Contracts', value: contracts.length, icon: FileContract, color: 'purple' },
+                { label: 'Contracts', value: contracts.length, icon: FileText, color: 'purple' },
                 { label: 'Invoices', value: invoices.length, icon: FileText, color: 'orange' }
               ].map((stat, index) => (
                 <div key={index} className="bg-white rounded-lg p-6 border shadow-sm">
