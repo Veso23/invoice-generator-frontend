@@ -720,26 +720,36 @@ const openAddModal = (type) => {
             <div className="bg-white rounded-lg border shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left p-4 font-medium text-gray-600">Name</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Company</th>
-                      <th className="text-left p-4 font-medium text-gray-600">VAT</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Email</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Created</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {consultants.map((consultant) => (
-                      <tr key={consultant.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4 font-medium">{consultant.first_name} {consultant.last_name}</td>
-                        <td className="p-4">{consultant.company_name}</td>
-                        <td className="p-4 font-mono text-sm">{consultant.company_vat}</td>
-                        <td className="p-4">{consultant.email || '-'}</td>
-                        <td className="p-4 text-sm text-gray-600">{formatDate(consultant.created_at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
+<thead className="bg-gray-50">
+  <tr>
+    <th className="text-left p-4 font-medium text-gray-600">Name</th>
+    <th className="text-left p-4 font-medium text-gray-600">Company</th>
+    <th className="text-left p-4 font-medium text-gray-600">Address</th>
+    <th className="text-left p-4 font-medium text-gray-600">VAT</th>
+    <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
+    <th className="text-left p-4 font-medium text-gray-600">Phone</th>
+    <th className="text-left p-4 font-medium text-gray-600">Email</th>
+    <th className="text-left p-4 font-medium text-gray-600">IBAN</th>
+    <th className="text-left p-4 font-medium text-gray-600">SWIFT</th>
+    <th className="text-left p-4 font-medium text-gray-600">Created</th>
+  </tr>
+</thead>
+<tbody>
+  {consultants.map((consultant) => (
+    <tr key={consultant.id} className="border-b hover:bg-gray-50">
+      <td className="p-4 font-medium">{consultant.first_name} {consultant.last_name}</td>
+      <td className="p-4">{consultant.company_name}</td>
+      <td className="p-4 text-sm">{consultant.company_address || '-'}</td>
+      <td className="p-4 font-mono text-sm">{consultant.company_vat}</td>
+      <td className="p-4 font-mono text-sm">{consultant.consultant_contract_id || '-'}</td>
+      <td className="p-4">{consultant.phone || '-'}</td>
+      <td className="p-4">{consultant.email || '-'}</td>
+      <td className="p-4 font-mono text-xs">{consultant.iban || '-'}</td>
+      <td className="p-4 font-mono text-xs">{consultant.swift || '-'}</td>
+      <td className="p-4 text-sm text-gray-600">{formatDate(consultant.created_at)}</td>
+    </tr>
+  ))}
+</tbody>
                 </table>
               </div>
             </div>
@@ -763,26 +773,36 @@ const openAddModal = (type) => {
             <div className="bg-white rounded-lg border shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left p-4 font-medium text-gray-600">Name</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Company</th>
-                      <th className="text-left p-4 font-medium text-gray-600">VAT</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Email</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Created</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {clients.map((client) => (
-                      <tr key={client.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4 font-medium">{client.first_name} {client.last_name}</td>
-                        <td className="p-4">{client.company_name}</td>
-                        <td className="p-4 font-mono text-sm">{client.company_vat}</td>
-                        <td className="p-4">{client.email || '-'}</td>
-                        <td className="p-4 text-sm text-gray-600">{formatDate(client.created_at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
+<thead className="bg-gray-50">
+  <tr>
+    <th className="text-left p-4 font-medium text-gray-600">Name</th>
+    <th className="text-left p-4 font-medium text-gray-600">Company</th>
+    <th className="text-left p-4 font-medium text-gray-600">Address</th>
+    <th className="text-left p-4 font-medium text-gray-600">VAT</th>
+    <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
+    <th className="text-left p-4 font-medium text-gray-600">Phone</th>
+    <th className="text-left p-4 font-medium text-gray-600">Email</th>
+    <th className="text-left p-4 font-medium text-gray-600">IBAN</th>
+    <th className="text-left p-4 font-medium text-gray-600">SWIFT</th>
+    <th className="text-left p-4 font-medium text-gray-600">Created</th>
+  </tr>
+</thead>
+<tbody>
+  {clients.map((client) => (
+    <tr key={client.id} className="border-b hover:bg-gray-50">
+      <td className="p-4 font-medium">{client.first_name} {client.last_name}</td>
+      <td className="p-4">{client.company_name}</td>
+      <td className="p-4 text-sm">{client.company_address || '-'}</td>
+      <td className="p-4 font-mono text-sm">{client.company_vat}</td>
+      <td className="p-4 font-mono text-sm">{client.client_contract_id || '-'}</td>
+      <td className="p-4">{client.phone || '-'}</td>
+      <td className="p-4">{client.email || '-'}</td>
+      <td className="p-4 font-mono text-xs">{client.iban || '-'}</td>
+      <td className="p-4 font-mono text-xs">{client.swift || '-'}</td>
+      <td className="p-4 text-sm text-gray-600">{formatDate(client.created_at)}</td>
+    </tr>
+  ))}
+</tbody>
                 </table>
               </div>
             </div>
