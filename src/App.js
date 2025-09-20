@@ -606,7 +606,7 @@ const configs = {
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="text-left p-4 font-medium text-gray-600">Person Name</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Person Names</th>
                       <th className="text-left p-4 font-medium text-gray-600">Month</th>
                       <th className="text-left p-4 font-medium text-gray-600">Days</th>
                       <th className="text-left p-4 font-medium text-gray-600">Status</th>
