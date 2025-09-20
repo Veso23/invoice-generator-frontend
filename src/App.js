@@ -869,8 +869,7 @@ const InvoiceGeneratorApp = () => {
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="text-left p-4 font-medium text-gray-600">Invoice #</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Type</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Parties</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Name</th>
                         <th className="text-left p-4 font-medium text-gray-600">Date</th>
                         <th className="text-left p-4 font-medium text-gray-600">Period</th>
                         <th className="text-left p-4 font-medium text-gray-600">Days</th>
