@@ -438,39 +438,40 @@ const InvoiceGeneratorApp = () => {
   };
 
   // Open modal for adding items
-  const openAddModal = (type) => {
-    const configs = {
-      consultant: {
-        title: 'Add New Consultant',
-        fields: [
-          { name: 'firstName', placeholder: 'First Name' },
-          { name: 'lastName', placeholder: 'Last Name' },
-          { name: 'companyName', placeholder: 'Company Name' },
-          { name: 'companyAddress', placeholder: 'Company Address' },
-          { name: 'companyVAT', placeholder: 'VAT Number' },
-          { name: 'iban', placeholder: 'IBAN' },
-          { name: 'swift', placeholder: 'SWIFT Code' },
-          { name: 'email', placeholder: 'Email', type: 'email' },
-          { name: 'phone', placeholder: 'Phone' }
-        ],
-        onSubmit: addConsultant
-      },
-      client: {
-        title: 'Add New Client',
-        fields: [
-          { name: 'firstName', placeholder: 'First Name' },
-          { name: 'lastName', placeholder: 'Last Name' },
-          { name: 'companyName', placeholder: 'Company Name' },
-          { name: 'companyAddress', placeholder: 'Company Address' },
-          { name: 'companyVAT', placeholder: 'VAT Number' },
-          { name: 'iban', placeholder: 'IBAN' },
-          { name: 'swift', placeholder: 'SWIFT Code' },
-          { name: 'email', placeholder: 'Email', type: 'email' },
-          { name: 'phone', placeholder: 'Phone' }
-        ],
-        onSubmit: addClient
-      }
-    };
+const configs = {
+  consultant: {
+    title: 'Add New Consultant',
+    fields: [
+      { name: 'firstName', placeholder: 'First Name' },
+      { name: 'lastName', placeholder: 'Last Name' },
+      { name: 'companyName', placeholder: 'Company Name' },
+      { name: 'companyAddress', placeholder: 'Company Address' },
+      { name: 'companyVAT', placeholder: 'VAT Number' },
+      { name: 'consultantContractId', placeholder: 'Consultant Contract ID' },
+      { name: 'iban', placeholder: 'IBAN' },
+      { name: 'swift', placeholder: 'SWIFT Code' },
+      { name: 'email', placeholder: 'Email', type: 'email' },
+      { name: 'phone', placeholder: 'Phone' }
+    ],
+    onSubmit: addConsultant
+  },
+  client: {
+    title: 'Add New Client',
+    fields: [
+      { name: 'firstName', placeholder: 'First Name' },
+      { name: 'lastName', placeholder: 'Last Name' },
+      { name: 'companyName', placeholder: 'Company Name' },
+      { name: 'companyAddress', placeholder: 'Company Address' },
+      { name: 'companyVAT', placeholder: 'VAT Number' },
+      { name: 'clientContractId', placeholder: 'Client Contract ID' },
+      { name: 'iban', placeholder: 'IBAN' },
+      { name: 'swift', placeholder: 'SWIFT Code' },
+      { name: 'email', placeholder: 'Email', type: 'email' },
+      { name: 'phone', placeholder: 'Phone' }
+    ],
+    onSubmit: addClient
+  }
+};
 
     setModalConfig(configs[type]);
     setModalOpen(true);
