@@ -882,7 +882,7 @@ const InvoiceGeneratorApp = () => {
                     <tbody>
                       {invoices.map((invoice) => (
                         <tr key={invoice.id} className="border-b hover:bg-gray-50">
-                          <td className="p-4 font-mono text-xs">{invoice.invoice_number}</td>
+<td className="p-4 font-mono text-xs">{invoice.invoice_number}</td>
 <td className="p-4 text-sm">
   <div>
     {invoice.invoice_type === 'consultant' ? (
@@ -906,6 +906,11 @@ const InvoiceGeneratorApp = () => {
     )}
   </div>
 </td>
+<td className="p-4 text-sm">{formatDate(invoice.invoice_date)}</td>
+<td className="p-4 text-sm">
+  {formatDate(invoice.period_from)} - {formatDate(invoice.period_to)}
+</td>
+<td className="p-4 font-medium">{invoice.days_worked}</td>
                           <td className="p-4 text-sm">
                             {formatDate(invoice.period_from)} - {formatDate(invoice.period_to)}
                           </td>
