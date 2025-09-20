@@ -824,47 +824,67 @@ const openAddModal = (type) => {
                       <th className="text-left p-4 font-medium text-gray-600">Consultant</th>
                       <th className="text-left p-4 font-medium text-gray-600">Client</th>
                       <th className="text-left p-4 font-medium text-gray-600">Period</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Days</th>
                       <th className="text-left p-4 font-medium text-gray-600">Purchase Price</th>
                       <th className="text-left p-4 font-medium text-gray-600">Sell Price</th>
                       <th className="text-left p-4 font-medium text-gray-600">Status</th>
                       <th className="text-left p-4 font-medium text-gray-600">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {contracts.map((contract) => {
-                      const days = calculateDays(contract.from_date, contract.to_date);
-                      
-                      return (
-                        <tr key={contract.id} className="border-b hover:bg-gray-50">
-                          <td className="p-4">{contract.consultant_company_name}</td>
-                          <td className="p-4">{contract.client_company_name}</td>
-                          <td className="p-4 text-sm">
-                            {formatDate(contract.from_date)} - {formatDate(contract.to_date)}
-                          </td>
-                          <td className="p-4 font-medium">{days}</td>
-                          <td className="p-4">{formatCurrency(contract.purchase_price)}</td>
-                          <td className="p-4">{formatCurrency(contract.sell_price)}</td>
-                          <td className="p-4">
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              contract.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                            }`}>
-                              {contract.status}
-                            </span>
-                          </td>
-                          <td className="p-4">
-                            <button
-                              onClick={() => generateInvoices(contract.id)}
-                              className="bg-blue-600 text-white px-3 py-1 rounded-md text-xs hover:bg-blue-700 flex items-center gap-1 transition"
-                            >
-                              <Calculator className="h-3 w-3" />
-                              Generate
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
+<tbody>
+  {contracts.map((contract) => {
+    // Check if contract is currently active based on dates
+    const today = new Date();
+    const startDate = new Date(contract.from_date);
+    const endDate = new Date(contract.to_date);
+    const isActive = today >= startDate && today <= endDate;
+    
+    return (
+      <tr key={contract.id} className="border-b hover:bg-gray-50">
+        <td className="p-4">
+          <div>
+            <div className="font-medium">
+              {contract.consultant_first_name} {contract.consultant_last_name}
+            </div>
+            <div className="text-gray-600">
+              {contract.consultant_company_name}
+            </div>
+          </div>
+        </td>
+        <td className="p-4">
+          <div>
+            <div className="font-medium">
+              {contract.client_first_name} {contract.client_last_name}
+            </div>
+            <div className="text-gray-600">
+              {contract.client_company_name}
+            </div>
+          </div>
+        </td>
+        <td className="p-4 text-sm">
+          {formatDate(contract.from_date)} - {formatDate(contract.to_date)}
+        </td>
+        <td className="p-4">{formatCurrency(contract.purchase_price)}</td>
+        <td className="p-4">{formatCurrency(contract.sell_price)}</td>
+        <td className="p-4">
+          <span className={`px-2 py-1 rounded-full text-xs ${
+            isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+          }`}>
+            {isActive ? 'active' : 'inactive'}
+          </span>
+        </td>
+        <td className="p-4">
+          <button
+            onClick={() => generateInvoices(contract.id)}
+            className="bg-blue-600 text-white px-3 py-1 rounded-md text-xs hover:bg-blue-700 flex items-center gap-1 transition"
+          >
+            <Calculator className="h-3 w-3" />
+            Generate
+          </button>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
                 </table>
               </div>
             </div>
