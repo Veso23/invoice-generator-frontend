@@ -884,30 +884,29 @@ const InvoiceGeneratorApp = () => {
                       {invoices.map((invoice) => (
                         <tr key={invoice.id} className="border-b hover:bg-gray-50">
                           <td className="p-4 font-mono text-xs">{invoice.invoice_number}</td>
-                          <td className="p-4">
-  <span className={`px-2 py-1 rounded-full text-xs capitalize ${
-    invoice.invoice_type === 'consultant' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-  }`}>
-    {invoice.invoice_type}
-  </span>
-</td>
 <td className="p-4 text-sm">
   <div>
-    <div className="font-medium">
-      {invoice.consultant_first_name} {invoice.consultant_last_name}
-    </div>
-    <div className="text-gray-600">
-      {invoice.consultant_company_name}
-    </div>
-    <div className="text-xs text-gray-500 mt-1">
-      → {invoice.client_first_name} {invoice.client_last_name}
-    </div>
-    <div className="text-xs text-gray-500">
-      {invoice.client_company_name}
-    </div>
+    {invoice.invoice_type === 'consultant' ? (
+      <>
+        <div className="font-medium">
+          {invoice.consultant_first_name} {invoice.consultant_last_name}
+        </div>
+        <div className="text-gray-600">
+          {invoice.consultant_company_name}
+        </div>
+      </>
+    ) : (
+      <>
+        <div className="font-medium">
+          {invoice.client_first_name} {invoice.client_last_name}
+        </div>
+        <div className="text-gray-600">
+          {invoice.client_company_name}
+        </div>
+      </>
+    )}
   </div>
 </td>
-<td className="p-4 text-sm">{formatDate(invoice.invoice_date)}</td>
                           <td className="p-4 text-sm">
                             {formatDate(invoice.period_from)} - {formatDate(invoice.period_to)}
                           </td>
