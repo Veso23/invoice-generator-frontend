@@ -911,10 +911,7 @@ const InvoiceGeneratorApp = () => {
   {formatDate(invoice.period_from)} - {formatDate(invoice.period_to)}
 </td>
 <td className="p-4 font-medium">{invoice.days_worked}</td>
-                          <td className="p-4 text-sm">
-                            {formatDate(invoice.period_from)} - {formatDate(invoice.period_to)}
-                          </td>
-                          <td className="p-4 font-medium">{invoice.days_worked}</td>
+
                           <td className="p-4">{formatCurrency(invoice.daily_rate)}</td>
                           <td className="p-4 font-bold">{formatCurrency(invoice.total_amount)}</td>
                           <td className="p-4">
