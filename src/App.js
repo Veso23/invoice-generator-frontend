@@ -828,7 +828,7 @@ const openAddModal = (type) => {
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
+              <th className="text-left p-4 font-medium text-gray-600">Contract Number</th>
               <th className="text-left p-4 font-medium text-gray-600">Consultant</th>
               <th className="text-left p-4 font-medium text-gray-600">Client</th>
               <th className="text-left p-4 font-medium text-gray-600">Contract IDs</th>
@@ -851,7 +851,7 @@ const openAddModal = (type) => {
                 <tr key={contract.id} className="border-b hover:bg-gray-50">
                   <td className="p-4">
                     <div className="font-mono text-sm font-medium text-blue-600">
-                      {contract.contract_number || `#${contract.id}`}
+                        {contract.contract_number || ''}
                     </div>
                   </td>
                   <td className="p-4">
