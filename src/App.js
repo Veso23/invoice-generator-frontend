@@ -814,6 +814,13 @@ const openAddModal = (type) => {
   <div className="space-y-6">
     <div className="flex justify-between items-center">
       <h2 className="text-xl font-bold text-gray-800">Contracts</h2>
+      <button
+        onClick={() => openAddModal('contract')}
+        className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2 transition"
+      >
+        <Plus className="h-4 w-4" />
+        Add Contract
+      </button>
     </div>
     
     <div className="bg-white rounded-lg border shadow-sm">
@@ -821,8 +828,10 @@ const openAddModal = (type) => {
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
+              <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
               <th className="text-left p-4 font-medium text-gray-600">Consultant</th>
               <th className="text-left p-4 font-medium text-gray-600">Client</th>
+              <th className="text-left p-4 font-medium text-gray-600">Contract IDs</th>
               <th className="text-left p-4 font-medium text-gray-600">Period</th>
               <th className="text-left p-4 font-medium text-gray-600">Purchase Price</th>
               <th className="text-left p-4 font-medium text-gray-600">Sell Price</th>
@@ -840,6 +849,11 @@ const openAddModal = (type) => {
               
               return (
                 <tr key={contract.id} className="border-b hover:bg-gray-50">
+                  <td className="p-4">
+                    <div className="font-mono text-sm font-medium text-blue-600">
+                      {contract.contract_number || `#${contract.id}`}
+                    </div>
+                  </td>
                   <td className="p-4">
                     <div>
                       <div className="font-medium">
@@ -863,6 +877,16 @@ const openAddModal = (type) => {
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
                         VAT: {contract.client_company_vat || 'N/A'}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div className="text-sm">
+                      <div className="font-mono text-xs text-gray-600">
+                        <span className="font-medium">Consultant:</span> {contract.consultant_contract_id || 'N/A'}
+                      </div>
+                      <div className="font-mono text-xs text-gray-600 mt-1">
+                        <span className="font-medium">Client:</span> {contract.client_contract_id || 'N/A'}
                       </div>
                     </div>
                   </td>
