@@ -910,10 +910,16 @@ contract: {
           <tbody>
             {contracts.map((contract) => {
               // Check if contract is currently active based on dates
-              const today = new Date();
-              const startDate = new Date(contract.from_date);
-              const endDate = new Date(contract.to_date);
-              const isActive = today >= startDate && today <= endDate;
+const today = new Date();
+today.setHours(0, 0, 0, 0); // Reset time to start of day
+
+const startDate = new Date(contract.from_date);
+startDate.setHours(0, 0, 0, 0);
+
+const endDate = new Date(contract.to_date);
+endDate.setHours(23, 59, 59, 999); // Set to end of day
+
+const isActive = today >= startDate && today <= endDate;
               
               return (
                 <tr key={contract.id} className="border-b hover:bg-gray-50">
