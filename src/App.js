@@ -884,7 +884,7 @@ contract: {
       <h2 className="text-xl font-bold text-gray-800">Contracts</h2>
       <button
         onClick={() => openAddModal('contract')}
-        className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2 transition"
+        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
       >
         <Plus className="h-4 w-4" />
         Add Contract
