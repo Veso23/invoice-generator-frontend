@@ -283,6 +283,7 @@ const Notification = ({ notification, onClose }) => {
 };
 
 // Simple Form Modal Component
+// Simple Form Modal Component
 const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
   const [formData, setFormData] = useState({});
 
@@ -304,25 +305,52 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
 
   if (!isOpen) return null;
 
+  const renderField = (field) => {
+    if (field.type === 'select') {
+      return (
+        <select
+          key={field.name}
+          value={formData[field.name] || ''}
+          onChange={(e) => setFormData({
+            ...formData,
+            [field.name]: e.target.value
+          })}
+          required={field.required !== false}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+        >
+          <option value="">{field.placeholder}</option>
+          {field.options?.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    return (
+      <input
+        key={field.name}
+        type={field.type || 'text'}
+        placeholder={field.placeholder}
+        value={formData[field.name] || ''}
+        onChange={(e) => setFormData({
+          ...formData,
+          [field.name]: e.target.value
+        })}
+        required={field.required !== false}
+        step={field.step}
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+      />
+    );
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+      <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <h3 className="text-lg font-semibold mb-4">{title}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {fields.map(field => (
-            <input
-              key={field.name}
-              type={field.type || 'text'}
-              placeholder={field.placeholder}
-              value={formData[field.name] || ''}
-              onChange={(e) => setFormData({
-                ...formData,
-                [field.name]: e.target.value
-              })}
-              required={field.required !== false}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            />
-          ))}
+          {fields.map(field => renderField(field))}
           <div className="flex gap-2 pt-4">
             <button
               type="button"
@@ -343,7 +371,6 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
     </div>
   );
 };
-
 // Main Application
 const InvoiceGeneratorApp = () => {
   const { user, login, register, logout, loading } = useAuth();
@@ -423,6 +450,20 @@ const InvoiceGeneratorApp = () => {
     }
   };
 
+  // Add new contract
+const addContract = async (contractData) => {
+  try {
+    await apiCall('/contracts', {
+      method: 'POST',
+      body: JSON.stringify(contractData)
+    });
+    showNotification('Contract added successfully!');
+    loadData();
+  } catch (error) {
+    showNotification('Failed to add contract: ' + error.message, 'error');
+  }
+};
+
   // Add new client
   const addClient = async (clientData) => {
     try {
@@ -437,7 +478,6 @@ const InvoiceGeneratorApp = () => {
     }
   };
 
-  // Open modal for adding items
 // Open modal for adding items
 const openAddModal = (type) => {
   const configs = {
@@ -472,6 +512,37 @@ const openAddModal = (type) => {
         { name: 'phone', placeholder: 'Phone' }
       ],
       onSubmit: addClient
+    },
+    contract: {
+      title: 'Add New Contract',
+      fields: [
+        { name: 'contractNumber', placeholder: 'Contract Number (e.g., CNT-2024-001)' },
+        { 
+          name: 'consultantId', 
+          placeholder: 'Select Consultant', 
+          type: 'select', 
+          options: consultants.map(c => ({ 
+            value: c.id, 
+            label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
+          })) 
+        },
+        { 
+          name: 'clientId', 
+          placeholder: 'Select Client', 
+          type: 'select', 
+          options: clients.map(c => ({ 
+            value: c.id, 
+            label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
+          })) 
+        },
+        { name: 'consultantContractId', placeholder: 'Consultant Contract ID' },
+        { name: 'clientContractId', placeholder: 'Client Contract ID' },
+        { name: 'fromDate', placeholder: 'From Date', type: 'date' },
+        { name: 'toDate', placeholder: 'To Date', type: 'date' },
+        { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
+        { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' }
+      ],
+      onSubmit: addContract
     }
   };
 
