@@ -283,7 +283,6 @@ const Notification = ({ notification, onClose }) => {
 };
 
 // Simple Form Modal Component
-// Simple Form Modal Component
 const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
   const [formData, setFormData] = useState({});
 
@@ -303,6 +302,29 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
     onClose();
   };
 
+  // Auto-populate contract IDs when consultant/client is selected
+  const handleSelectChange = (fieldName, value) => {
+    const newFormData = { ...formData, [fieldName]: value };
+    
+    // Auto-populate consultant contract ID
+    if (fieldName === 'consultantId' && value) {
+      const selectedConsultant = consultants.find(c => c.id == value);
+      if (selectedConsultant && selectedConsultant.consultant_contract_id) {
+        newFormData.consultantContractId = selectedConsultant.consultant_contract_id;
+      }
+    }
+    
+    // Auto-populate client contract ID
+    if (fieldName === 'clientId' && value) {
+      const selectedClient = clients.find(c => c.id == value);
+      if (selectedClient && selectedClient.client_contract_id) {
+        newFormData.clientContractId = selectedClient.client_contract_id;
+      }
+    }
+    
+    setFormData(newFormData);
+  };
+
   if (!isOpen) return null;
 
   const renderField = (field) => {
@@ -311,10 +333,7 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
         <select
           key={field.name}
           value={formData[field.name] || ''}
-          onChange={(e) => setFormData({
-            ...formData,
-            [field.name]: e.target.value
-          })}
+          onChange={(e) => handleSelectChange(field.name, e.target.value)}
           required={field.required !== false}
           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
         >
@@ -347,7 +366,7 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
         <h3 className="text-lg font-semibold mb-4">{title}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           {fields.map(field => renderField(field))}
@@ -513,37 +532,37 @@ const openAddModal = (type) => {
       ],
       onSubmit: addClient
     },
-    contract: {
-      title: 'Add New Contract',
-      fields: [
-        { name: 'contractNumber', placeholder: 'Contract Number (e.g., CNT-2024-001)' },
-        { 
-          name: 'consultantId', 
-          placeholder: 'Select Consultant', 
-          type: 'select', 
-          options: consultants.map(c => ({ 
-            value: c.id, 
-            label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
-          })) 
-        },
-        { 
-          name: 'clientId', 
-          placeholder: 'Select Client', 
-          type: 'select', 
-          options: clients.map(c => ({ 
-            value: c.id, 
-            label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
-          })) 
-        },
-        { name: 'consultantContractId', placeholder: 'Consultant Contract ID' },
-        { name: 'clientContractId', placeholder: 'Client Contract ID' },
-        { name: 'fromDate', placeholder: 'From Date', type: 'date' },
-        { name: 'toDate', placeholder: 'To Date', type: 'date' },
-        { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
-        { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' }
-      ],
-      onSubmit: addContract
-    }
+contract: {
+  title: 'Add New Contract',
+  fields: [
+    { name: 'contractNumber', placeholder: 'Contract Number (e.g., CNT-2024-001)' },
+    { 
+      name: 'consultantId', 
+      placeholder: 'Select Consultant', 
+      type: 'select', 
+      options: consultants.map(c => ({ 
+        value: c.id, 
+        label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
+      })) 
+    },
+    { 
+      name: 'clientId', 
+      placeholder: 'Select Client', 
+      type: 'select', 
+      options: clients.map(c => ({ 
+        value: c.id, 
+        label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
+      })) 
+    },
+    { name: 'consultantContractId', placeholder: 'Consultant Contract ID' },
+    { name: 'clientContractId', placeholder: 'Client Contract ID' },
+    { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date' },
+    { name: 'toDate', placeholder: 'Contract End Date', type: 'date' },
+    { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
+    { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' }
+  ],
+  onSubmit: addContract
+}
   };
 
   setModalConfig(configs[type]);
