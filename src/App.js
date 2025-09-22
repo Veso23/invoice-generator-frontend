@@ -304,11 +304,12 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
 
   if (!isOpen) return null;
 
-  const renderField = (field) => {
-    if (field.type === 'select') {
-      return (
+ const renderField = (field) => {
+  if (field.type === 'select') {
+    return (
+      <div key={field.name}>
+        {field.label && <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>}
         <select
-          key={field.name}
           value={formData[field.name] || ''}
           onChange={(e) => setFormData({
             ...formData,
@@ -324,12 +325,14 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
             </option>
           ))}
         </select>
-      );
-    }
+      </div>
+    );
+  }
 
-    return (
+  return (
+    <div key={field.name}>
+      {field.label && <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>}
       <input
-        key={field.name}
         type={field.type || 'text'}
         placeholder={field.placeholder}
         value={formData[field.name] || ''}
@@ -341,8 +344,9 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
         step={field.step}
         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
       />
-    );
-  };
+    </div>
+  );
+};
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
