@@ -810,86 +810,92 @@ const openAddModal = (type) => {
         )}
 
         {/* Contracts Tab */}
-        {activeTab === 'contracts' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">Contracts</h2>
-            </div>
-            
-            <div className="bg-white rounded-lg border shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left p-4 font-medium text-gray-600">Consultant</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Client</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Period</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Purchase Price</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Sell Price</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-                    </tr>
-                  </thead>
-<tbody>
-  {contracts.map((contract) => {
-    // Check if contract is currently active based on dates
-    const today = new Date();
-    const startDate = new Date(contract.from_date);
-    const endDate = new Date(contract.to_date);
-    const isActive = today >= startDate && today <= endDate;
+{activeTab === 'contracts' && (
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <h2 className="text-xl font-bold text-gray-800">Contracts</h2>
+    </div>
     
-    return (
-      <tr key={contract.id} className="border-b hover:bg-gray-50">
-        <td className="p-4">
-          <div>
-            <div className="font-medium">
-              {contract.consultant_first_name} {contract.consultant_last_name}
-            </div>
-            <div className="text-gray-600">
-              {contract.consultant_company_name}
-            </div>
-          </div>
-        </td>
-        <td className="p-4">
-          <div>
-            <div className="font-medium">
-              {contract.client_first_name} {contract.client_last_name}
-            </div>
-            <div className="text-gray-600">
-              {contract.client_company_name}
-            </div>
-          </div>
-        </td>
-        <td className="p-4 text-sm">
-          {formatDate(contract.from_date)} - {formatDate(contract.to_date)}
-        </td>
-        <td className="p-4">{formatCurrency(contract.purchase_price)}</td>
-        <td className="p-4">{formatCurrency(contract.sell_price)}</td>
-        <td className="p-4">
-          <span className={`px-2 py-1 rounded-full text-xs ${
-            isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-          }`}>
-            {isActive ? 'active' : 'inactive'}
-          </span>
-        </td>
-        <td className="p-4">
-          <button
-            onClick={() => generateInvoices(contract.id)}
-            className="bg-blue-600 text-white px-3 py-1 rounded-md text-xs hover:bg-blue-700 flex items-center gap-1 transition"
-          >
-            <Calculator className="h-3 w-3" />
-            Generate
-          </button>
-        </td>
-      </tr>
-    );
-  })}
-</tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+    <div className="bg-white rounded-lg border shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left p-4 font-medium text-gray-600">Consultant</th>
+              <th className="text-left p-4 font-medium text-gray-600">Client</th>
+              <th className="text-left p-4 font-medium text-gray-600">Period</th>
+              <th className="text-left p-4 font-medium text-gray-600">Purchase Price</th>
+              <th className="text-left p-4 font-medium text-gray-600">Sell Price</th>
+              <th className="text-left p-4 font-medium text-gray-600">Status</th>
+              <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {contracts.map((contract) => {
+              // Check if contract is currently active based on dates
+              const today = new Date();
+              const startDate = new Date(contract.from_date);
+              const endDate = new Date(contract.to_date);
+              const isActive = today >= startDate && today <= endDate;
+              
+              return (
+                <tr key={contract.id} className="border-b hover:bg-gray-50">
+                  <td className="p-4">
+                    <div>
+                      <div className="font-medium">
+                        {contract.consultant_first_name} {contract.consultant_last_name}
+                      </div>
+                      <div className="text-gray-600">
+                        {contract.consultant_company_name}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        VAT: {contract.consultant_company_vat || 'N/A'}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div>
+                      <div className="font-medium">
+                        {contract.client_first_name} {contract.client_last_name}
+                      </div>
+                      <div className="text-gray-600">
+                        {contract.client_company_name}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        VAT: {contract.client_company_vat || 'N/A'}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="p-4 text-sm">
+                    {formatDate(contract.from_date)} - {formatDate(contract.to_date)}
+                  </td>
+                  <td className="p-4">{formatCurrency(contract.purchase_price)}</td>
+                  <td className="p-4">{formatCurrency(contract.sell_price)}</td>
+                  <td className="p-4">
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {isActive ? 'active' : 'inactive'}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <button
+                      onClick={() => generateInvoices(contract.id)}
+                      className="bg-blue-600 text-white px-3 py-1 rounded-md text-xs hover:bg-blue-700 flex items-center gap-1 transition"
+                    >
+                      <Calculator className="h-3 w-3" />
+                      Generate
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* Invoices Tab */}
         {activeTab === 'invoices' && (
