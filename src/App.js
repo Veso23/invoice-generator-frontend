@@ -809,7 +809,7 @@ const openAddModal = (type) => {
           </div>
         )}
 
-        {/* Contracts Tab */}
+{/* Contracts Tab */}
 {activeTab === 'contracts' && (
   <div className="space-y-6">
     <div className="flex justify-between items-center">
@@ -821,8 +821,10 @@ const openAddModal = (type) => {
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
+              <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
               <th className="text-left p-4 font-medium text-gray-600">Consultant</th>
               <th className="text-left p-4 font-medium text-gray-600">Client</th>
+              <th className="text-left p-4 font-medium text-gray-600">Contract IDs</th>
               <th className="text-left p-4 font-medium text-gray-600">Period</th>
               <th className="text-left p-4 font-medium text-gray-600">Purchase Price</th>
               <th className="text-left p-4 font-medium text-gray-600">Sell Price</th>
