@@ -534,8 +534,8 @@ contract: {
         label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
       })) 
     },
-    { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date' },
-    { name: 'toDate', placeholder: 'Contract End Date', type: 'date' },
+    { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date' },
+    { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date' },
     { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
     { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' }
   ],
