@@ -534,8 +534,6 @@ contract: {
         label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
       })) 
     },
-    { name: 'consultantContractId', placeholder: 'Consultant Contract ID' },
-    { name: 'clientContractId', placeholder: 'Client Contract ID' },
     { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date' },
     { name: 'toDate', placeholder: 'Contract End Date', type: 'date' },
     { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
