@@ -302,29 +302,6 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
     onClose();
   };
 
-  // Auto-populate contract IDs when consultant/client is selected
-  const handleSelectChange = (fieldName, value) => {
-    const newFormData = { ...formData, [fieldName]: value };
-    
-    // Auto-populate consultant contract ID
-    if (fieldName === 'consultantId' && value) {
-      const selectedConsultant = consultants.find(c => c.id == value);
-      if (selectedConsultant && selectedConsultant.consultant_contract_id) {
-        newFormData.consultantContractId = selectedConsultant.consultant_contract_id;
-      }
-    }
-    
-    // Auto-populate client contract ID
-    if (fieldName === 'clientId' && value) {
-      const selectedClient = clients.find(c => c.id == value);
-      if (selectedClient && selectedClient.client_contract_id) {
-        newFormData.clientContractId = selectedClient.client_contract_id;
-      }
-    }
-    
-    setFormData(newFormData);
-  };
-
   if (!isOpen) return null;
 
   const renderField = (field) => {
@@ -333,7 +310,10 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
         <select
           key={field.name}
           value={formData[field.name] || ''}
-          onChange={(e) => handleSelectChange(field.name, e.target.value)}
+          onChange={(e) => setFormData({
+            ...formData,
+            [field.name]: e.target.value
+          })}
           required={field.required !== false}
           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
         >
