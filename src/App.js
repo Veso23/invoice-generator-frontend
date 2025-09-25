@@ -387,7 +387,6 @@ const InvoiceGeneratorApp = () => {
   const [notification, setNotification] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({});
-  const [automationLogs, setAutomationLogs] = useState([]);
   const [timesheets, setTimesheets] = useState([]);
 
   // Show notification
