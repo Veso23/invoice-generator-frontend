@@ -1340,6 +1340,7 @@ const isActive = today >= startDate && today <= endDate;
               </div>
             )}
           </div>
+)}
 {/* Timesheets Tab */}
 {activeTab === 'timesheets' && (
   <div className="space-y-6">
