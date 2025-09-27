@@ -479,24 +479,7 @@ const viewTimesheet = (fileUrl) => {
   }
 };
 
-  // Add new client
-  const addClient = async (clientData) => {
-    try {
-      await apiCall('/clients', {
-        method: 'POST',
-        body: JSON.stringify(clientData)
-      });
-      showNotification('Client added successfully!');
-      loadData();
-    } catch (error) {
-      showNotification('Failed to add client: ' + error.message, 'error');
-    }
-  };
-
-// Add this function near your other functions like viewTimesheet
-const [matchingTimesheet, setMatchingTimesheet] = useState(null);
-
-const matchConsultant = async (timesheetId, consultantId) => {
+  const matchConsultant = async (timesheetId, consultantId) => {
   try {
     await apiCall(`/timesheets/${timesheetId}/match`, {
       method: 'PUT',
@@ -510,71 +493,19 @@ const matchConsultant = async (timesheetId, consultantId) => {
   }
 };
 
-// Update the Actions column in your timesheets table:
-<td className="p-4">
-  <div className="flex gap-2">
-    <button
-      onClick={() => viewTimesheet(timesheet.timesheet_file_url)}
-      className="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-md text-xs hover:bg-blue-50 transition flex items-center gap-1"
-      title="View Timesheet"
-    >
-      <Eye className="h-3 w-3" />
-      View
-    </button>
-    
-    {timesheet.consultant_matched ? (
-      <button
-        onClick={() => {
-          showNotification('Invoice generation from timesheets coming soon!');
-        }}
-        className="bg-green-600 text-white px-3 py-1 rounded-md text-xs hover:bg-green-700 flex items-center gap-1 transition"
-        title="Generate Invoice"
-      >
-        <Calculator className="h-3 w-3" />
-        Generate
-      </button>
-    ) : (
-      <div className="relative">
-        {matchingTimesheet === timesheet.id ? (
-          <div className="flex gap-1">
-            <select
-              onChange={(e) => {
-                if (e.target.value) {
-                  matchConsultant(timesheet.id, e.target.value);
-                }
-              }}
-              className="text-xs border border-gray-300 rounded px-2 py-1"
-              defaultValue=""
-            >
-              <option value="">Select Consultant</option>
-              {consultants.map(consultant => (
-                <option key={consultant.id} value={consultant.id}>
-                  {consultant.first_name} {consultant.last_name} - {consultant.company_name}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => setMatchingTimesheet(null)}
-              className="text-gray-400 hover:text-gray-600 px-1"
-              title="Cancel"
-            >
-              ×
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setMatchingTimesheet(timesheet.id)}
-            className="bg-orange-600 text-white px-3 py-1 rounded-md text-xs hover:bg-orange-700 flex items-center gap-1 transition"
-            title="Match Consultant"
-          >
-            <Users className="h-3 w-3" />
-            Match
-          </button>
-        )}
-      </div>
-    )}
-  </div>
-</td>
+  // Add new client
+  const addClient = async (clientData) => {
+    try {
+      await apiCall('/clients', {
+        method: 'POST',
+        body: JSON.stringify(clientData)
+      });
+      showNotification('Client added successfully!');
+      loadData();
+    } catch (error) {
+      showNotification('Failed to add client: ' + error.message, 'error');
+    }
+  };
 
 // Open modal for adding items
 const openAddModal = (type) => {
@@ -1179,31 +1110,70 @@ const isActive = today >= startDate && today <= endDate;
                       )}
                     </div>
                   </td>
-                  <td className="p-4">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => viewTimesheet(timesheet.timesheet_file_url)}
-                        className="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-md text-xs hover:bg-blue-50 transition flex items-center gap-1"
-                        title="View Timesheet"
-                      >
-                        <Eye className="h-3 w-3" />
-                        View
-                      </button>
-                      {timesheet.consultant_matched && (
-                        <button
-                          onClick={() => {
-                            // This will be implemented later when we move invoice generation
-                            showNotification('Invoice generation from timesheets coming soon!');
-                          }}
-                          className="bg-green-600 text-white px-3 py-1 rounded-md text-xs hover:bg-green-700 flex items-center gap-1 transition"
-                          title="Generate Invoice"
-                        >
-                          <Calculator className="h-3 w-3" />
-                          Generate
-                        </button>
-                      )}
-                    </div>
-                  </td>
+<td className="p-4">
+  <div className="flex gap-2">
+    <button
+      onClick={() => viewTimesheet(timesheet.timesheet_file_url)}
+      className="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-md text-xs hover:bg-blue-50 transition flex items-center gap-1"
+      title="View Timesheet"
+    >
+      <Eye className="h-3 w-3" />
+      View
+    </button>
+    
+    {timesheet.consultant_matched ? (
+      <button
+        onClick={() => {
+          showNotification('Invoice generation from timesheets coming soon!');
+        }}
+        className="bg-green-600 text-white px-3 py-1 rounded-md text-xs hover:bg-green-700 flex items-center gap-1 transition"
+        title="Generate Invoice"
+      >
+        <Calculator className="h-3 w-3" />
+        Generate
+      </button>
+    ) : (
+      <div className="relative">
+        {matchingTimesheet === timesheet.id ? (
+          <div className="flex gap-1">
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  matchConsultant(timesheet.id, e.target.value);
+                }
+              }}
+              className="text-xs border border-gray-300 rounded px-2 py-1"
+              defaultValue=""
+            >
+              <option value="">Select Consultant</option>
+              {consultants.map(consultant => (
+                <option key={consultant.id} value={consultant.id}>
+                  {consultant.first_name} {consultant.last_name} - {consultant.company_name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setMatchingTimesheet(null)}
+              className="text-gray-400 hover:text-gray-600 px-1"
+              title="Cancel"
+            >
+              ×
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setMatchingTimesheet(timesheet.id)}
+            className="bg-orange-600 text-white px-3 py-1 rounded-md text-xs hover:bg-orange-700 flex items-center gap-1 transition"
+            title="Match Consultant"
+          >
+            <Users className="h-3 w-3" />
+            Match
+          </button>
+        )}
+      </div>
+    )}
+  </div>
+</td>
                 </tr>
               ))}
             </tbody>
