@@ -389,6 +389,8 @@ const InvoiceGeneratorApp = () => {
   const [modalConfig, setModalConfig] = useState({});
   const [timesheets, setTimesheets] = useState([]);
   const [matchingTimesheet, setMatchingTimesheet] = useState(null);
+  const [editingDays, setEditingDays] = useState(null);
+  const [editDaysValue, setEditDaysValue] = useState('');
   
   // Show notification
   const showNotification = (message, type = 'success') => {
@@ -507,6 +509,31 @@ const viewTimesheet = (fileUrl) => {
       showNotification('Failed to add client: ' + error.message, 'error');
     }
   };
+
+  const updateDays = async (timesheetId, newDays) => {
+  try {
+    await apiCall(`/timesheets/${timesheetId}/days`, {
+      method: 'PUT',
+      body: JSON.stringify({ days: parseInt(newDays) })
+    });
+    showNotification('Days updated successfully!');
+    setEditingDays(null);
+    setEditDaysValue('');
+    loadData(); // Refresh data
+  } catch (error) {
+    showNotification('Failed to update days: ' + error.message, 'error');
+  }
+};
+
+const startEditDays = (timesheet) => {
+  setEditingDays(timesheet.id);
+  setEditDaysValue(timesheet.pdf_days || timesheet.email_days || '');
+};
+
+const cancelEditDays = () => {
+  setEditingDays(null);
+  setEditDaysValue('');
+};
 
 // Open modal for adding items
 const openAddModal = (type) => {
@@ -1081,14 +1108,49 @@ const isActive = today >= startDate && today <= endDate;
                   <td className="p-4 text-sm font-medium">
                     {timesheet.month || 'N/A'}
                   </td>
-                  <td className="p-4">
-                    <div className="text-center">
-                      <span className="text-lg font-bold text-blue-600">
-                        {timesheet.pdf_days || timesheet.email_days || 'N/A'}
-                      </span>
-                      <div className="text-xs text-gray-500">days</div>
-                    </div>
-                  </td>
+<td className="p-4">
+  {editingDays === timesheet.id ? (
+    <div className="flex items-center gap-2">
+      <input
+        type="number"
+        value={editDaysValue}
+        onChange={(e) => setEditDaysValue(e.target.value)}
+        className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+        min="0"
+        autoFocus
+      />
+      <button
+        onClick={() => updateDays(timesheet.id, editDaysValue)}
+        className="text-green-600 hover:text-green-800 p-1"
+        title="Save"
+      >
+        <CheckCircle className="h-4 w-4" />
+      </button>
+      <button
+        onClick={cancelEditDays}
+        className="text-red-600 hover:text-red-800 p-1"
+        title="Cancel"
+      >
+        <AlertCircle className="h-4 w-4" />
+      </button>
+    </div>
+  ) : (
+    <div className="text-center group">
+      <div
+        onClick={() => startEditDays(timesheet)}
+        className="cursor-pointer hover:bg-gray-50 rounded p-1 transition"
+      >
+        <span className="text-lg font-bold text-blue-600">
+          {timesheet.pdf_days || timesheet.email_days || 'N/A'}
+        </span>
+        <div className="text-xs text-gray-500">days</div>
+        <div className="text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition">
+          Click to edit
+        </div>
+      </div>
+    </div>
+  )}
+</td>
                   <td className="p-4">
                     <div className="space-y-1">
                       <span className={`px-2 py-1 rounded-full text-xs ${
