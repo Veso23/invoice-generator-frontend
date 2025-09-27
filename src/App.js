@@ -388,6 +388,7 @@ const InvoiceGeneratorApp = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({});
   const [timesheets, setTimesheets] = useState([]);
+  const [matchingTimesheet, setMatchingTimesheet] = useState(null);
 
   // Show notification
   const showNotification = (message, type = 'success') => {
@@ -493,42 +494,88 @@ const viewTimesheet = (fileUrl) => {
     }
   };
 
-  // Match timesheet to consultant
-app.put('/api/timesheets/:id/match', authenticateToken, checkCompanyAccess, async (req, res) => {
+// Add this function near your other functions like viewTimesheet
+const [matchingTimesheet, setMatchingTimesheet] = useState(null);
+
+const matchConsultant = async (timesheetId, consultantId) => {
   try {
-    const { id } = req.params;
-    const { consultantId } = req.body;
-
-    if (!consultantId) {
-      return res.status(400).json({ error: 'Consultant ID is required' });
-    }
-
-    // Verify consultant belongs to the same company
-    const consultant = await pool.query(
-      'SELECT * FROM consultants WHERE id = $1 AND company_id = $2',
-      [consultantId, req.companyId]
-    );
-
-    if (consultant.rows.length === 0) {
-      return res.status(404).json({ error: 'Consultant not found' });
-    }
-
-    // Update automation_logs with consultant email to create the match
-    const result = await pool.query(
-      'UPDATE automation_logs SET sender_email = $1 WHERE id = $2 RETURNING *',
-      [consultant.rows[0].email, id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Timesheet not found' });
-    }
-
-    res.json({ success: true, message: 'Timesheet matched successfully' });
+    await apiCall(`/timesheets/${timesheetId}/match`, {
+      method: 'PUT',
+      body: JSON.stringify({ consultantId })
+    });
+    showNotification('Consultant matched successfully!');
+    setMatchingTimesheet(null);
+    loadData(); // Refresh data
   } catch (error) {
-    console.error('Match timesheet error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    showNotification('Failed to match consultant: ' + error.message, 'error');
   }
-});
+};
+
+// Update the Actions column in your timesheets table:
+<td className="p-4">
+  <div className="flex gap-2">
+    <button
+      onClick={() => viewTimesheet(timesheet.timesheet_file_url)}
+      className="text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded-md text-xs hover:bg-blue-50 transition flex items-center gap-1"
+      title="View Timesheet"
+    >
+      <Eye className="h-3 w-3" />
+      View
+    </button>
+    
+    {timesheet.consultant_matched ? (
+      <button
+        onClick={() => {
+          showNotification('Invoice generation from timesheets coming soon!');
+        }}
+        className="bg-green-600 text-white px-3 py-1 rounded-md text-xs hover:bg-green-700 flex items-center gap-1 transition"
+        title="Generate Invoice"
+      >
+        <Calculator className="h-3 w-3" />
+        Generate
+      </button>
+    ) : (
+      <div className="relative">
+        {matchingTimesheet === timesheet.id ? (
+          <div className="flex gap-1">
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  matchConsultant(timesheet.id, e.target.value);
+                }
+              }}
+              className="text-xs border border-gray-300 rounded px-2 py-1"
+              defaultValue=""
+            >
+              <option value="">Select Consultant</option>
+              {consultants.map(consultant => (
+                <option key={consultant.id} value={consultant.id}>
+                  {consultant.first_name} {consultant.last_name} - {consultant.company_name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => setMatchingTimesheet(null)}
+              className="text-gray-400 hover:text-gray-600 px-1"
+              title="Cancel"
+            >
+              ×
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setMatchingTimesheet(timesheet.id)}
+            className="bg-orange-600 text-white px-3 py-1 rounded-md text-xs hover:bg-orange-700 flex items-center gap-1 transition"
+            title="Match Consultant"
+          >
+            <Users className="h-3 w-3" />
+            Match
+          </button>
+        )}
+      </div>
+    )}
+  </div>
+</td>
 
 // Open modal for adding items
 const openAddModal = (type) => {
