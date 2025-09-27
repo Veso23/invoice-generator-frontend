@@ -1144,9 +1144,6 @@ const isActive = today >= startDate && today <= endDate;
           {timesheet.pdf_days || timesheet.email_days || 'N/A'}
         </span>
         <div className="text-xs text-gray-500">days</div>
-        <div className="text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition">
-          Click to edit
-        </div>
       </div>
     </div>
   )}
