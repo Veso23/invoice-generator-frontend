@@ -482,38 +482,21 @@ const viewTimesheet = (fileUrl) => {
   }
 };
 
-const matchConsultant = async (timesheetId, consultantId) => {
-    try {
-      await apiCall(`/timesheets/${timesheetId}/match`, {
-        method: 'PUT',
-        body: JSON.stringify({ consultantId })
-      });
-      showNotification('Consultant matched successfully!');
-      setMatchingTimesheet(null);
-      loadData();
-    } catch (error) {
-      showNotification('Failed to match consultant: ' + error.message, 'error');
-    }
-  };
+  const matchConsultant = async (timesheetId, consultantId) => {
+  try {
+    await apiCall(`/timesheets/${timesheetId}/match`, {
+      method: 'PUT',
+      body: JSON.stringify({ consultantId })
+    });
+    showNotification('Consultant matched successfully!');
+    setMatchingTimesheet(null);
+    loadData(); // Refresh data
+  } catch (error) {
+    showNotification('Failed to match consultant: ' + error.message, 'error');
+  }
+};
 
-  const generateInvoiceFromTimesheet = async (timesheetId) => {
-    try {
-      setDataLoading(true);
-      await apiCall(`/timesheets/${timesheetId}/generate-invoice`, {
-        method: 'POST'
-      });
-      
-      showNotification('Invoice generated successfully!', 'success');
-      await loadData();
-      setActiveTab('invoices');
-      
-    } catch (error) {
-      showNotification(error.message || 'Failed to generate invoice', 'error');
-    } finally {
-      setDataLoading(false);
-    }
-  };
-
+  // Add new client
   const addClient = async (clientData) => {
     try {
       await apiCall('/clients', {
@@ -528,19 +511,19 @@ const matchConsultant = async (timesheetId, consultantId) => {
   };
 
   const updateDays = async (timesheetId, newDays) => {
-    try {
-      await apiCall(`/timesheets/${timesheetId}/days`, {
-        method: 'PUT',
-        body: JSON.stringify({ days: parseInt(newDays) })
-      });
-      showNotification('Days updated successfully!');
-      setEditingDays(null);
-      setEditDaysValue('');
-      loadData();
-    } catch (error) {
-      showNotification('Failed to update days: ' + error.message, 'error');
-    }
-  };
+  try {
+    await apiCall(`/timesheets/${timesheetId}/days`, {
+      method: 'PUT',
+      body: JSON.stringify({ days: parseInt(newDays) })
+    });
+    showNotification('Days updated successfully!');
+    setEditingDays(null);
+    setEditDaysValue('');
+    loadData(); // Refresh data
+  } catch (error) {
+    showNotification('Failed to update days: ' + error.message, 'error');
+  }
+};
 
 const startEditDays = (timesheet) => {
   setEditingDays(timesheet.id);
@@ -1198,19 +1181,26 @@ const isActive = today >= startDate && today <= endDate;
       View
     </button>
     
-{timesheet.consultant_matched ? (
-      <button
-        onClick={() => generateInvoiceFromTimesheet(timesheet.id)}
+    {timesheet.consultant_matched ? (
+<button
+        onClick={async () => {
+          try {
+            setDataLoading(true);
+            await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, { method: 'POST' });
+            showNotification('Invoices generated successfully!');
+            loadData();
+          } catch (error) {
+            showNotification(error.message, 'error');
+          } finally {
+            setDataLoading(false);
+          }
+        }}
         disabled={timesheet.invoice_generated || dataLoading}
-        className={`${
-          timesheet.invoice_generated 
-            ? 'bg-gray-400 cursor-not-allowed' 
-            : 'bg-green-600 hover:bg-green-700'
-        } text-white px-3 py-1 rounded-md text-xs flex items-center gap-1 transition disabled:opacity-50`}
-        title={timesheet.invoice_generated ? "Invoice already generated" : "Generate Invoice"}
+        className="bg-green-600 text-white px-3 py-1 rounded-md text-xs hover:bg-green-700 flex items-center gap-1 transition"
+        title="Generate Invoice"
       >
         <Calculator className="h-3 w-3" />
-        {dataLoading ? 'Generating...' : (timesheet.invoice_generated ? 'Generated' : 'Generate')}
+        Generate
       </button>
     ) : (
       <div className="relative">
