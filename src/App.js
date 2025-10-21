@@ -496,20 +496,6 @@ const viewTimesheet = (fileUrl) => {
   }
 };
 
-  // Add new client
-  const addClient = async (clientData) => {
-    try {
-      await apiCall('/clients', {
-        method: 'POST',
-        body: JSON.stringify(clientData)
-      });
-      showNotification('Client added successfully!');
-      loadData();
-    } catch (error) {
-      showNotification('Failed to add client: ' + error.message, 'error');
-    }
-  };
-
 
 // ⬇️⬇️⬇️ PASTE THIS NEW FUNCTION HERE ⬇️⬇️⬇️
 
