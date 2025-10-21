@@ -523,10 +523,21 @@ const generateInvoiceFromTimesheet = async (timesheetId) => {
 
 // ⬆️⬆️⬆️ END OF NEW FUNCTION ⬆️⬆️⬆️
 
-  // Add new client
+ // Add new client
   const addClient = async (clientData) => {
+    try {
+      await apiCall('/clients', {
+        method: 'POST',
+        body: JSON.stringify(clientData)
+      });
+      showNotification('Client added successfully!');
+      loadData();
+    } catch (error) {
+      showNotification('Failed to add client: ' + error.message, 'error');
+    }
+  };
 
-  const updateDays = async (timesheetId, newDays) => {
+  const updateDays = async (timesheetId, newDays) => {  const updateDays = async (timesheetId, newDays) => {
   try {
     await apiCall(`/timesheets/${timesheetId}/days`, {
       method: 'PUT',
