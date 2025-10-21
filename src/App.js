@@ -482,48 +482,38 @@ const viewTimesheet = (fileUrl) => {
   }
 };
 
-  const matchConsultant = async (timesheetId, consultantId) => {
-  try {
-    await apiCall(`/timesheets/${timesheetId}/match`, {
-      method: 'PUT',
-      body: JSON.stringify({ consultantId })
-    });
-    showNotification('Consultant matched successfully!');
-    setMatchingTimesheet(null);
-    loadData(); // Refresh data
-  } catch (error) {
-    showNotification('Failed to match consultant: ' + error.message, 'error');
-  }
-};
+const matchConsultant = async (timesheetId, consultantId) => {
+    try {
+      await apiCall(`/timesheets/${timesheetId}/match`, {
+        method: 'PUT',
+        body: JSON.stringify({ consultantId })
+      });
+      showNotification('Consultant matched successfully!');
+      setMatchingTimesheet(null);
+      loadData();
+    } catch (error) {
+      showNotification('Failed to match consultant: ' + error.message, 'error');
+    }
+  };
 
+  const generateInvoiceFromTimesheet = async (timesheetId) => {
+    try {
+      setDataLoading(true);
+      await apiCall(`/timesheets/${timesheetId}/generate-invoice`, {
+        method: 'POST'
+      });
+      
+      showNotification('Invoice generated successfully!', 'success');
+      await loadData();
+      setActiveTab('invoices');
+      
+    } catch (error) {
+      showNotification(error.message || 'Failed to generate invoice', 'error');
+    } finally {
+      setDataLoading(false);
+    }
+  };
 
-// ⬇️⬇️⬇️ PASTE THIS NEW FUNCTION HERE ⬇️⬇️⬇️
-
-const generateInvoiceFromTimesheet = async (timesheetId) => {
-  try {
-    setDataLoading(true);
-    const response = await apiCall(`/timesheets/${timesheetId}/generate-invoice`, {
-      method: 'POST'
-    });
-    
-    showNotification('Invoice generated successfully!', 'success');
-    
-    // Refresh data
-    await loadData();
-    
-    // Switch to invoices tab to show the new invoice
-    setActiveTab('invoices');
-    
-  } catch (error) {
-    showNotification(error.message || 'Failed to generate invoice', 'error');
-  } finally {
-    setDataLoading(false);
-  }
-};
-
-// ⬆️⬆️⬆️ END OF NEW FUNCTION ⬆️⬆️⬆️
-
- // Add new client
   const addClient = async (clientData) => {
     try {
       await apiCall('/clients', {
@@ -537,8 +527,7 @@ const generateInvoiceFromTimesheet = async (timesheetId) => {
     }
   };
 
-  const updateDays = async (timesheetId, newDays) => {  const updateDays = async (timesheetId, newDays) => {
-  try {
+  const updateDays = async (timesheetId, newDays) => {
     await apiCall(`/timesheets/${timesheetId}/days`, {
       method: 'PUT',
       body: JSON.stringify({ days: parseInt(newDays) })
