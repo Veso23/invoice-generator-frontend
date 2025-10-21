@@ -510,19 +510,6 @@ const viewTimesheet = (fileUrl) => {
     }
   };
 
-  const matchConsultant = async (timesheetId, consultantId) => {
-  try {
-    await apiCall(`/timesheets/${timesheetId}/match`, {
-      method: 'PUT',
-      body: JSON.stringify({ consultantId })
-    });
-    showNotification('Consultant matched successfully!');
-    setMatchingTimesheet(null);
-    loadData(); // Refresh data
-  } catch (error) {
-    showNotification('Failed to match consultant: ' + error.message, 'error');
-  }
-};
 
 // ⬇️⬇️⬇️ PASTE THIS NEW FUNCTION HERE ⬇️⬇️⬇️
 
