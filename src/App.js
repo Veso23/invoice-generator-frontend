@@ -528,18 +528,19 @@ const matchConsultant = async (timesheetId, consultantId) => {
   };
 
   const updateDays = async (timesheetId, newDays) => {
-    await apiCall(`/timesheets/${timesheetId}/days`, {
-      method: 'PUT',
-      body: JSON.stringify({ days: parseInt(newDays) })
-    });
-    showNotification('Days updated successfully!');
-    setEditingDays(null);
-    setEditDaysValue('');
-    loadData(); // Refresh data
-  } catch (error) {
-    showNotification('Failed to update days: ' + error.message, 'error');
-  }
-};
+    try {
+      await apiCall(`/timesheets/${timesheetId}/days`, {
+        method: 'PUT',
+        body: JSON.stringify({ days: parseInt(newDays) })
+      });
+      showNotification('Days updated successfully!');
+      setEditingDays(null);
+      setEditDaysValue('');
+      loadData();
+    } catch (error) {
+      showNotification('Failed to update days: ' + error.message, 'error');
+    }
+  };
 
 const startEditDays = (timesheet) => {
   setEditingDays(timesheet.id);
