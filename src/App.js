@@ -510,6 +510,49 @@ const viewTimesheet = (fileUrl) => {
     }
   };
 
+  const matchConsultant = async (timesheetId, consultantId) => {
+  try {
+    await apiCall(`/timesheets/${timesheetId}/match`, {
+      method: 'PUT',
+      body: JSON.stringify({ consultantId })
+    });
+    showNotification('Consultant matched successfully!');
+    setMatchingTimesheet(null);
+    loadData(); // Refresh data
+  } catch (error) {
+    showNotification('Failed to match consultant: ' + error.message, 'error');
+  }
+};
+
+// ⬇️⬇️⬇️ PASTE THIS NEW FUNCTION HERE ⬇️⬇️⬇️
+
+const generateInvoiceFromTimesheet = async (timesheetId) => {
+  try {
+    setDataLoading(true);
+    const response = await apiCall(`/timesheets/${timesheetId}/generate-invoice`, {
+      method: 'POST'
+    });
+    
+    showNotification('Invoice generated successfully!', 'success');
+    
+    // Refresh data
+    await loadData();
+    
+    // Switch to invoices tab to show the new invoice
+    setActiveTab('invoices');
+    
+  } catch (error) {
+    showNotification(error.message || 'Failed to generate invoice', 'error');
+  } finally {
+    setDataLoading(false);
+  }
+};
+
+// ⬆️⬆️⬆️ END OF NEW FUNCTION ⬆️⬆️⬆️
+
+  // Add new client
+  const addClient = async (clientData) => {
+
   const updateDays = async (timesheetId, newDays) => {
   try {
     await apiCall(`/timesheets/${timesheetId}/days`, {
@@ -1181,16 +1224,19 @@ const isActive = today >= startDate && today <= endDate;
       View
     </button>
     
-    {timesheet.consultant_matched ? (
+{timesheet.consultant_matched ? (
       <button
-        onClick={() => {
-          showNotification('Invoice generation from timesheets coming soon!');
-        }}
-        className="bg-green-600 text-white px-3 py-1 rounded-md text-xs hover:bg-green-700 flex items-center gap-1 transition"
-        title="Generate Invoice"
+        onClick={() => generateInvoiceFromTimesheet(timesheet.id)}
+        disabled={timesheet.invoice_generated || dataLoading}
+        className={`${
+          timesheet.invoice_generated 
+            ? 'bg-gray-400 cursor-not-allowed' 
+            : 'bg-green-600 hover:bg-green-700'
+        } text-white px-3 py-1 rounded-md text-xs flex items-center gap-1 transition disabled:opacity-50`}
+        title={timesheet.invoice_generated ? "Invoice already generated" : "Generate Invoice"}
       >
         <Calculator className="h-3 w-3" />
-        Generate
+        {dataLoading ? 'Generating...' : (timesheet.invoice_generated ? 'Generated' : 'Generate')}
       </button>
     ) : (
       <div className="relative">
