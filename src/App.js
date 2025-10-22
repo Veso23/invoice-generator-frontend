@@ -1346,14 +1346,13 @@ const isActive = today >= startDate && today <= endDate;
       </button>
     </div>
   ) : (
-    <div 
-      onClick={() => startEditInvoiceNumber(invoice)}
-      className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition inline-block"
-      title="Click to edit"
-    >
-      {invoice.invoice_number}
-      <Edit className="h-3 w-3 inline ml-1 opacity-0 group-hover:opacity-100" />
-    </div>
+<div 
+  onClick={() => startEditInvoiceNumber(invoice)}
+  className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition inline-block"
+  title="Click to edit"
+>
+  {invoice.invoice_number}
+</div>
   )}
 </td>
 <td className="p-4 text-sm">
@@ -1380,8 +1379,8 @@ const isActive = today >= startDate && today <= endDate;
   </div>
 </td>
 <td className="p-4 text-sm">{formatDate(invoice.invoice_date)}</td>
-<td className="p-4 text-sm">
-  {formatDate(invoice.period_from)} - {formatDate(invoice.period_to)}
+<td className="p-4 text-xs">
+  {new Date(invoice.period_to).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
 </td>
 <td className="p-4 font-medium">{invoice.days_worked}</td>
 
