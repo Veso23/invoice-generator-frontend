@@ -1378,9 +1378,11 @@ const isActive = today >= startDate && today <= endDate;
     )}
   </div>
 </td>
-<td className="p-4 text-sm">{formatDate(invoice.invoice_date)}</td>
+<td className="p-4 text-sm">
+  {new Date(invoice.period_to).toLocaleDateString('en-GB')}
+</td>
 <td className="p-4 text-xs">
-  {new Date(invoice.period_to).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+  {new Date(invoice.period_to).toLocaleDateString('en-US', { month: 'long' })}
 </td>
 <td className="p-4 font-medium">{invoice.days_worked}</td>
 
