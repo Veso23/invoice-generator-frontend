@@ -391,6 +391,8 @@ const InvoiceGeneratorApp = () => {
   const [matchingTimesheet, setMatchingTimesheet] = useState(null);
   const [editingDays, setEditingDays] = useState(null);
   const [editDaysValue, setEditDaysValue] = useState('');
+  const [editingInvoiceNumber, setEditingInvoiceNumber] = useState(null);  // ← ADD
+  const [editInvoiceNumberValue, setEditInvoiceNumberValue] = useState(''); // ← ADD
   
   // Show notification
   const showNotification = (message, type = 'success') => {
@@ -443,6 +445,33 @@ const InvoiceGeneratorApp = () => {
       showNotification('Failed to generate invoices: ' + error.message, 'error');
     }
     setDataLoading(false);
+  };
+
+  // Start editing invoice number
+  const startEditInvoiceNumber = (invoice) => {
+    setEditingInvoiceNumber(invoice.id);
+    setEditInvoiceNumberValue(invoice.invoice_number);
+  };
+
+  // Update invoice number
+  const updateInvoiceNumber = async (invoiceId) => {
+    try {
+      await apiCall(`/invoices/${invoiceId}/number`, {
+        method: 'PUT',
+        body: JSON.stringify({ invoiceNumber: editInvoiceNumberValue })
+      });
+      showNotification('Invoice number updated successfully!');
+      setEditingInvoiceNumber(null);
+      loadData();
+    } catch (error) {
+      showNotification('Failed to update invoice number: ' + error.message, 'error');
+    }
+  };
+
+  // Cancel editing invoice number
+  const cancelEditInvoiceNumber = () => {
+    setEditingInvoiceNumber(null);
+    setEditInvoiceNumberValue('');
   };
 
   // Add new consultant
@@ -1286,8 +1315,47 @@ const isActive = today >= startDate && today <= endDate;
                     </thead>
                     <tbody>
                       {invoices.map((invoice) => (
-                        <tr key={invoice.id} className="border-b hover:bg-gray-50">
-<td className="p-4 font-mono text-xs">{invoice.invoice_number}</td>
+                        <tr key={invoice.id} className="border-b hover:bg-gray-50 group">
+<td className="p-4 font-mono text-xs">
+  {editingInvoiceNumber === invoice.id ? (
+    <div className="flex items-center gap-1">
+      <input
+        type="text"
+        value={editInvoiceNumberValue}
+        onChange={(e) => setEditInvoiceNumberValue(e.target.value)}
+        className="border border-blue-500 rounded px-2 py-1 text-xs w-40 focus:outline-none focus:ring-2 focus:ring-blue-300"
+        autoFocus
+        onKeyPress={(e) => {
+          if (e.key === 'Enter') updateInvoiceNumber(invoice.id);
+          if (e.key === 'Escape') cancelEditInvoiceNumber();
+        }}
+      />
+      <button
+        onClick={() => updateInvoiceNumber(invoice.id)}
+        className="text-green-600 hover:text-green-800 p-1"
+        title="Save"
+      >
+        <CheckCircle className="h-4 w-4" />
+      </button>
+      <button
+        onClick={cancelEditInvoiceNumber}
+        className="text-gray-400 hover:text-gray-600 p-1"
+        title="Cancel"
+      >
+        ×
+      </button>
+    </div>
+  ) : (
+    <div 
+      onClick={() => startEditInvoiceNumber(invoice)}
+      className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition inline-block"
+      title="Click to edit"
+    >
+      {invoice.invoice_number}
+      <Edit className="h-3 w-3 inline ml-1 opacity-0 group-hover:opacity-100" />
+    </div>
+  )}
+</td>
 <td className="p-4 text-sm">
   <div>
     {invoice.invoice_type === 'consultant' ? (
