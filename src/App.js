@@ -527,8 +527,8 @@ const [userMenuOpen, setUserMenuOpen] = useState(false);
       setInvoices(invoicesData);
       setAutomationLogs(automationData);
       setTimesheets(timesheetsData);
-          await loadCompanySettings();
-    await loadTimesheetStatus();
+      loadCompanySettings().catch(err => console.log('Settings load failed:', err));
+      loadTimesheetStatus().catch(err => console.log('Timesheet status load failed:', err));
     } catch (error) {
       console.error('Failed to load data:', error);
       showNotification('Failed to load some data. Please refresh the page.', 'error');
