@@ -1337,77 +1337,62 @@ const isActive = today >= startDate && today <= endDate;
     </div>
   </div>
 )}
-{/* Timesheets Tab */}
+
 {/* Timesheets Tab */}
 {activeTab === 'timesheets' && (
   <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <div>
-        <h2 className="text-xl font-bold text-gray-800">Timesheet Status</h2>
-        {timesheetStatus && (
-          <p className="text-sm text-gray-600 mt-1">
-            Checking {timesheetStatus.checking_month} {timesheetStatus.checking_year} timesheets 
-            (Deadline: {timesheetStatus.deadline_day}th of each month)
-          </p>
-        )}
+    {/* STATUS SUMMARY AT TOP */}
+    <div className="bg-white rounded-lg border shadow-sm p-6">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">Timesheet Status Summary</h2>
+          {timesheetStatus && (
+            <p className="text-sm text-gray-600 mt-1">
+              Checking {timesheetStatus.checking_month} {timesheetStatus.checking_year} timesheets 
+              (Deadline: {timesheetStatus.deadline_day}th of each month)
+            </p>
+          )}
+        </div>
       </div>
-      <button
-        onClick={() => setSettingsModalOpen(true)}
-        className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
-      >
-        <Edit className="h-4 w-4" />
-        Change Deadline
-      </button>
-    </div>
-    
-    {!timesheetStatus || timesheetStatus.consultants?.length === 0 ? (
-      <div className="bg-white rounded-lg p-12 text-center border shadow-sm">
-        <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-800 mb-2">No active consultants</h3>
-        <p className="text-gray-600">Add consultants and create active contracts to track timesheets</p>
-      </div>
-    ) : (
-      <div className="bg-white rounded-lg border shadow-sm">
+      
+      {!timesheetStatus || timesheetStatus.consultants?.length === 0 ? (
+        <div className="text-center py-8">
+          <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+          <p className="text-gray-600">No active consultants with contracts</p>
+        </div>
+      ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-left p-4 font-medium text-gray-600">Consultant</th>
-                <th className="text-left p-4 font-medium text-gray-600">Email</th>
-                <th className="text-left p-4 font-medium text-gray-600">Period</th>
-                <th className="text-left p-4 font-medium text-gray-600">Days Worked</th>
-                <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                <th className="text-left p-4 font-medium text-gray-600">Deadline</th>
+                <th className="text-left p-3 font-medium text-gray-600 text-sm">Consultant</th>
+                <th className="text-left p-3 font-medium text-gray-600 text-sm">Email</th>
+                <th className="text-left p-3 font-medium text-gray-600 text-sm">Period</th>
+                <th className="text-left p-3 font-medium text-gray-600 text-sm">Days Worked</th>
+                <th className="text-left p-3 font-medium text-gray-600 text-sm">Status</th>
+                <th className="text-left p-3 font-medium text-gray-600 text-sm">Deadline</th>
               </tr>
             </thead>
             <tbody>
               {timesheetStatus.consultants.map((consultant) => (
                 <tr key={consultant.id} className="border-b hover:bg-gray-50">
-                  <td className="p-4">
-                    <div className="font-medium">
-                      {consultant.first_name} {consultant.last_name}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                      {consultant.company_name}
-                    </div>
+                  <td className="p-3">
+                    <div className="font-medium text-sm">{consultant.first_name} {consultant.last_name}</div>
+                    <div className="text-xs text-gray-600">{consultant.company_name}</div>
                   </td>
-                  <td className="p-4 text-sm text-gray-600">
-                    {consultant.email}
-                  </td>
-                  <td className="p-4 text-sm font-medium">
+                  <td className="p-3 text-sm text-gray-600">{consultant.email}</td>
+                  <td className="p-3 text-sm font-medium">
                     {consultant.checking_month} {consultant.checking_year}
                   </td>
-                  <td className="p-4 text-center">
+                  <td className="p-3 text-center">
                     {consultant.days_worked ? (
-                      <span className="text-lg font-bold text-blue-600">
-                        {consultant.days_worked}
-                      </span>
+                      <span className="text-lg font-bold text-blue-600">{consultant.days_worked}</span>
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
                   </td>
-                  <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  <td className="p-3">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       consultant.status === 'received' 
                         ? 'bg-green-100 text-green-800' 
                         : consultant.status === 'waiting'
@@ -1420,7 +1405,7 @@ const isActive = today >= startDate && today <= endDate;
                       {consultant.status_text}
                     </span>
                   </td>
-                  <td className="p-4 text-sm text-gray-600">
+                  <td className="p-3 text-sm text-gray-600">
                     {new Date(consultant.deadline_date).toLocaleDateString('en-GB')}
                   </td>
                 </tr>
@@ -1428,8 +1413,179 @@ const isActive = today >= startDate && today <= endDate;
             </tbody>
           </table>
         </div>
+      )}
+    </div>
+
+    {/* FULL TIMESHEET MANAGEMENT BELOW */}
+    <div className="bg-white rounded-lg border shadow-sm">
+      <div className="px-6 py-4 border-b">
+        <h2 className="text-lg font-semibold text-gray-800">All Timesheets</h2>
+        <p className="text-sm text-gray-600 mt-1">Manage individual timesheet submissions</p>
       </div>
-    )}
+      
+      {timesheets.length === 0 ? (
+        <div className="p-12 text-center">
+          <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-800 mb-2">No timesheets received yet</h3>
+          <p className="text-gray-600">Timesheets will appear here when received via email</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left p-4 font-medium text-gray-600">Date</th>
+                <th className="text-left p-4 font-medium text-gray-600">Person</th>
+                <th className="text-left p-4 font-medium text-gray-600">Email</th>
+                <th className="text-left p-4 font-medium text-gray-600">Month</th>
+                <th className="text-left p-4 font-medium text-gray-600">Days</th>
+                <th className="text-left p-4 font-medium text-gray-600">Match Status</th>
+                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {timesheets.map((timesheet) => (
+                <tr key={timesheet.id} className="border-b hover:bg-gray-50">
+                  <td className="p-4 text-sm">
+                    {new Date(timesheet.created_at).toLocaleDateString('en-GB')}
+                  </td>
+                  <td className="p-4">
+                    <div className="font-medium">{timesheet.person_name}</div>
+                    {timesheet.consultant_matched && (
+                      <div className="text-xs text-gray-600">
+                        {timesheet.consultant_first_name} {timesheet.consultant_last_name}
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-4 text-sm font-mono">{timesheet.sender_email || '-'}</td>
+                  <td className="p-4 text-sm font-medium">{timesheet.month}</td>
+                  <td className="p-4">
+                    {editingDays === timesheet.id ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          value={editDaysValue}
+                          onChange={(e) => setEditDaysValue(e.target.value)}
+                          className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                          autoFocus
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') updateDays(timesheet.id, editDaysValue);
+                            if (e.key === 'Escape') cancelEditDays();
+                          }}
+                        />
+                        <button
+                          onClick={() => updateDays(timesheet.id, editDaysValue)}
+                          className="text-green-600 hover:text-green-800 p-1"
+                          title="Save"
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={cancelEditDays}
+                          className="text-gray-400 hover:text-gray-600 p-1"
+                          title="Cancel"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => startEditDays(timesheet)}
+                        className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition inline-block"
+                        title="Click to edit"
+                      >
+                        <span className="font-bold text-blue-600">
+                          {timesheet.pdf_days || timesheet.email_days || '-'}
+                        </span>
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-4">
+                    {timesheet.consultant_matched ? (
+                      <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 flex items-center gap-1 w-fit">
+                        <CheckCircle className="h-3 w-3" />
+                        Matched
+                      </span>
+                    ) : matchingTimesheet === timesheet.id ? (
+                      <div className="flex items-center gap-2">
+                        <select
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              matchConsultant(timesheet.id, e.target.value);
+                            }
+                          }}
+                          className="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500"
+                          autoFocus
+                        >
+                          <option value="">Select consultant...</option>
+                          {consultants.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.first_name} {c.last_name} - {c.company_name}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => setMatchingTimesheet(null)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setMatchingTimesheet(timesheet.id)}
+                        className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition"
+                      >
+                        No Match - Click to Match
+                      </button>
+                    )}
+                  </td>
+                  <td className="p-4">
+                    <div className="flex gap-2">
+                      {timesheet.pdf_url && (
+                        <button
+                          onClick={() => viewTimesheet(timesheet.pdf_url)}
+                          className="text-blue-600 hover:text-blue-800 p-1 transition"
+                          title="View Timesheet PDF"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      )}
+                      {timesheet.consultant_matched && !timesheet.invoice_generated && (
+                        <button
+                          onClick={async () => {
+                            try {
+                              await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
+                                method: 'POST'
+                              });
+                              showNotification('Invoice generated successfully!');
+                              loadData();
+                            } catch (error) {
+                              showNotification('Failed to generate invoice: ' + error.message, 'error');
+                            }
+                          }}
+                          className="text-green-600 hover:text-green-800 p-1 transition flex items-center gap-1 text-xs"
+                          title="Generate Invoice"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Invoice
+                        </button>
+                      )}
+                      {timesheet.invoice_generated && (
+                        <span className="text-xs text-green-600 flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Invoiced
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   </div>
 )}
         {/* Invoices Tab */}
