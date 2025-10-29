@@ -483,8 +483,6 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
   );
 };
 
-};
-
 // Deadline Modal Component
 const DeadlineModal = ({ isOpen, onClose, currentDeadline, onSubmit }) => {
   const [deadline, setDeadline] = useState(15);
