@@ -894,6 +894,14 @@ contract: {
         settings={companySettings}
         onSubmit={updateCompanySettings}
       />
+          
+          {/* Deadline Modal */}
+<DeadlineModal
+  isOpen={deadlineModalOpen}
+  onClose={() => setDeadlineModalOpen(false)}
+  currentDeadline={companySettings?.timesheet_deadline_day}
+  onSubmit={(data) => updateCompanySettings({ ...companySettings, ...data })}
+/>
 
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
