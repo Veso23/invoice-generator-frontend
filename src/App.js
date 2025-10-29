@@ -374,6 +374,109 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
     </div>
   );
 };
+
+// Settings Modal Component
+const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    timesheet_deadline_day: 15,
+    company_vat: '',
+    company_email: ''
+  });
+
+  useEffect(() => {
+    if (isOpen && settings) {
+      setFormData({
+        name: settings.name || '',
+        timesheet_deadline_day: settings.timesheet_deadline_day || 15,
+        company_vat: settings.company_vat || '',
+        company_email: settings.company_email || ''
+      });
+    }
+  }, [isOpen, settings]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 className="text-lg font-semibold mb-4">Company Settings</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Company VAT</label>
+            <input
+              type="text"
+              value={formData.company_vat}
+              onChange={(e) => setFormData({ ...formData, company_vat: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Company Email</label>
+            <input
+              type="email"
+              value={formData.company_email}
+              onChange={(e) => setFormData({ ...formData, company_email: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Timesheet Deadline (Day of Month)
+            </label>
+            <select
+              value={formData.timesheet_deadline_day}
+              onChange={(e) => setFormData({ ...formData, timesheet_deadline_day: parseInt(e.target.value) })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            >
+              {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                <option key={day} value={day}>{day}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Day of the month by which timesheets must be received
+            </p>
+          </div>
+
+          <div className="flex gap-2 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              Save Settings
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // Main Application
 const InvoiceGeneratorApp = () => {
   const { user, login, register, logout, loading } = useAuth();
@@ -393,6 +496,10 @@ const InvoiceGeneratorApp = () => {
   const [editDaysValue, setEditDaysValue] = useState('');
   const [editingInvoiceNumber, setEditingInvoiceNumber] = useState(null);  // ← ADD
   const [editInvoiceNumberValue, setEditInvoiceNumberValue] = useState(''); // ← ADD
+  const [companySettings, setCompanySettings] = useState(null);
+const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+const [timesheetStatus, setTimesheetStatus] = useState(null);
+const [userMenuOpen, setUserMenuOpen] = useState(false);
   
   // Show notification
   const showNotification = (message, type = 'success') => {
@@ -420,6 +527,8 @@ const InvoiceGeneratorApp = () => {
       setInvoices(invoicesData);
       setAutomationLogs(automationData);
       setTimesheets(timesheetsData);
+          await loadCompanySettings();
+    await loadTimesheetStatus();
     } catch (error) {
       console.error('Failed to load data:', error);
       showNotification('Failed to load some data. Please refresh the page.', 'error');
@@ -487,6 +596,41 @@ const InvoiceGeneratorApp = () => {
       showNotification('Failed to add consultant: ' + error.message, 'error');
     }
   };
+
+  // Load company settings
+const loadCompanySettings = async () => {
+  try {
+    const settings = await apiCall('/company/settings');
+    setCompanySettings(settings);
+  } catch (error) {
+    console.error('Failed to load company settings:', error);
+  }
+};
+
+// Update company settings
+const updateCompanySettings = async (settingsData) => {
+  try {
+    await apiCall('/company/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settingsData)
+    });
+    showNotification('Settings updated successfully!');
+    loadCompanySettings();
+    setSettingsModalOpen(false);
+  } catch (error) {
+    showNotification('Failed to update settings: ' + error.message, 'error');
+  }
+};
+
+// Load timesheet status
+const loadTimesheetStatus = async () => {
+  try {
+    const status = await apiCall('/timesheets/status');
+    setTimesheetStatus(status);
+  } catch (error) {
+    console.error('Failed to load timesheet status:', error);
+  }
+};
 
   // Add new contract
 const addContract = async (contractData) => {
@@ -673,6 +817,14 @@ contract: {
         onSubmit={modalConfig.onSubmit}
       />
 
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+        settings={companySettings}
+        onSubmit={updateCompanySettings}
+      />
+
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -688,18 +840,44 @@ contract: {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+<div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-700">{user.firstName} {user.lastName}</p>
                 <p className="text-xs text-gray-500">{user.email}</p>
               </div>
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition"
-              >
-                <LogOut className="h-4 w-4" />
-                Logout
-              </button>
+              
+              {/* User Menu */}
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition"
+                >
+                  <Users className="h-4 w-4" />
+                  Menu
+                </button>
+                
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
+                    <button
+                      onClick={() => {
+                        setSettingsModalOpen(true);
+                        setUserMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <Edit className="h-4 w-4" />
+                      Settings
+                    </button>
+                    <button
+                      onClick={logout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
