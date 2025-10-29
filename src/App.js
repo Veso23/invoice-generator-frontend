@@ -22,6 +22,13 @@ const apiCall = async (endpoint, options = {}) => {
     const data = await response.json();
 
     if (!response.ok) {
+      if (response.status === 403 && data.error === 'Invalid token') {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+        window.location.reload(); // Force re-login
+        throw new Error('Session expired. Please log in again.');
+      }
+      
       throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
     }
 
