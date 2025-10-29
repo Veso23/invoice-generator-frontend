@@ -547,9 +547,6 @@ const DeadlineModal = ({ isOpen, onClose, currentDeadline, onSubmit }) => {
 
 // Main Application
 const InvoiceGeneratorApp = () => {
-
-// Main Application
-const InvoiceGeneratorApp = () => {
   const { user, login, register, logout, loading } = useAuth();
   const [consultants, setConsultants] = useState([]);
   const [clients, setClients] = useState([]);
