@@ -421,7 +421,6 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              required
             />
           </div>
           
@@ -484,6 +483,73 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
   );
 };
 
+};
+
+// Deadline Modal Component
+const DeadlineModal = ({ isOpen, onClose, currentDeadline, onSubmit }) => {
+  const [deadline, setDeadline] = useState(15);
+
+  useEffect(() => {
+    if (isOpen) {
+      setDeadline(currentDeadline || 15);
+    }
+  }, [isOpen, currentDeadline]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit({ timesheet_deadline_day: deadline });
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 className="text-lg font-semibold mb-4">Change Timesheet Deadline</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Deadline Day of Month
+            </label>
+            <select
+              value={deadline}
+              onChange={(e) => setDeadline(parseInt(e.target.value))}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            >
+              {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                <option key={day} value={day}>{day}</option>
+              ))}
+            </select>
+            <p className="text-xs text-gray-500 mt-2">
+              Timesheets must be received by this day of each month
+            </p>
+          </div>
+
+          <div className="flex gap-2 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Main Application
+const InvoiceGeneratorApp = () => {
+
 // Main Application
 const InvoiceGeneratorApp = () => {
   const { user, login, register, logout, loading } = useAuth();
@@ -507,6 +573,7 @@ const InvoiceGeneratorApp = () => {
 const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 const [timesheetStatus, setTimesheetStatus] = useState(null);
 const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
   
   // Show notification
   const showNotification = (message, type = 'success') => {
@@ -629,6 +696,7 @@ const updateCompanySettings = async (settingsData) => {
   }
 };
 
+  
 // Load timesheet status
 const loadTimesheetStatus = async () => {
   try {
