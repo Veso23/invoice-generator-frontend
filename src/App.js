@@ -684,8 +684,10 @@ const updateCompanySettings = async (settingsData) => {
       body: JSON.stringify(settingsData)
     });
     showNotification('Settings updated successfully!');
-    loadCompanySettings();
+    await loadCompanySettings();
+    await loadTimesheetStatus(); // ← ADD THIS LINE
     setSettingsModalOpen(false);
+    setDeadlineModalOpen(false);
   } catch (error) {
     showNotification('Failed to update settings: ' + error.message, 'error');
   }
