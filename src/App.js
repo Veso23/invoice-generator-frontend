@@ -1468,9 +1468,9 @@ const isActive = today >= startDate && today <= endDate;
                   </td>
                   <td className="p-4">
                     <div className="flex gap-2">
-                      {timesheet?.pdf_url && (
-                        <button
-                          onClick={() => viewTimesheet(timesheet.pdf_url)}
+                      {timesheet?.timesheet_file_url && (
+  <button
+    onClick={() => viewTimesheet(timesheet.timesheet_file_url)}
                           className="text-blue-600 hover:text-blue-800 p-1 transition"
                           title="View Timesheet PDF"
                         >
