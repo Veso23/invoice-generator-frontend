@@ -584,11 +584,14 @@ const InvoiceGeneratorApp = () => {
   const [editDaysValue, setEditDaysValue] = useState('');
   const [editingInvoiceNumber, setEditingInvoiceNumber] = useState(null);  // ← ADD
   const [editInvoiceNumberValue, setEditInvoiceNumberValue] = useState(''); // ← ADD
+  const [editingVatRate, setEditingVatRate] = useState(null);  // ← ADD THIS
+const [editVatRateValue, setEditVatRateValue] = useState(''); // ← ADD THIS
   const [companySettings, setCompanySettings] = useState(null);
 const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 const [timesheetStatus, setTimesheetStatus] = useState(null);
 const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
+
   
   // Show notification
   const showNotification = (message, type = 'success') => {
@@ -671,6 +674,47 @@ const [userMenuOpen, setUserMenuOpen] = useState(false);
     setEditingInvoiceNumber(null);
     setEditInvoiceNumberValue('');
   };
+
+  // Start editing VAT rate
+const startEditVatRate = (invoice) => {
+  setEditingVatRate(invoice.id);
+  setEditVatRateValue(invoice.vat_rate);
+};
+
+// Update VAT rate
+const updateVatRate = async (invoiceId, newVatRate) => {
+  try {
+    await apiCall(`/invoices/${invoiceId}/vat`, {
+      method: 'PUT',
+      body: JSON.stringify({ vatRate: parseFloat(newVatRate) })
+    });
+    showNotification('VAT rate updated successfully!');
+    setEditingVatRate(null);
+    loadData();
+  } catch (error) {
+    showNotification('Failed to update VAT rate: ' + error.message, 'error');
+  }
+};
+
+// Cancel editing VAT rate
+const cancelEditVatRate = () => {
+  setEditingVatRate(null);
+  setEditVatRateValue('');
+};
+
+// Toggle VAT enabled/disabled
+const toggleVat = async (invoiceId, currentEnabled) => {
+  try {
+    await apiCall(`/invoices/${invoiceId}/vat-toggle`, {
+      method: 'PUT',
+      body: JSON.stringify({ vatEnabled: !currentEnabled })
+    });
+    showNotification(`VAT ${!currentEnabled ? 'enabled' : 'disabled'} successfully!`);
+    loadData();
+  } catch (error) {
+    showNotification('Failed to toggle VAT: ' + error.message, 'error');
+  }
+};
 
   // Add new consultant
   const addConsultant = async (consultantData) => {
@@ -1564,121 +1608,208 @@ const isActive = today >= startDate && today <= endDate;
                         <th className="text-left p-4 font-medium text-gray-600">Period</th>
                         <th className="text-left p-4 font-medium text-gray-600">Days</th>
                         <th className="text-left p-4 font-medium text-gray-600">Daily Rate</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Subtotal</th>
+                        <th className="text-left p-4 font-medium text-gray-600">VAT</th>  {/* ← ADD */}
                         <th className="text-left p-4 font-medium text-gray-600">Total</th>
                         <th className="text-left p-4 font-medium text-gray-600">Status</th>
                         <th className="text-left p-4 font-medium text-gray-600">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {invoices.map((invoice) => (
-                        <tr key={invoice.id} className="border-b hover:bg-gray-50 group">
-<td className="p-4 font-mono text-xs">
-  {editingInvoiceNumber === invoice.id ? (
-    <div className="flex items-center gap-1">
-      <input
-        type="text"
-        value={editInvoiceNumberValue}
-        onChange={(e) => setEditInvoiceNumberValue(e.target.value)}
-        className="border border-blue-500 rounded px-2 py-1 text-xs w-40 focus:outline-none focus:ring-2 focus:ring-blue-300"
-        autoFocus
-        onKeyPress={(e) => {
-          if (e.key === 'Enter') updateInvoiceNumber(invoice.id);
-          if (e.key === 'Escape') cancelEditInvoiceNumber();
-        }}
-      />
-      <button
-        onClick={() => updateInvoiceNumber(invoice.id)}
-        className="text-green-600 hover:text-green-800 p-1"
-        title="Save"
-      >
-        <CheckCircle className="h-4 w-4" />
-      </button>
-      <button
-        onClick={cancelEditInvoiceNumber}
-        className="text-gray-400 hover:text-gray-600 p-1"
-        title="Cancel"
-      >
-        ×
-      </button>
-    </div>
-  ) : (
-<div 
-  onClick={() => startEditInvoiceNumber(invoice)}
-  className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition inline-block"
-  title="Click to edit"
->
-  {invoice.invoice_number}
-</div>
-  )}
-</td>
-<td className="p-4 text-sm">
-  <div>
-    {invoice.invoice_type === 'consultant' ? (
-      <>
-        <div className="font-medium">
-          {invoice.consultant_first_name} {invoice.consultant_last_name}
-        </div>
-        <div className="text-gray-600">
-          {invoice.consultant_company_name}
-        </div>
-      </>
-    ) : (
-      <>
-        <div className="font-medium">
-          {invoice.client_first_name} {invoice.client_last_name}
-        </div>
-        <div className="text-gray-600">
-          {invoice.client_company_name}
-        </div>
-      </>
-    )}
-  </div>
-</td>
-<td className="p-4 text-sm">
-  {new Date(invoice.period_to).toLocaleDateString('en-GB')}
-</td>
-<td className="p-4 text-xs">
-  {new Date(invoice.period_to).toLocaleDateString('en-US', { month: 'long' })}
-</td>
-<td className="p-4 font-medium">{invoice.days_worked}</td>
+  {invoices.map((invoice) => {
+    // Calculate amounts
+    const subtotal = parseFloat(invoice.subtotal);
+    const vatRate = parseFloat(invoice.vat_rate);
+    const vatEnabled = invoice.vat_enabled !== false; // default true
+    const vatAmount = vatEnabled ? (subtotal * vatRate / 100) : 0;
+    const total = subtotal + vatAmount;
+    
+    return (
+      <tr key={invoice.id} className="border-b hover:bg-gray-50 group">
+        {/* Invoice Number - Editable */}
+        <td className="p-4 font-mono text-xs">
+          {editingInvoiceNumber === invoice.id ? (
+            <div className="flex items-center gap-1">
+              <input
+                type="text"
+                value={editInvoiceNumberValue}
+                onChange={(e) => setEditInvoiceNumberValue(e.target.value)}
+                className="border border-blue-500 rounded px-2 py-1 text-xs w-40 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                autoFocus
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') updateInvoiceNumber(invoice.id);
+                  if (e.key === 'Escape') cancelEditInvoiceNumber();
+                }}
+              />
+              <button
+                onClick={() => updateInvoiceNumber(invoice.id)}
+                className="text-green-600 hover:text-green-800 p-1"
+                title="Save"
+              >
+                <CheckCircle className="h-4 w-4" />
+              </button>
+              <button
+                onClick={cancelEditInvoiceNumber}
+                className="text-gray-400 hover:text-gray-600 p-1"
+                title="Cancel"
+              >
+                ×
+              </button>
+            </div>
+          ) : (
+            <div 
+              onClick={() => startEditInvoiceNumber(invoice)}
+              className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition inline-block"
+              title="Click to edit"
+            >
+              {invoice.invoice_number}
+            </div>
+          )}
+        </td>
 
-                          <td className="p-4">{formatCurrency(invoice.daily_rate)}</td>
-                          <td className="p-4 font-bold">{formatCurrency(invoice.total_amount)}</td>
-                          <td className="p-4">
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              invoice.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                              invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                              invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {invoice.status}
-                            </span>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex gap-2">
-                              <button
-                                className="text-blue-600 hover:text-blue-800 p-1 transition"
-                                title="View Invoice"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </button>
-                              <button
-                                className="text-green-600 hover:text-green-800 p-1 transition"
-                                title="Download PDF"
-                              >
-                                <Download className="h-4 w-4" />
-                              </button>
-                              <button
-                                className="text-purple-600 hover:text-purple-800 p-1 transition"
-                                title="Send Email"
-                              >
-                                <Send className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
+        {/* Name */}
+        <td className="p-4 text-sm">
+          <div>
+            {invoice.invoice_type === 'consultant' ? (
+              <>
+                <div className="font-medium">
+                  {invoice.consultant_first_name} {invoice.consultant_last_name}
+                </div>
+                <div className="text-gray-600">
+                  {invoice.consultant_company_name}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="font-medium">
+                  {invoice.client_first_name} {invoice.client_last_name}
+                </div>
+                <div className="text-gray-600">
+                  {invoice.client_company_name}
+                </div>
+              </>
+            )}
+          </div>
+        </td>
+
+        {/* Date */}
+        <td className="p-4 text-sm">
+          {new Date(invoice.period_to).toLocaleDateString('en-GB')}
+        </td>
+
+        {/* Period */}
+        <td className="p-4 text-xs">
+          {new Date(invoice.period_to).toLocaleDateString('en-US', { month: 'long' })}
+        </td>
+
+        {/* Days */}
+        <td className="p-4 font-medium">{invoice.days_worked}</td>
+
+        {/* Daily Rate */}
+        <td className="p-4">{formatCurrency(invoice.daily_rate)}</td>
+
+        {/* Subtotal */}
+        <td className="p-4 font-medium">{formatCurrency(subtotal)}</td>
+
+        {/* VAT - Toggle & Editable Rate */}
+        <td className="p-4">
+          <div className="flex flex-col gap-1">
+            {/* VAT Toggle */}
+            <label className="flex items-center gap-1 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={vatEnabled}
+                onChange={() => toggleVat(invoice.id, vatEnabled)}
+                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-xs text-gray-600">VAT</span>
+            </label>
+            
+            {/* VAT Rate - Editable */}
+            {vatEnabled && (
+              <div>
+                {editingVatRate === invoice.id ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editVatRateValue}
+                      onChange={(e) => setEditVatRateValue(e.target.value)}
+                      className="border border-blue-500 rounded px-1 py-0.5 w-16 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
+                      autoFocus
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') updateVatRate(invoice.id, editVatRateValue);
+                        if (e.key === 'Escape') cancelEditVatRate();
+                      }}
+                    />
+                    <button
+                      onClick={() => updateVatRate(invoice.id, editVatRateValue)}
+                      className="text-green-600 hover:text-green-800 p-0.5"
+                      title="Save"
+                    >
+                      <CheckCircle className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => startEditVatRate(invoice)}
+                    className="cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded transition inline-block text-xs"
+                    title="Click to edit VAT rate"
+                  >
+                    {vatRate}% = {formatCurrency(vatAmount)}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {!vatEnabled && (
+              <span className="text-xs text-gray-400">No VAT</span>
+            )}
+          </div>
+        </td>
+
+        {/* Total */}
+        <td className="p-4 font-bold text-green-600">{formatCurrency(total)}</td>
+
+        {/* Status */}
+        <td className="p-4">
+          <span className={`px-2 py-1 rounded-full text-xs ${
+            invoice.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+            invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+            invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
+            'bg-gray-100 text-gray-800'
+          }`}>
+            {invoice.status}
+          </span>
+        </td>
+
+        {/* Actions */}
+        <td className="p-4">
+          <div className="flex gap-2">
+            <button
+              className="text-blue-600 hover:text-blue-800 p-1 transition"
+              title="View Invoice"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
+            <button
+              className="text-green-600 hover:text-green-800 p-1 transition"
+              title="Download PDF"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+            <button
+              className="text-purple-600 hover:text-purple-800 p-1 transition"
+              title="Send Email"
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          </div>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
                   </table>
                 </div>
               </div>
