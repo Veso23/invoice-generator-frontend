@@ -1711,19 +1711,21 @@ const isActive = today >= startDate && today <= endDate;
         {/* Subtotal */}
         <td className="p-4 font-medium">{formatCurrency(subtotal)}</td>
 
-        <td className="p-4">
-  <div className="flex flex-col gap-2">
-    {/* Checkbox Toggle (no label) */}
+ {/* VAT - Clean Horizontal Layout */}
+<td className="p-4">
+  <div className="flex items-center gap-3">
+    {/* Checkbox */}
     <input
       type="checkbox"
       checked={vatEnabled}
       onChange={() => toggleVat(invoice.id, vatEnabled)}
-      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
+      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+      title="Toggle VAT"
     />
     
-    {/* VAT Rate & Amount Display */}
+    {/* VAT Info */}
     {vatEnabled ? (
-      <div className="flex flex-col">
+      <div className="flex items-center gap-2">
         {/* VAT Rate - Editable */}
         {editingVatRate === invoice.id ? (
           <div className="flex items-center gap-1">
@@ -1732,7 +1734,7 @@ const isActive = today >= startDate && today <= endDate;
               step="0.01"
               value={editVatRateValue}
               onChange={(e) => setEditVatRateValue(e.target.value)}
-              className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="border border-blue-500 rounded px-2 py-1 w-16 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
               autoFocus
               onKeyPress={(e) => {
                 if (e.key === 'Enter') updateVatRate(invoice.id, editVatRateValue);
@@ -1751,17 +1753,13 @@ const isActive = today >= startDate && today <= endDate;
         ) : (
           <div
             onClick={() => startEditVatRate(invoice)}
-            className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition text-sm font-medium"
+            className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition flex items-baseline gap-0.5"
             title="Click to edit VAT rate"
           >
-            {vatRate}%
+            <span className="text-sm font-medium">{vatRate}%</span>
+            <span className="font-bold text-gray-700 ml-2">{formatCurrency(vatAmount)}</span>
           </div>
         )}
-        
-        {/* VAT Amount - Same style as Total */}
-        <div className="font-bold text-gray-700">
-          {formatCurrency(vatAmount)}
-        </div>
       </div>
     ) : (
       <span className="text-xs text-gray-400 italic">No VAT</span>
