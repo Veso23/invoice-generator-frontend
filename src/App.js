@@ -1711,62 +1711,63 @@ const isActive = today >= startDate && today <= endDate;
         {/* Subtotal */}
         <td className="p-4 font-medium">{formatCurrency(subtotal)}</td>
 
-        {/* VAT - Toggle & Editable Rate */}
         <td className="p-4">
-          <div className="flex flex-col gap-1">
-            {/* VAT Toggle */}
-            <label className="flex items-center gap-1 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={vatEnabled}
-                onChange={() => toggleVat(invoice.id, vatEnabled)}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-              />
-              <span className="text-xs text-gray-600">VAT</span>
-            </label>
-            
-            {/* VAT Rate - Editable */}
-            {vatEnabled && (
-              <div>
-                {editingVatRate === invoice.id ? (
-                  <div className="flex items-center gap-1">
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={editVatRateValue}
-                      onChange={(e) => setEditVatRateValue(e.target.value)}
-                      className="border border-blue-500 rounded px-1 py-0.5 w-16 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300"
-                      autoFocus
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') updateVatRate(invoice.id, editVatRateValue);
-                        if (e.key === 'Escape') cancelEditVatRate();
-                      }}
-                    />
-                    <button
-                      onClick={() => updateVatRate(invoice.id, editVatRateValue)}
-                      className="text-green-600 hover:text-green-800 p-0.5"
-                      title="Save"
-                    >
-                      <CheckCircle className="h-3 w-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => startEditVatRate(invoice)}
-                    className="cursor-pointer hover:bg-blue-50 px-1 py-0.5 rounded transition inline-block text-xs"
-                    title="Click to edit VAT rate"
-                  >
-                    {vatRate}% = {formatCurrency(vatAmount)}
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {!vatEnabled && (
-              <span className="text-xs text-gray-400">No VAT</span>
-            )}
+  <div className="flex flex-col gap-2">
+    {/* Checkbox Toggle (no label) */}
+    <input
+      type="checkbox"
+      checked={vatEnabled}
+      onChange={() => toggleVat(invoice.id, vatEnabled)}
+      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer"
+    />
+    
+    {/* VAT Rate & Amount Display */}
+    {vatEnabled ? (
+      <div className="flex flex-col">
+        {/* VAT Rate - Editable */}
+        {editingVatRate === invoice.id ? (
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              step="0.01"
+              value={editVatRateValue}
+              onChange={(e) => setEditVatRateValue(e.target.value)}
+              className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+              autoFocus
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') updateVatRate(invoice.id, editVatRateValue);
+                if (e.key === 'Escape') cancelEditVatRate();
+              }}
+            />
+            <span className="text-sm">%</span>
+            <button
+              onClick={() => updateVatRate(invoice.id, editVatRateValue)}
+              className="text-green-600 hover:text-green-800 p-0.5"
+              title="Save"
+            >
+              <CheckCircle className="h-3 w-3" />
+            </button>
           </div>
-        </td>
+        ) : (
+          <div
+            onClick={() => startEditVatRate(invoice)}
+            className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition text-sm font-medium"
+            title="Click to edit VAT rate"
+          >
+            {vatRate}%
+          </div>
+        )}
+        
+        {/* VAT Amount - Same style as Total */}
+        <div className="font-bold text-gray-700">
+          {formatCurrency(vatAmount)}
+        </div>
+      </div>
+    ) : (
+      <span className="text-xs text-gray-400 italic">No VAT</span>
+    )}
+  </div>
+</td>
 
         {/* Total */}
         <td className="p-4 font-bold text-green-600">{formatCurrency(total)}</td>
