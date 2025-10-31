@@ -388,7 +388,8 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
     name: '',
     timesheet_deadline_day: 15,
     company_vat: '',
-    company_email: ''
+    company_email: '',
+    default_vat_rate: 21.00
   });
 
   useEffect(() => {
@@ -397,7 +398,8 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
         name: settings.name || '',
         timesheet_deadline_day: settings.timesheet_deadline_day || 15,
         company_vat: settings.company_vat || '',
-        company_email: settings.company_email || ''
+        company_email: settings.company_email || '',
+        default_vat_rate: settings.default_vat_rate || 21.00
       });
     }
   }, [isOpen, settings]);
@@ -459,6 +461,24 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
             </select>
             <p className="text-xs text-gray-500 mt-1">
               Day of the month by which timesheets must be received
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Default VAT Rate (%)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              max="100"
+              value={formData.default_vat_rate}
+              onChange={(e) => setFormData({ ...formData, default_vat_rate: parseFloat(e.target.value) })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Default VAT percentage applied to new invoices
             </p>
           </div>
 
