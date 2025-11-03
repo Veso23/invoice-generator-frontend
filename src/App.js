@@ -386,20 +386,32 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
 const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
   const [formData, setFormData] = useState({
     name: '',
+    address: '',
+    representative_name: '',
     timesheet_deadline_day: 15,
     company_vat: '',
     company_email: '',
-    default_vat_rate: 21.00
+    default_vat_rate: 21.00,
+    bank_name: '',
+    bank_iban: '',
+    bank_swift: '',
+    bank_address: ''
   });
 
   useEffect(() => {
     if (isOpen && settings) {
       setFormData({
         name: settings.name || '',
+        address: settings.address || '',
+        representative_name: settings.representative_name || '',
         timesheet_deadline_day: settings.timesheet_deadline_day || 15,
         company_vat: settings.company_vat || '',
         company_email: settings.company_email || '',
-        default_vat_rate: settings.default_vat_rate || 21.00
+        default_vat_rate: settings.default_vat_rate || 21.00,
+        bank_name: settings.bank_name || '',
+        bank_iban: settings.bank_iban || '',
+        bank_swift: settings.bank_swift || '',
+        bank_address: settings.bank_address || ''
       });
     }
   }, [isOpen, settings]);
@@ -412,74 +424,164 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl my-8">
         <h3 className="text-lg font-semibold mb-4">Company Settings</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Company VAT</label>
-            <input
-              type="text"
-              value={formData.company_vat}
-              onChange={(e) => setFormData({ ...formData, company_vat: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Company Email</label>
-            <input
-              type="email"
-              value={formData.company_email}
-              onChange={(e) => setFormData({ ...formData, company_email: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Timesheet Deadline (Day of Month)
-            </label>
-            <select
-              value={formData.timesheet_deadline_day}
-              onChange={(e) => setFormData({ ...formData, timesheet_deadline_day: parseInt(e.target.value) })}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            >
-              {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                <option key={day} value={day}>{day}</option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              Day of the month by which timesheets must be received
-            </p>
+          {/* Company Info Section */}
+          <div className="border-b pb-4">
+            <h4 className="font-medium text-gray-700 mb-3">Company Information</h4>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+              
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Address</label>
+                <textarea
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  rows="2"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="Street, City, Country"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company VAT</label>
+                <input
+                  type="text"
+                  value={formData.company_vat}
+                  onChange={(e) => setFormData({ ...formData, company_vat: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Email</label>
+                <input
+                  type="email"
+                  value={formData.company_email}
+                  onChange={(e) => setFormData({ ...formData, company_email: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+
+              <div className="col-span-2">
+      <label className="block text-sm font-medium text-gray-700 mb-1">Representative Name</label>
+      <input
+        type="text"
+        value={formData.representative_name}
+        onChange={(e) => setFormData({ ...formData, representative_name: e.target.value })}
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+        
+      />
+      <p className="text-xs text-gray-500 mt-1">
+        Person representing the company on invoices
+      </p>
+    </div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Default VAT Rate (%)
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              max="100"
-              value={formData.default_vat_rate}
-              onChange={(e) => setFormData({ ...formData, default_vat_rate: parseFloat(e.target.value) })}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Default VAT percentage applied to new invoices
-            </p>
+          {/* Bank Info Section */}
+          <div className="border-b pb-4">
+            <h4 className="font-medium text-gray-700 mb-3">Bank Information</h4>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                <input
+                  type="text"
+                  value={formData.bank_name}
+                  onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="e.g., DSK Bank"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">SWIFT Code</label>
+                <input
+                  type="text"
+                  value={formData.bank_swift}
+                  onChange={(e) => setFormData({ ...formData, bank_swift: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="e.g., STSABGSF"
+                />
+              </div>
+              
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">IBAN</label>
+                <input
+                  type="text"
+                  value={formData.bank_iban}
+                  onChange={(e) => setFormData({ ...formData, bank_iban: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="e.g., BG19STSA93000031081943"
+                />
+              </div>
+              
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Bank Address</label>
+                <input
+                  type="text"
+                  value={formData.bank_address}
+                  onChange={(e) => setFormData({ ...formData, bank_address: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="Bank street, city, country"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Invoice Settings Section */}
+          <div className="pb-4">
+            <h4 className="font-medium text-gray-700 mb-3">Invoice Settings</h4>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Timesheet Deadline (Day of Month)
+                </label>
+                <select
+                  value={formData.timesheet_deadline_day}
+                  onChange={(e) => setFormData({ ...formData, timesheet_deadline_day: parseInt(e.target.value) })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                    <option key={day} value={day}>{day}</option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Day of the month by which timesheets must be received
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Default VAT Rate (%)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={formData.default_vat_rate}
+                  onChange={(e) => setFormData({ ...formData, default_vat_rate: parseFloat(e.target.value) })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Default VAT percentage applied to new invoices
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="flex gap-2 pt-4">
