@@ -804,6 +804,41 @@ const cancelEditVatRate = () => {
   setEditVatRateValue('');
 };
 
+// Generate PDF for invoice
+const generatePDF = async (invoiceId) => {
+  try {
+    setDataLoading(true);
+    const response = await apiCall(`/invoices/${invoiceId}/generate-pdf`, {
+      method: 'POST'
+    });
+    showNotification('PDF generated successfully!');
+    loadData(); // Refresh to get the PDF URL
+    return response.pdfUrl;
+  } catch (error) {
+    showNotification('Failed to generate PDF: ' + error.message, 'error');
+  } finally {
+    setDataLoading(false);
+  }
+};
+
+// Download PDF
+const downloadPDF = async (invoice) => {
+  try {
+    // If no PDF exists, generate it first
+    if (!invoice.pdf_url) {
+      const pdfUrl = await generatePDF(invoice.id);
+      if (pdfUrl) {
+        window.open(pdfUrl, '_blank');
+      }
+    } else {
+      // PDF already exists, just open it
+      window.open(invoice.pdf_url, '_blank');
+    }
+  } catch (error) {
+    showNotification('Failed to download PDF: ' + error.message, 'error');
+  }
+};
+  
 // Toggle VAT enabled/disabled
 const toggleVat = async (invoiceId, currentEnabled) => {
   try {
@@ -1884,29 +1919,29 @@ const isActive = today >= startDate && today <= endDate;
           </span>
         </td>
 
-        {/* Actions */}
-        <td className="p-4">
-          <div className="flex gap-2">
-            <button
-              className="text-blue-600 hover:text-blue-800 p-1 transition"
-              title="View Invoice"
-            >
-              <Eye className="h-4 w-4" />
-            </button>
-            <button
-              className="text-green-600 hover:text-green-800 p-1 transition"
-              title="Download PDF"
-            >
-              <Download className="h-4 w-4" />
-            </button>
-            <button
-              className="text-purple-600 hover:text-purple-800 p-1 transition"
-              title="Send Email"
-            >
-              <Send className="h-4 w-4" />
-            </button>
-          </div>
-        </td>
+{/* Actions */}
+<td className="p-4">
+  <div className="flex gap-2">
+    {/* View/Download PDF */}
+    <button
+      onClick={() => downloadPDF(invoice)}
+      className="text-green-600 hover:text-green-800 p-1 transition"
+      title={invoice.pdf_url ? "Download PDF" : "Generate & Download PDF"}
+      disabled={dataLoading}
+    >
+      <Download className="h-4 w-4" />
+    </button>
+    
+    {/* Send Email - Coming soon */}
+    <button
+      className="text-purple-600 hover:text-purple-800 p-1 transition opacity-50 cursor-not-allowed"
+      title="Send Email (Coming soon)"
+      disabled
+    >
+      <Send className="h-4 w-4" />
+    </button>
+  </div>
+</td>
       </tr>
     );
   })}
