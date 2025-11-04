@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Plus, Edit, Trash2, Calculator, Users, Building, LogIn, LogOut, Eye, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, Download, Plus, Edit, Trash2, Calculator, Users, Building, LogIn, LogOut, Eye, Send, CheckCircle, AlertCircle, X } from 'lucide-react';
 import './App.css';
+
 
 // API Configuration
 const API_BASE_URL = 'https://invoice-generator-api-dak7.onrender.com/api';
@@ -47,8 +48,6 @@ const useAuth = () => {
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const userData = localStorage.getItem('userData');
-    const [timesheetModalOpen, setTimesheetModalOpen] = useState(false);
-    const [selectedTimesheet, setSelectedTimesheet] = useState(null);
     
     if (token && userData) {
       try {
@@ -782,6 +781,8 @@ const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 const [timesheetStatus, setTimesheetStatus] = useState(null);
 const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
+   const [timesheetModalOpen, setTimesheetModalOpen] = useState(false);
+  const [selectedTimesheet, setSelectedTimesheet] = useState(null);
 
   
   // Show notification
