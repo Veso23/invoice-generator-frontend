@@ -47,6 +47,8 @@ const useAuth = () => {
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const userData = localStorage.getItem('userData');
+    const [timesheetModalOpen, setTimesheetModalOpen] = useState(false);
+    const [selectedTimesheet, setSelectedTimesheet] = useState(null);
     
     if (token && userData) {
       try {
@@ -605,6 +607,93 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
   );
 };
 
+// Timesheet View Modal
+const TimesheetModal = ({ isOpen, onClose, timesheet }) => {
+  if (!isOpen || !timesheet) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Timesheet Details</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {/* Consultant Info */}
+          <div className="border-b pb-3">
+            <h4 className="font-medium text-gray-700 mb-2">Consultant</h4>
+            <p className="text-sm text-gray-600">{timesheet.person_name || 'N/A'}</p>
+            <p className="text-sm text-gray-500">{timesheet.sender_email || 'N/A'}</p>
+          </div>
+
+          {/* Period */}
+          <div className="border-b pb-3">
+            <h4 className="font-medium text-gray-700 mb-2">Period</h4>
+            <p className="text-sm text-gray-600">{timesheet.month || 'N/A'}</p>
+          </div>
+
+          {/* Days & Hours */}
+          <div className="grid grid-cols-2 gap-4 border-b pb-3">
+            <div>
+              <h4 className="font-medium text-gray-700 mb-2">Email Data</h4>
+              <p className="text-sm text-gray-600">Days: {timesheet.email_days || 0}</p>
+              <p className="text-sm text-gray-600">Hours: {timesheet.email_hours || 0}</p>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-700 mb-2">PDF Data</h4>
+              <p className="text-sm text-gray-600">Days: {timesheet.pdf_days || 0}</p>
+              <p className="text-sm text-gray-600">Hours: {timesheet.pdf_hours || 0}</p>
+            </div>
+          </div>
+
+          {/* Status */}
+          <div className="border-b pb-3">
+            <h4 className="font-medium text-gray-700 mb-2">Status</h4>
+            <div className="flex gap-4">
+              <div>
+                <p className="text-xs text-gray-500">Days Status</p>
+                <span className={`inline-block px-2 py-1 rounded text-xs ${
+                  timesheet.days_status === 'Match' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {timesheet.days_status || 'N/A'}
+                </span>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Hours Status</p>
+                <span className={`inline-block px-2 py-1 rounded text-xs ${
+                  timesheet.hours_status === 'Match' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {timesheet.hours_status || 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Received Date */}
+          <div>
+            <h4 className="font-medium text-gray-700 mb-2">Received</h4>
+            <p className="text-sm text-gray-600">
+              {timesheet.created_at ? new Date(timesheet.created_at).toLocaleString() : 'N/A'}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Deadline Modal Component
 const DeadlineModal = ({ isOpen, onClose, currentDeadline, onSubmit }) => {
   const [deadline, setDeadline] = useState(15);
@@ -770,6 +859,51 @@ const [userMenuOpen, setUserMenuOpen] = useState(false);
       showNotification('Failed to update invoice number: ' + error.message, 'error');
     }
   };
+
+  // View timesheet for invoice
+const viewTimesheet = async (invoice) => {
+  try {
+    setDataLoading(true);
+    
+    // Extract month from invoice period
+    const periodDate = new Date(invoice.period_to);
+    const month = periodDate.toLocaleDateString('en-US', { month: 'long' });
+    
+    // Get consultant email from contract
+    const contract = contracts.find(c => c.id === invoice.contract_id);
+    if (!contract) {
+      showNotification('Contract not found', 'error');
+      return;
+    }
+    
+    const consultant = consultants.find(c => c.id === contract.consultant_id);
+    if (!consultant) {
+      showNotification('Consultant not found', 'error');
+      return;
+    }
+    
+    // Find matching timesheet
+    const response = await apiCall('/timesheets');
+    const allTimesheets = response;
+    
+    // Find timesheet that matches consultant email and month
+    const matchingTimesheet = allTimesheets.find(ts => 
+      ts.sender_email === consultant.email && 
+      ts.month?.toLowerCase() === month.toLowerCase()
+    );
+    
+    if (matchingTimesheet) {
+      setSelectedTimesheet(matchingTimesheet);
+      setTimesheetModalOpen(true);
+    } else {
+      showNotification('No timesheet found for this invoice', 'error');
+    }
+  } catch (error) {
+    showNotification('Failed to load timesheet: ' + error.message, 'error');
+  } finally {
+    setDataLoading(false);
+  }
+};
 
   // Cancel editing invoice number
   const cancelEditInvoiceNumber = () => {
@@ -1804,6 +1938,16 @@ const isActive = today >= startDate && today <= endDate;
           )}
         </td>
 
+{/* Timesheet Modal */}
+<TimesheetModal
+  isOpen={timesheetModalOpen}
+  onClose={() => {
+    setTimesheetModalOpen(false);
+    setSelectedTimesheet(null);
+  }}
+  timesheet={selectedTimesheet}
+/>
+
         {/* Name */}
         <td className="p-4 text-sm">
           <div>
@@ -1922,6 +2066,16 @@ const isActive = today >= startDate && today <= endDate;
 {/* Actions */}
 <td className="p-4">
   <div className="flex gap-2">
+    {/* View Timesheet */}
+    <button
+      onClick={() => viewTimesheet(invoice)}
+      className="text-blue-600 hover:text-blue-800 p-1 transition"
+      title="View Timesheet"
+      disabled={dataLoading}
+    >
+      <Eye className="h-4 w-4" />
+    </button>
+    
     {/* View/Download PDF */}
     <button
       onClick={() => downloadPDF(invoice)}
