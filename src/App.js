@@ -1053,14 +1053,6 @@ const addContract = async (contractData) => {
   }
 };
 
-  // View timesheet function
-const viewTimesheet = (fileUrl) => {
-  if (fileUrl) {
-    window.open(fileUrl, '_blank');
-  } else {
-    showNotification('No timesheet file available', 'error');
-  }
-};
 
   const matchConsultant = async (timesheetId, consultantId) => {
   try {
@@ -1807,7 +1799,7 @@ const isActive = today >= startDate && today <= endDate;
                     <div className="flex gap-2">
                       {timesheet?.timesheet_file_url && (
   <button
-    onClick={() => viewTimesheet(timesheet.timesheet_file_url)}
+    onClick={() => window.open(timesheet.timesheet_file_url, '_blank')}
                           className="text-blue-600 hover:text-blue-800 p-1 transition"
                           title="View Timesheet PDF"
                         >
