@@ -861,7 +861,7 @@ const [userMenuOpen, setUserMenuOpen] = useState(false);
     }
   };
 
-  // View timesheet for invoice
+// View timesheet for invoice
 const viewTimesheet = async (invoice) => {
   try {
     setDataLoading(true);
@@ -883,9 +883,15 @@ const viewTimesheet = async (invoice) => {
       return;
     }
     
-    // Find matching timesheet
-    const response = await apiCall('/timesheets');
+    // Find matching timesheet - use /all endpoint to get processed timesheets too
+    const response = await apiCall('/timesheets/all');  // ← CHANGED THIS LINE
     const allTimesheets = response;
+    
+    console.log('Looking for timesheet:', { 
+      consultantEmail: consultant.email, 
+      month: month,
+      allTimesheets 
+    });
     
     // Find timesheet that matches consultant email and month
     const matchingTimesheet = allTimesheets.find(ts => 
@@ -897,7 +903,7 @@ const viewTimesheet = async (invoice) => {
       setSelectedTimesheet(matchingTimesheet);
       setTimesheetModalOpen(true);
     } else {
-      showNotification('No timesheet found for this invoice', 'error');
+      showNotification(`No timesheet found for ${consultant.email} in ${month}`, 'error');
     }
   } catch (error) {
     showNotification('Failed to load timesheet: ' + error.message, 'error');
