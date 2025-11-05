@@ -607,27 +607,7 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
 };
 
 
-          {/* Received Date */}
-          <div>
-            <h4 className="font-medium text-gray-700 mb-2">Received</h4>
-            <p className="text-sm text-gray-600">
-              {timesheet.created_at ? new Date(timesheet.created_at).toLocaleString() : 'N/A'}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+ 
 
 // Deadline Modal Component
 const DeadlineModal = ({ isOpen, onClose, currentDeadline, onSubmit }) => {
