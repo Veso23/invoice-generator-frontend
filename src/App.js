@@ -606,70 +606,6 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
   );
 };
 
-// Timesheet View Modal
-const TimesheetModal = ({ isOpen, onClose, timesheet }) => {
-  if (!isOpen || !timesheet) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Timesheet Details</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          {/* Consultant Info */}
-          <div className="border-b pb-3">
-            <h4 className="font-medium text-gray-700 mb-2">Consultant</h4>
-            <p className="text-sm text-gray-600">{timesheet.person_name || 'N/A'}</p>
-            <p className="text-sm text-gray-500">{timesheet.sender_email || 'N/A'}</p>
-          </div>
-
-          {/* Period */}
-          <div className="border-b pb-3">
-            <h4 className="font-medium text-gray-700 mb-2">Period</h4>
-            <p className="text-sm text-gray-600">{timesheet.month || 'N/A'}</p>
-          </div>
-
-          {/* Days & Hours */}
-          <div className="grid grid-cols-2 gap-4 border-b pb-3">
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2">Email Data</h4>
-              <p className="text-sm text-gray-600">Days: {timesheet.email_days || 0}</p>
-              <p className="text-sm text-gray-600">Hours: {timesheet.email_hours || 0}</p>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2">PDF Data</h4>
-              <p className="text-sm text-gray-600">Days: {timesheet.pdf_days || 0}</p>
-              <p className="text-sm text-gray-600">Hours: {timesheet.pdf_hours || 0}</p>
-            </div>
-          </div>
-
-          {/* Status */}
-          <div className="border-b pb-3">
-            <h4 className="font-medium text-gray-700 mb-2">Status</h4>
-            <div className="flex gap-4">
-              <div>
-                <p className="text-xs text-gray-500">Days Status</p>
-                <span className={`inline-block px-2 py-1 rounded text-xs ${
-                  timesheet.days_status === 'Match' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {timesheet.days_status || 'N/A'}
-                </span>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Hours Status</p>
-                <span className={`inline-block px-2 py-1 rounded text-xs ${
-                  timesheet.hours_status === 'Match' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {timesheet.hours_status || 'N/A'}
-                </span>
-              </div>
-            </div>
-          </div>
 
           {/* Received Date */}
           <div>
@@ -781,8 +717,6 @@ const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 const [timesheetStatus, setTimesheetStatus] = useState(null);
 const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
-   const [timesheetModalOpen, setTimesheetModalOpen] = useState(false);
-  const [selectedTimesheet, setSelectedTimesheet] = useState(null);
 
   
   // Show notification
@@ -1933,15 +1867,6 @@ const isActive = today >= startDate && today <= endDate;
           )}
         </td>
 
-{/* Timesheet Modal */}
-<TimesheetModal
-  isOpen={timesheetModalOpen}
-  onClose={() => {
-    setTimesheetModalOpen(false);
-    setSelectedTimesheet(null);
-  }}
-  timesheet={selectedTimesheet}
-/>
 
         {/* Name */}
         <td className="p-4 text-sm">
