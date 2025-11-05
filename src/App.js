@@ -861,7 +861,7 @@ const [userMenuOpen, setUserMenuOpen] = useState(false);
     }
   };
 
-// View timesheet for invoice
+// View timesheet for invoice - Opens the actual PDF file
 const viewTimesheet = async (invoice) => {
   try {
     setDataLoading(true);
@@ -884,14 +884,8 @@ const viewTimesheet = async (invoice) => {
     }
     
     // Find matching timesheet - use /all endpoint to get processed timesheets too
-    const response = await apiCall('/timesheets/all');  // ← CHANGED THIS LINE
+    const response = await apiCall('/timesheets/all');
     const allTimesheets = response;
-    
-    console.log('Looking for timesheet:', { 
-      consultantEmail: consultant.email, 
-      month: month,
-      allTimesheets 
-    });
     
     // Find timesheet that matches consultant email and month
     const matchingTimesheet = allTimesheets.find(ts => 
@@ -899,9 +893,11 @@ const viewTimesheet = async (invoice) => {
       ts.month?.toLowerCase() === month.toLowerCase()
     );
     
-    if (matchingTimesheet) {
-      setSelectedTimesheet(matchingTimesheet);
-      setTimesheetModalOpen(true);
+    if (matchingTimesheet && matchingTimesheet.timesheet_file_url) {
+      // Open the actual PDF file in new tab
+      window.open(matchingTimesheet.timesheet_file_url, '_blank');
+    } else if (matchingTimesheet) {
+      showNotification('No PDF file available for this timesheet', 'error');
     } else {
       showNotification(`No timesheet found for ${consultant.email} in ${month}`, 'error');
     }
