@@ -704,40 +704,63 @@ const [userMenuOpen, setUserMenuOpen] = useState(false);
     setNotification({ message, type });
   };
 
-  // Load data from API
-  const loadData = async () => {
-    if (!user) return;
+ // Load data from API
+const loadData = async () => {
+  if (!user) return;
+  
+  setDataLoading(true);
+  try {
+    const [consultantsData, clientsData, contractsData, invoicesData, automationData, timesheetsData] = await Promise.all([
+      apiCall('/consultants').catch(err => {
+        console.error('Failed to load consultants:', err);
+        return [];
+      }),
+      apiCall('/clients').catch(err => {
+        console.error('Failed to load clients:', err);
+        return [];
+      }),
+      apiCall('/contracts').catch(err => {
+        console.error('Failed to load contracts:', err);
+        return [];
+      }),
+      apiCall('/invoices').catch(err => {
+        console.error('Failed to load invoices:', err);
+        return [];
+      }),
+      apiCall('/automation-logs').catch(err => {
+        console.error('Failed to load automation logs:', err);
+        return [];
+      }),
+      apiCall('/timesheets').catch(err => {
+        console.error('Failed to load timesheets:', err);
+        return [];
+      })
+    ]);
+
+    setConsultants(consultantsData);
+    setClients(clientsData);
+    setContracts(contractsData);
+    setInvoices(invoicesData);
+    setAutomationLogs(automationData);
+    setTimesheets(timesheetsData);
     
-    setDataLoading(true);
-    try {
-      const [consultantsData, clientsData, contractsData, invoicesData, automationData, timesheetsData] = await Promise.all([
-  apiCall('/consultants').catch(() => []),
-  apiCall('/clients').catch(() => []),
-  apiCall('/contracts').catch(() => []),
-  apiCall('/invoices').catch(() => []),
-  apiCall('/automation-logs').catch(() => []),
-  apiCall('/timesheets').catch(() => [])
-]);
+    // Load company settings and timesheet status
+    await loadCompanySettings().catch(err => console.error('Settings load failed:', err));
+    await loadTimesheetStatus().catch(err => console.error('Timesheet status load failed:', err));
+    
+  } catch (error) {
+    console.error('Failed to load data:', error);
+    showNotification('Failed to load some data. Please refresh the page.', 'error');
+  }
+  setDataLoading(false);
+};
 
-      setConsultants(consultantsData);
-      setClients(clientsData);
-      setContracts(contractsData);
-      setInvoices(invoicesData);
-      setAutomationLogs(automationData);
-      setTimesheets(timesheetsData);
-      loadCompanySettings().catch(err => console.log('Settings load failed:', err));
-      loadTimesheetStatus().catch(err => console.log('Timesheet status load failed:', err));
-    } catch (error) {
-      console.error('Failed to load data:', error);
-      showNotification('Failed to load some data. Please refresh the page.', 'error');
-    }
-    setDataLoading(false);
-  };
-
-  useEffect(() => {
+useEffect(() => {
+  if (user) {
     loadData();
-  }, [user]);
-
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [user]);
   // Generate invoices
   const generateInvoices = async (contractId) => {
     try {
