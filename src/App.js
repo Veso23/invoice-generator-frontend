@@ -559,9 +559,9 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
           <div className="border-b pb-4">
             <h4 className="font-medium text-gray-700 mb-3">Email Settings (SMTP)</h4>
             <p className="text-sm text-gray-600 mb-4">
-              Configure your email server to send invoices. Need help? 
-              <a href="#" className="text-blue-600 hover:text-blue-800 ml-1">View SMTP guide</a>
-            </p>
+  Configure your email server to send invoices. Need help? 
+  <button type="button" onClick={() => window.open('https://support.google.com/accounts/answer/185833', '_blank')} className="text-blue-600 hover:text-blue-800 ml-1 underline">View Gmail SMTP guide</button>
+</p>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
