@@ -396,7 +396,14 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
     bank_name: '',
     bank_iban: '',
     bank_swift: '',
-    bank_address: ''
+    bank_address: '',
+    smtp_host: '',
+    smtp_port: 587,
+    smtp_username: '',
+    smtp_password: '',
+    smtp_from_email: '',
+    smtp_from_name: '',
+    smtp_secure: true
   });
 
   useEffect(() => {
@@ -412,7 +419,14 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
         bank_name: settings.bank_name || '',
         bank_iban: settings.bank_iban || '',
         bank_swift: settings.bank_swift || '',
-        bank_address: settings.bank_address || ''
+        bank_address: settings.bank_address || '',
+        smtp_host: settings.smtp_host || '',
+        smtp_port: settings.smtp_port || 587,
+        smtp_username: settings.smtp_username || '',
+        smtp_password: settings.smtp_password || '',
+        smtp_from_email: settings.smtp_from_email || '',
+        smtp_from_name: settings.smtp_from_name || '',
+        smtp_secure: settings.smtp_secure !== false
       });
     }
   }, [isOpen, settings]);
@@ -426,7 +440,7 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl my-8">
+      <div className="bg-white rounded-lg p-6 w-full max-w-2xl my-8 max-h-[90vh] overflow-y-auto">
         <h3 className="text-lg font-semibold mb-4">Company Settings</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Company Info Section */}
@@ -476,18 +490,17 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
               </div>
 
               <div className="col-span-2">
-      <label className="block text-sm font-medium text-gray-700 mb-1">Representative Name</label>
-      <input
-        type="text"
-        value={formData.representative_name}
-        onChange={(e) => setFormData({ ...formData, representative_name: e.target.value })}
-        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-        
-      />
-      <p className="text-xs text-gray-500 mt-1">
-        Person representing the company on invoices
-      </p>
-    </div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Representative Name</label>
+                <input
+                  type="text"
+                  value={formData.representative_name}
+                  onChange={(e) => setFormData({ ...formData, representative_name: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Person representing the company on invoices
+                </p>
+              </div>
             </div>
           </div>
 
@@ -537,6 +550,98 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                   onChange={(e) => setFormData({ ...formData, bank_address: e.target.value })}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                   placeholder="Bank street, city, country"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Email/SMTP Settings Section - NEW */}
+          <div className="border-b pb-4">
+            <h4 className="font-medium text-gray-700 mb-3">Email Settings (SMTP)</h4>
+            <p className="text-sm text-gray-600 mb-4">
+              Configure your email server to send invoices. Need help? 
+              <a href="#" className="text-blue-600 hover:text-blue-800 ml-1">View SMTP guide</a>
+            </p>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Host</label>
+                <input
+                  type="text"
+                  value={formData.smtp_host}
+                  onChange={(e) => setFormData({ ...formData, smtp_host: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="e.g., smtp.gmail.com or smtp.office365.com"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Port</label>
+                <input
+                  type="number"
+                  value={formData.smtp_port}
+                  onChange={(e) => setFormData({ ...formData, smtp_port: parseInt(e.target.value) })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="587"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Secure Connection</label>
+                <select
+                  value={formData.smtp_secure ? 'true' : 'false'}
+                  onChange={(e) => setFormData({ ...formData, smtp_secure: e.target.value === 'true' })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                >
+                  <option value="true">TLS/SSL (Port 587 or 465)</option>
+                  <option value="false">No Encryption</option>
+                </select>
+              </div>
+              
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Username</label>
+                <input
+                  type="text"
+                  value={formData.smtp_username}
+                  onChange={(e) => setFormData({ ...formData, smtp_username: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="your-email@company.com"
+                />
+              </div>
+              
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Password</label>
+                <input
+                  type="password"
+                  value={formData.smtp_password}
+                  onChange={(e) => setFormData({ ...formData, smtp_password: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="Your email password or app password"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  For Gmail, use an <a href="https://support.google.com/accounts/answer/185833" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">App Password</a>
+                </p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Email</label>
+                <input
+                  type="email"
+                  value={formData.smtp_from_email}
+                  onChange={(e) => setFormData({ ...formData, smtp_from_email: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="invoices@company.com"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Name</label>
+                <input
+                  type="text"
+                  value={formData.smtp_from_name}
+                  onChange={(e) => setFormData({ ...formData, smtp_from_name: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  placeholder="Company Name"
                 />
               </div>
             </div>
@@ -910,6 +1015,34 @@ const downloadPDF = async (invoice) => {
     }
   } catch (error) {
     showNotification('Failed to download PDF: ' + error.message, 'error');
+  }
+};
+
+  // Send invoice email
+const sendInvoiceEmail = async (invoice) => {
+  try {
+    setDataLoading(true);
+    
+    // First, ensure PDF exists
+    if (!invoice.pdf_url) {
+      const pdfUrl = await generatePDF(invoice.id);
+      if (!pdfUrl) {
+        showNotification('Failed to generate PDF', 'error');
+        return;
+      }
+    }
+    
+    // Send email
+    await apiCall(`/invoices/${invoice.id}/send-email`, {
+      method: 'POST'
+    });
+    
+    showNotification('Invoice email sent successfully!');
+    loadData(); // Refresh to update email status
+  } catch (error) {
+    showNotification('Failed to send email: ' + error.message, 'error');
+  } finally {
+    setDataLoading(false);
   }
 };
   
@@ -2009,14 +2142,19 @@ const isActive = today >= startDate && today <= endDate;
       <Download className="h-4 w-4" />
     </button>
     
-    {/* Send Email - Coming soon */}
-    <button
-      className="text-purple-600 hover:text-purple-800 p-1 transition opacity-50 cursor-not-allowed"
-      title="Send Email (Coming soon)"
-      disabled
-    >
-      <Send className="h-4 w-4" />
-    </button>
+{/* Send Email */}
+<button
+  onClick={() => sendInvoiceEmail(invoice)}
+  className={`p-1 transition ${
+    invoice.email_sent 
+      ? 'text-green-600 hover:text-green-800' 
+      : 'text-purple-600 hover:text-purple-800'
+  }`}
+  title={invoice.email_sent ? `Sent to ${invoice.email_sent_to}` : "Send Invoice Email"}
+  disabled={dataLoading}
+>
+  {invoice.email_sent ? <CheckCircle className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+</button>
   </div>
 </td>
       </tr>
