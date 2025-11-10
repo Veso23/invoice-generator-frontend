@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Plus, Edit, Trash2, Calculator, Users, Building, LogIn, LogOut, Eye, Send, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { FileText, Download, Plus, Edit, Calculator, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import './App.css';
 
 
@@ -790,7 +790,6 @@ const InvoiceGeneratorApp = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({});
   const [timesheets, setTimesheets] = useState([]);
-  const [matchingTimesheet, setMatchingTimesheet] = useState(null);
   const [editingDays, setEditingDays] = useState(null);
   const [editDaysValue, setEditDaysValue] = useState('');
   const [editingInvoiceNumber, setEditingInvoiceNumber] = useState(null);  // ← ADD
@@ -1126,20 +1125,6 @@ const addContract = async (contractData) => {
   }
 };
 
-
-  const matchConsultant = async (timesheetId, consultantId) => {
-  try {
-    await apiCall(`/timesheets/${timesheetId}/match`, {
-      method: 'PUT',
-      body: JSON.stringify({ consultantId })
-    });
-    showNotification('Consultant matched successfully!');
-    setMatchingTimesheet(null);
-    loadData(); // Refresh data
-  } catch (error) {
-    showNotification('Failed to match consultant: ' + error.message, 'error');
-  }
-};
 
   // Add new client
   const addClient = async (clientData) => {
