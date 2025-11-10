@@ -385,6 +385,7 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
 
 // Settings Modal Component
 const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
+  const [activeSettingsTab, setActiveSettingsTab] = useState('company');
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -439,262 +440,311 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl my-8 max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold mb-4">Company Settings</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Company Info Section */}
-          <div className="border-b pb-4">
-            <h4 className="font-medium text-gray-700 mb-3">Company Information</h4>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                />
-              </div>
-              
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company Address</label>
-                <textarea
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  rows="2"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="Street, City, Country"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company VAT</label>
-                <input
-                  type="text"
-                  value={formData.company_vat}
-                  onChange={(e) => setFormData({ ...formData, company_vat: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company Email</label>
-                <input
-                  type="email"
-                  value={formData.company_email}
-                  onChange={(e) => setFormData({ ...formData, company_email: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                />
-              </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-3xl max-h-[85vh] flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-4 border-b">
+          <h3 className="text-lg font-semibold">Company Settings</h3>
+        </div>
 
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Representative Name</label>
-                <input
-                  type="text"
-                  value={formData.representative_name}
-                  onChange={(e) => setFormData({ ...formData, representative_name: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Person representing the company on invoices
-                </p>
+        {/* Tabs */}
+        <div className="flex gap-2 px-6 pt-4 border-b">
+          <button
+            type="button"
+            onClick={() => setActiveSettingsTab('company')}
+            className={`px-4 py-2 rounded-t-lg font-medium transition ${
+              activeSettingsTab === 'company'
+                ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+            }`}
+          >
+            Company & Bank
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSettingsTab('email')}
+            className={`px-4 py-2 rounded-t-lg font-medium transition ${
+              activeSettingsTab === 'email'
+                ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+            }`}
+          >
+            Email (SMTP)
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSettingsTab('invoice')}
+            className={`px-4 py-2 rounded-t-lg font-medium transition ${
+              activeSettingsTab === 'invoice'
+                ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+            }`}
+          >
+            Invoice Settings
+          </button>
+        </div>
+
+        {/* Form Content */}
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+          <div className="overflow-y-auto px-6 py-4 flex-1">
+            {/* Company & Bank Tab */}
+            {activeSettingsTab === 'company' && (
+              <div className="space-y-6">
+                {/* Company Info Section */}
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-3">Company Information</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      />
+                    </div>
+                    
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Company Address</label>
+                      <textarea
+                        value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        rows="2"
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="Street, City, Country"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Company VAT</label>
+                      <input
+                        type="text"
+                        value={formData.company_vat}
+                        onChange={(e) => setFormData({ ...formData, company_vat: e.target.value })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Company Email</label>
+                      <input
+                        type="email"
+                        value={formData.company_email}
+                        onChange={(e) => setFormData({ ...formData, company_email: e.target.value })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      />
+                    </div>
+
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Representative Name</label>
+                      <input
+                        type="text"
+                        value={formData.representative_name}
+                        onChange={(e) => setFormData({ ...formData, representative_name: e.target.value })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Person representing the company on invoices
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bank Info Section */}
+                <div>
+                  <h4 className="font-medium text-gray-700 mb-3">Bank Information</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
+                      <input
+                        type="text"
+                        value={formData.bank_name}
+                        onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="e.g., DSK Bank"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">SWIFT Code</label>
+                      <input
+                        type="text"
+                        value={formData.bank_swift}
+                        onChange={(e) => setFormData({ ...formData, bank_swift: e.target.value })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="e.g., STSABGSF"
+                      />
+                    </div>
+                    
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">IBAN</label>
+                      <input
+                        type="text"
+                        value={formData.bank_iban}
+                        onChange={(e) => setFormData({ ...formData, bank_iban: e.target.value })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="e.g., BG19STSA93000031081943"
+                      />
+                    </div>
+                    
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Bank Address</label>
+                      <input
+                        type="text"
+                        value={formData.bank_address}
+                        onChange={(e) => setFormData({ ...formData, bank_address: e.target.value })}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                        placeholder="Bank street, city, country"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Email Settings Tab */}
+            {activeSettingsTab === 'email' && (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  Configure your email server to send invoices. Need help? 
+                  <button type="button" onClick={() => window.open('https://support.google.com/accounts/answer/185833', '_blank')} className="text-blue-600 hover:text-blue-800 ml-1 underline">View Gmail SMTP guide</button>
+                </p>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Host</label>
+                    <input
+                      type="text"
+                      value={formData.smtp_host}
+                      onChange={(e) => setFormData({ ...formData, smtp_host: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      placeholder="e.g., smtp.gmail.com or smtp.office365.com"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Port</label>
+                    <input
+                      type="number"
+                      value={formData.smtp_port}
+                      onChange={(e) => setFormData({ ...formData, smtp_port: parseInt(e.target.value) })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      placeholder="587"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Secure Connection</label>
+                    <select
+                      value={formData.smtp_secure ? 'true' : 'false'}
+                      onChange={(e) => setFormData({ ...formData, smtp_secure: e.target.value === 'true' })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    >
+                      <option value="true">TLS/SSL (Port 587 or 465)</option>
+                      <option value="false">No Encryption</option>
+                    </select>
+                  </div>
+                  
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Username</label>
+                    <input
+                      type="text"
+                      value={formData.smtp_username}
+                      onChange={(e) => setFormData({ ...formData, smtp_username: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      placeholder="your-email@company.com"
+                    />
+                  </div>
+                  
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Password</label>
+                    <input
+                      type="password"
+                      value={formData.smtp_password}
+                      onChange={(e) => setFormData({ ...formData, smtp_password: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      placeholder="Your email password or app password"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      For Gmail, use an <a href="https://support.google.com/accounts/answer/185833" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">App Password</a>
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">From Email</label>
+                    <input
+                      type="email"
+                      value={formData.smtp_from_email}
+                      onChange={(e) => setFormData({ ...formData, smtp_from_email: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      placeholder="invoices@company.com"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">From Name</label>
+                    <input
+                      type="text"
+                      value={formData.smtp_from_name}
+                      onChange={(e) => setFormData({ ...formData, smtp_from_name: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      placeholder="Company Name"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Invoice Settings Tab */}
+            {activeSettingsTab === 'invoice' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Timesheet Deadline (Day of Month)
+                    </label>
+                    <select
+                      value={formData.timesheet_deadline_day}
+                      onChange={(e) => setFormData({ ...formData, timesheet_deadline_day: parseInt(e.target.value) })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    >
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                        <option key={day} value={day}>{day}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Day of the month by which timesheets must be received
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Default VAT Rate (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={formData.default_vat_rate}
+                      onChange={(e) => setFormData({ ...formData, default_vat_rate: parseFloat(e.target.value) })}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Default VAT percentage applied to new invoices
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Bank Info Section */}
-          <div className="border-b pb-4">
-            <h4 className="font-medium text-gray-700 mb-3">Bank Information</h4>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
-                <input
-                  type="text"
-                  value={formData.bank_name}
-                  onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="e.g., DSK Bank"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">SWIFT Code</label>
-                <input
-                  type="text"
-                  value={formData.bank_swift}
-                  onChange={(e) => setFormData({ ...formData, bank_swift: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="e.g., STSABGSF"
-                />
-              </div>
-              
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">IBAN</label>
-                <input
-                  type="text"
-                  value={formData.bank_iban}
-                  onChange={(e) => setFormData({ ...formData, bank_iban: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="e.g., BG19STSA93000031081943"
-                />
-              </div>
-              
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bank Address</label>
-                <input
-                  type="text"
-                  value={formData.bank_address}
-                  onChange={(e) => setFormData({ ...formData, bank_address: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="Bank street, city, country"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Email/SMTP Settings Section - NEW */}
-          <div className="border-b pb-4">
-            <h4 className="font-medium text-gray-700 mb-3">Email Settings (SMTP)</h4>
-            <p className="text-sm text-gray-600 mb-4">
-  Configure your email server to send invoices. Need help? 
-  <button type="button" onClick={() => window.open('https://support.google.com/accounts/answer/185833', '_blank')} className="text-blue-600 hover:text-blue-800 ml-1 underline">View Gmail SMTP guide</button>
-</p>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Host</label>
-                <input
-                  type="text"
-                  value={formData.smtp_host}
-                  onChange={(e) => setFormData({ ...formData, smtp_host: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="e.g., smtp.gmail.com or smtp.office365.com"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Port</label>
-                <input
-                  type="number"
-                  value={formData.smtp_port}
-                  onChange={(e) => setFormData({ ...formData, smtp_port: parseInt(e.target.value) })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="587"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Secure Connection</label>
-                <select
-                  value={formData.smtp_secure ? 'true' : 'false'}
-                  onChange={(e) => setFormData({ ...formData, smtp_secure: e.target.value === 'true' })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
-                  <option value="true">TLS/SSL (Port 587 or 465)</option>
-                  <option value="false">No Encryption</option>
-                </select>
-              </div>
-              
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Username</label>
-                <input
-                  type="text"
-                  value={formData.smtp_username}
-                  onChange={(e) => setFormData({ ...formData, smtp_username: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="your-email@company.com"
-                />
-              </div>
-              
-              <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Password</label>
-                <input
-                  type="password"
-                  value={formData.smtp_password}
-                  onChange={(e) => setFormData({ ...formData, smtp_password: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="Your email password or app password"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  For Gmail, use an <a href="https://support.google.com/accounts/answer/185833" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">App Password</a>
-                </p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">From Email</label>
-                <input
-                  type="email"
-                  value={formData.smtp_from_email}
-                  onChange={(e) => setFormData({ ...formData, smtp_from_email: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="invoices@company.com"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">From Name</label>
-                <input
-                  type="text"
-                  value={formData.smtp_from_name}
-                  onChange={(e) => setFormData({ ...formData, smtp_from_name: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="Company Name"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Invoice Settings Section */}
-          <div className="pb-4">
-            <h4 className="font-medium text-gray-700 mb-3">Invoice Settings</h4>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Timesheet Deadline (Day of Month)
-                </label>
-                <select
-                  value={formData.timesheet_deadline_day}
-                  onChange={(e) => setFormData({ ...formData, timesheet_deadline_day: parseInt(e.target.value) })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                >
-                  {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                    <option key={day} value={day}>{day}</option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Day of the month by which timesheets must be received
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Default VAT Rate (%)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  value={formData.default_vat_rate}
-                  onChange={(e) => setFormData({ ...formData, default_vat_rate: parseFloat(e.target.value) })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Default VAT percentage applied to new invoices
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2 pt-4">
+          {/* Footer Buttons */}
+          <div className="px-6 py-4 border-t bg-gray-50 flex gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
             >
               Cancel
             </button>
@@ -710,7 +760,6 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
     </div>
   );
 };
-
 
  
 
