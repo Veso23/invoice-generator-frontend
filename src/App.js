@@ -311,8 +311,26 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
   };
 
   if (!isOpen) return null;
+const renderField = (field) => {
+  // Handle CHECKBOX
+  if (field.type === 'checkbox') {
+    return (
+      <div key={field.name} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+        <input
+          type="checkbox"
+          checked={formData[field.name] || false}
+          onChange={(e) => setFormData({
+            ...formData,
+            [field.name]: e.target.checked
+          })}
+          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+        />
+        <label className="text-sm font-medium text-gray-700">{field.label}</label>
+      </div>
+    );
+  }
 
- const renderField = (field) => {
+  // Handle SELECT
   if (field.type === 'select') {
     return (
       <div key={field.name}>
@@ -337,6 +355,7 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
     );
   }
 
+  // Handle all other inputs (text, number, date, email, etc.)
   return (
     <div key={field.name}>
       {field.label && <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>}
@@ -843,8 +862,6 @@ const InvoiceGeneratorApp = () => {
   const [editDaysValue, setEditDaysValue] = useState('');
   const [editingInvoiceNumber, setEditingInvoiceNumber] = useState(null);  // ← ADD
   const [editInvoiceNumberValue, setEditInvoiceNumberValue] = useState(''); // ← ADD
-  const [editingVatRate, setEditingVatRate] = useState(null);  // ← ADD THIS
-const [editVatRateValue, setEditVatRateValue] = useState(''); // ← ADD THIS
   const [companySettings, setCompanySettings] = useState(null);
 const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 const [timesheetStatus, setTimesheetStatus] = useState(null);
@@ -1004,32 +1021,6 @@ const viewTimesheet = async (invoice) => {
     setEditInvoiceNumberValue('');
   };
 
-  // Start editing VAT rate
-const startEditVatRate = (invoice) => {
-  setEditingVatRate(invoice.id);
-  setEditVatRateValue(invoice.vat_rate);
-};
-
-// Update VAT rate
-const updateVatRate = async (invoiceId, newVatRate) => {
-  try {
-    await apiCall(`/invoices/${invoiceId}/vat`, {
-      method: 'PUT',
-      body: JSON.stringify({ vatRate: parseFloat(newVatRate) })
-    });
-    showNotification('VAT rate updated successfully!');
-    setEditingVatRate(null);
-    loadData();
-  } catch (error) {
-    showNotification('Failed to update VAT rate: ' + error.message, 'error');
-  }
-};
-
-// Cancel editing VAT rate
-const cancelEditVatRate = () => {
-  setEditingVatRate(null);
-  setEditVatRateValue('');
-};
 
 // Generate PDF for invoice
 const generatePDF = async (invoiceId) => {
@@ -1094,19 +1085,6 @@ const sendInvoiceEmail = async (invoice) => {
   }
 };
   
-// Toggle VAT enabled/disabled
-const toggleVat = async (invoiceId, currentEnabled) => {
-  try {
-    await apiCall(`/invoices/${invoiceId}/vat-toggle`, {
-      method: 'PUT',
-      body: JSON.stringify({ vatEnabled: !currentEnabled })
-    });
-    showNotification(`VAT ${!currentEnabled ? 'enabled' : 'disabled'} successfully!`);
-    loadData();
-  } catch (error) {
-    showNotification('Failed to toggle VAT: ' + error.message, 'error');
-  }
-};
 
   // Add new consultant
   const addConsultant = async (consultantData) => {
@@ -1274,7 +1252,9 @@ contract: {
     { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date' },
     { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date' },
     { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
-    { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' }
+    { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' },
+    { name: 'vatEnabled', placeholder: 'Enable VAT', type: 'checkbox', label: 'Enable VAT for this contract' },  // ← ADD THIS
+    { name: 'vatRate', placeholder: 'VAT Rate (%)', type: 'number', step: '0.01', label: 'VAT Rate (%)' }  // ← ADD THIS
   ],
   onSubmit: addContract
 }
@@ -1683,6 +1663,7 @@ contract: {
               <th className="text-left p-4 font-medium text-gray-600">Purchase Price</th>
               <th className="text-left p-4 font-medium text-gray-600">Sell Price</th>
               <th className="text-left p-4 font-medium text-gray-600">Status</th>
+              <th className="text-left p-4 font-medium text-gray-600">VAT</th>
             </tr>
           </thead>
           <tbody>
@@ -1747,6 +1728,15 @@ contract: {
                   </td>
                   <td className="p-4">{formatCurrency(contract.purchase_price)}</td>
                   <td className="p-4">{formatCurrency(contract.sell_price)}</td>
+                        <td className="p-4">
+  {contract.vat_enabled ? (
+    <span className="text-sm text-green-600 font-medium">
+      {parseFloat(contract.vat_rate || 21).toFixed(0)}%
+    </span>
+  ) : (
+    <span className="text-sm text-gray-400 italic">No VAT</span>
+  )}
+</td>
                   <td className="p-4">
                     <span className={`px-2 py-1 rounded-full text-xs ${
                       isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
@@ -2073,60 +2063,16 @@ contract: {
         {/* Subtotal */}
         <td className="p-4 font-medium">{formatCurrency(subtotal)}</td>
 
- {/* VAT - Clean Horizontal Layout */}
+{/* VAT - Read Only */}
 <td className="p-4">
-  <div className="flex items-center gap-3">
-    {/* Checkbox */}
-    <input
-      type="checkbox"
-      checked={vatEnabled}
-      onChange={() => toggleVat(invoice.id, vatEnabled)}
-      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer flex-shrink-0"
-      title="Toggle VAT"
-    />
-    
-    {/* VAT Info */}
-    {vatEnabled ? (
-      <div className="flex items-center gap-2">
-        {/* VAT Rate - Editable */}
-        {editingVatRate === invoice.id ? (
-          <div className="flex items-center gap-1">
-            <input
-              type="number"
-              step="0.01"
-              value={editVatRateValue}
-              onChange={(e) => setEditVatRateValue(e.target.value)}
-              className="border border-blue-500 rounded px-2 py-1 w-16 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-              autoFocus
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') updateVatRate(invoice.id, editVatRateValue);
-                if (e.key === 'Escape') cancelEditVatRate();
-              }}
-            />
-            <span className="text-sm">%</span>
-            <button
-              onClick={() => updateVatRate(invoice.id, editVatRateValue)}
-              className="text-green-600 hover:text-green-800 p-0.5"
-              title="Save"
-            >
-              <CheckCircle className="h-3 w-3" />
-            </button>
-          </div>
-        ) : (
-          <div
-            onClick={() => startEditVatRate(invoice)}
-            className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition flex items-baseline gap-0.5"
-            title="Click to edit VAT rate"
-          >
-            <span className="text-sm font-medium">{vatRate}%</span>
-            <span className="font-bold text-gray-700 ml-2">{formatCurrency(vatAmount)}</span>
-          </div>
-        )}
-      </div>
-    ) : (
-      <span className="text-xs text-gray-400 italic">No VAT</span>
-    )}
-  </div>
+  {invoice.vat_enabled ? (
+    <div className="text-sm">
+      <div className="text-gray-600">{parseFloat(invoice.vat_rate).toFixed(0)}%</div>
+      <div className="font-medium text-gray-700">{formatCurrency(vatAmount)}</div>
+    </div>
+  ) : (
+    <span className="text-xs text-gray-400 italic">No VAT</span>
+  )}
 </td>
 
         {/* Total */}
