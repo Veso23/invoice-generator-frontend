@@ -312,42 +312,43 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
 
   if (!isOpen) return null;
 const renderField = (field) => {
-  // Handle CHECKBOX
   if (field.type === 'checkbox') {
     return (
-      <div key={field.name} className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-        <input
-          type="checkbox"
-          checked={formData[field.name] || false}
-          onChange={(e) => setFormData({
-            ...formData,
-            [field.name]: e.target.checked
-          })}
-          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-        />
-        <label className="text-sm font-medium text-gray-700">{field.label}</label>
+      <div key={field.name} style={{ marginBottom: '15px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <input
+            type="checkbox"
+            checked={formData[field.name] || false}
+            onChange={(e) => setFormData({ ...formData, [field.name]: e.target.checked })}
+          />
+          {field.label}
+        </label>
       </div>
     );
   }
 
-  // Handle SELECT
   if (field.type === 'select') {
     return (
-      <div key={field.name}>
-        {field.label && <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>}
+      <div key={field.name} style={{ marginBottom: '15px' }}>
+        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+          {field.label}:
+        </label>
         <select
           value={formData[field.name] || ''}
-          onChange={(e) => setFormData({
-            ...formData,
-            [field.name]: e.target.value
-          })}
-          required={field.required !== false}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+          disabled={field.disabled}  // ← Add this
+          required={field.required}
+          style={{ 
+            width: '100%', 
+            padding: '8px',
+            opacity: field.disabled ? 0.6 : 1,  // ← Visual feedback
+            cursor: field.disabled ? 'not-allowed' : 'pointer'
+          }}
         >
-          <option value="">{field.placeholder}</option>
-          {field.options?.map(option => (
-            <option key={option.value} value={option.value}>
-              {option.label}
+          <option value="">Select {field.label}</option>
+          {field.options?.map(opt => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
             </option>
           ))}
         </select>
@@ -355,6 +356,30 @@ const renderField = (field) => {
     );
   }
 
+  // Default input
+  return (
+    <div key={field.name} style={{ marginBottom: '15px' }}>
+      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+        {field.label}:
+      </label>
+      <input
+        type={field.type || 'text'}
+        value={formData[field.name] || ''}
+        onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+        disabled={field.disabled}  // ← Add this
+        required={field.required}
+        step={field.step}
+        style={{ 
+          width: '100%', 
+          padding: '8px',
+          opacity: field.disabled ? 0.6 : 1,  // ← Visual feedback
+          cursor: field.disabled ? 'not-allowed' : 'text',
+          backgroundColor: field.disabled ? '#f5f5f5' : 'white'  // ← Gray out when disabled
+        }}
+      />
+    </div>
+  );
+};
   // Handle all other inputs (text, number, date, email, etc.)
   return (
     <div key={field.name}>
@@ -1254,7 +1279,7 @@ contract: {
     { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
     { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' },
     { name: 'vatEnabled', placeholder: 'Enable VAT', type: 'checkbox', label: 'Enable VAT for this contract' },  // ← ADD THIS
-    { name: 'vatRate', placeholder: 'VAT Rate (%)', type: 'number', step: '0.01', label: 'VAT Rate (%)' }  // ← ADD THIS
+    { name: 'vatRate', placeholder: 'VAT Rate (%)', type: 'number', step: '0.01', label: 'VAT Rate (%)', disabled: !formData.vatEnabled }  // ← ADD THIS
   ],
   onSubmit: addContract
 }
