@@ -1189,16 +1189,16 @@ const addContract = async (contractData) => {
     }
   };
 
-  const updateDays = async (timesheetId, newDays) => {
+const updateDays = async (timesheetId, newDays) => {
   try {
     await apiCall(`/timesheets/${timesheetId}/days`, {
       method: 'PUT',
-      body: JSON.stringify({ days: parseInt(newDays) })
+      body: JSON.stringify({ days: parseFloat(newDays) })  // ← CHANGED from parseInt
     });
     showNotification('Days updated successfully!');
     setEditingDays(null);
     setEditDaysValue('');
-    loadData(); // Refresh data
+    loadData();
   } catch (error) {
     showNotification('Failed to update days: ' + error.message, 'error');
   }
@@ -1422,7 +1422,7 @@ contract: {
         )}
 
         {/* Dashboard Tab */}
-        {activeTab === 'dashboard' && (
+          {activeTab === 'dashboard' && (
           <div className="space-y-6">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -1444,7 +1444,7 @@ contract: {
                   </div>
                 </div>
               ))}
-            </div>
+            </div> 
 
             {/* N8N Automation Data */}
             <div className="bg-white rounded-lg border shadow-sm">
@@ -1852,6 +1852,7 @@ const isActive = today >= startDate && today <= endDate;
                         <div className="flex items-center gap-1">
                           <input
                             type="number"
+                            step="0.5"
                             value={editDaysValue}
                             onChange={(e) => setEditDaysValue(e.target.value)}
                             className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
