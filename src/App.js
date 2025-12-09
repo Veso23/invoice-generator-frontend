@@ -1763,9 +1763,12 @@ contract: {
                   <td className="p-4">{formatCurrency(contract.sell_price)}</td>
                         <td className="p-4">
   {contract.vat_enabled ? (
-    <span className="text-sm text-green-600 font-medium">
-      {parseFloat(contract.vat_rate || 21).toFixed(0)}%
-    </span>
+    <div>
+      <span className="text-sm text-green-600 font-medium">
+        {parseFloat(contract.vat_rate || 21).toFixed(0)}%
+      </span>
+      <div className="text-xs text-gray-500">Client only</div>  {/* ← ADD THIS */}
+    </div>
   ) : (
     <span className="text-sm text-gray-400 italic">No VAT</span>
   )}
