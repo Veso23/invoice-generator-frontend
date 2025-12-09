@@ -331,21 +331,19 @@ const renderField = (field) => {
     return (
       <div key={field.name} style={{ marginBottom: '15px' }}>
         <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-          {field.label}:
+          {field.label || field.placeholder}:
         </label>
         <select
           value={formData[field.name] || ''}
           onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-          disabled={field.disabled}  // ← Add this
-          required={field.required}
+          required={field.required !== false}
           style={{ 
             width: '100%', 
             padding: '8px',
-            opacity: field.disabled ? 0.6 : 1,  // ← Visual feedback
-            cursor: field.disabled ? 'not-allowed' : 'pointer'
+            cursor: 'pointer'
           }}
         >
-          <option value="">Select {field.label}</option>
+          <option value="">Select {field.label || field.placeholder}</option>
           {field.options?.map(opt => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
@@ -356,45 +354,31 @@ const renderField = (field) => {
     );
   }
 
-  // Default input
+  // Dynamically disable VAT rate input if VAT is not enabled
+  const isDisabled = field.name === 'vatRate' && !formData.vatEnabled;
+
   return (
     <div key={field.name} style={{ marginBottom: '15px' }}>
-      <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-        {field.label}:
-      </label>
-      <input
-        type={field.type || 'text'}
-        value={formData[field.name] || ''}
-        onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-        disabled={field.disabled}  // ← Add this
-        required={field.required}
-        step={field.step}
-        style={{ 
-          width: '100%', 
-          padding: '8px',
-          opacity: field.disabled ? 0.6 : 1,  // ← Visual feedback
-          cursor: field.disabled ? 'not-allowed' : 'text',
-          backgroundColor: field.disabled ? '#f5f5f5' : 'white'  // ← Gray out when disabled
-        }}
-      />
-    </div>
-  );
-};
-  // Handle all other inputs (text, number, date, email, etc.)
-  return (
-    <div key={field.name}>
-      {field.label && <label className="block text-sm font-medium text-gray-700 mb-1">{field.label}</label>}
+      {field.label && (
+        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+          {field.label}:
+        </label>
+      )}
       <input
         type={field.type || 'text'}
         placeholder={field.placeholder}
         value={formData[field.name] || ''}
-        onChange={(e) => setFormData({
-          ...formData,
-          [field.name]: e.target.value
-        })}
+        onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+        disabled={isDisabled}
         required={field.required !== false}
         step={field.step}
-        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+        style={{ 
+          width: '100%', 
+          padding: '8px',
+          opacity: isDisabled ? 0.6 : 1,
+          cursor: isDisabled ? 'not-allowed' : 'text',
+          backgroundColor: isDisabled ? '#f5f5f5' : 'white'
+        }}
       />
     </div>
   );
@@ -1279,7 +1263,7 @@ contract: {
     { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
     { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' },
     { name: 'vatEnabled', placeholder: 'Enable VAT', type: 'checkbox', label: 'Enable VAT for this contract' },  // ← ADD THIS
-    { name: 'vatRate', placeholder: 'VAT Rate (%)', type: 'number', step: '0.01', label: 'VAT Rate (%)', disabled: !formData.vatEnabled }  // ← ADD THIS
+    { name: 'vatRate', placeholder: 'VAT Rate (%)', type: 'number', step: '0.01', label: 'VAT Rate (%)' }  // ← ADD THIS
   ],
   onSubmit: addContract
 }
