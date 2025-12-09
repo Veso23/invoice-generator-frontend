@@ -1671,8 +1671,8 @@ contract: {
               <th className="text-left p-4 font-medium text-gray-600">Period</th>
               <th className="text-left p-4 font-medium text-gray-600">Purchase Price</th>
               <th className="text-left p-4 font-medium text-gray-600">Sell Price</th>
-              <th className="text-left p-4 font-medium text-gray-600">Status</th>
               <th className="text-left p-4 font-medium text-gray-600">VAT</th>
+              <th className="text-left p-4 font-medium text-gray-600">Status</th>
             </tr>
           </thead>
           <tbody>
