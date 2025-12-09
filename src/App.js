@@ -861,7 +861,10 @@ const InvoiceGeneratorApp = () => {
   const [contracts, setContracts] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [automationLogs, setAutomationLogs] = useState([]);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+  // Load saved tab from localStorage, default to 'dashboard'
+  return localStorage.getItem('activeTab') || 'dashboard';
+});
   const [dataLoading, setDataLoading] = useState(false);
   const [notification, setNotification] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -877,6 +880,9 @@ const [timesheetStatus, setTimesheetStatus] = useState(null);
 const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
 
+  useEffect(() => {
+  localStorage.setItem('activeTab', activeTab);
+}, [activeTab]);
   
   // Show notification
   const showNotification = (message, type = 'success') => {
