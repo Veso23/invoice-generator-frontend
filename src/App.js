@@ -1268,8 +1268,8 @@ contract: {
     { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date' },
     { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
     { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' },
-    { name: 'vatEnabled', placeholder: 'Enable VAT', type: 'checkbox', label: 'Enable VAT for this contract' },  // ← ADD THIS
-    { name: 'vatRate', placeholder: 'VAT Rate (%)', type: 'number', step: '0.01', label: 'VAT Rate (%)' }  // ← ADD THIS
+    { name: 'vatEnabled', placeholder: 'Enable VAT', type: 'checkbox', label: 'Enable VAT for Client Invoices' },  // ← UPDATED LABEL
+    { name: 'vatRate', placeholder: 'VAT Rate (%)', type: 'number', step: '0.01', label: 'Client VAT Rate (%)' }  // ← UPDATED LABEL
   ],
   onSubmit: addContract
 }
