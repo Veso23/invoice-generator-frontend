@@ -1410,134 +1410,152 @@ contract: {
           </div>
         )}
 
-        {/* Dashboard Tab */}
-          {activeTab === 'dashboard' && (
-          <div className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {[
-                { label: 'Consultants', value: consultants.length, icon: Users, color: 'blue' },
-                { label: 'Clients', value: clients.length, icon: Building, color: 'green' },
-                { label: 'Contracts', value: contracts.length, icon: FileText, color: 'purple' },
-                { label: 'Invoices', value: invoices.length, icon: FileText, color: 'orange' }
-              ].map((stat, index) => (
-                <div key={index} className="bg-white rounded-lg p-6 border shadow-sm">
-                  <div className="flex items-center">
-                    <div className={`p-3 rounded-lg bg-${stat.color}-100 mr-4`}>
-                      <stat.icon className={`h-6 w-6 text-${stat.color}-600`} />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-600">{stat.label}</h3>
-                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div> 
-
-            {/* N8N Automation Data */}
-            <div className="bg-white rounded-lg border shadow-sm">
-              <div className="px-6 py-4 border-b">
-                <h2 className="text-lg font-semibold text-gray-800">N8N Automation Data</h2>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left p-4 font-medium text-gray-600">Person Name</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Month</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Days</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Processed</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {automationLogs.map((log) => (
-                      <tr key={log.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4 font-medium">{log.person_name}</td>
-                        <td className="p-4">{log.month}</td>
-                        <td className="p-4">{log.email_days}</td>
-                        <td className="p-4">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            log.status === 'match' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {log.status}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            log.processed ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {log.processed ? 'Yes' : 'Pending'}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          {!log.processed && (
-                            <button
-                              onClick={() => {
-                                const matchingContract = contracts.find(c => {
-                                  return c.client_company_name && 
-                                    c.client_company_name.toLowerCase().includes(log.person_name.toLowerCase());
-                                });
-                                if (matchingContract) {
-                                  generateInvoices(matchingContract.id);
-                                } else {
-                                  showNotification('No matching contract found', 'error');
-                                }
-                              }}
-                              className="bg-blue-600 text-white px-3 py-1 rounded-md text-xs hover:bg-blue-700 transition"
-                            >
-                              Generate Invoices
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+       {/* Dashboard Tab */}
+{activeTab === 'dashboard' && (
+  <div className="space-y-6">
+    {/* Stats Cards */}
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {[
+        { label: 'Consultants', value: consultants.length, icon: Users, color: 'blue' },
+        { label: 'Clients', value: clients.length, icon: Building, color: 'green' },
+        { label: 'Contracts', value: contracts.length, icon: FileText, color: 'purple' },
+        { label: 'Invoices', value: invoices.length, icon: FileText, color: 'orange' }
+      ].map((stat, index) => (
+        <div key={index} className="bg-white rounded-lg p-6 border shadow-sm">
+          <div className="flex items-center">
+            <div className={`p-3 rounded-lg bg-${stat.color}-100 mr-4`}>
+              <stat.icon className={`h-6 w-6 text-${stat.color}-600`} />
             </div>
-
-            {/* Active Contracts */}
-            <div className="bg-white rounded-lg border shadow-sm">
-              <div className="px-6 py-4 border-b">
-                <h2 className="text-lg font-semibold text-gray-800">Active Contracts</h2>
-              </div>
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {contracts.filter(c => c.status === 'active').map((contract) => {
-                    const days = calculateDays(contract.from_date, contract.to_date);
-                    
-                    return (
-                      <div key={contract.id} className="border rounded-lg p-4 hover:bg-gray-50 transition">
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h3 className="font-medium text-gray-800">{contract.consultant_company_name} → {contract.client_company_name}</h3>
-                            <p className="text-sm text-gray-600">
-                              {formatDate(contract.from_date)} to {formatDate(contract.to_date)} ({days} days)
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => generateInvoices(contract.id)}
-                            className="bg-green-600 text-white px-3 py-1 rounded-md text-sm hover:bg-green-700 flex items-center gap-1 transition"
-                          >
-                            <Calculator className="h-4 w-4" />
-                            Generate
-                          </button>
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          <p>Consultant: {formatCurrency(contract.purchase_price)}/day × {days} = {formatCurrency(contract.purchase_price * days)}</p>
-                          <p>Client: {formatCurrency(contract.sell_price)}/day × {days} = {formatCurrency(contract.sell_price * days)}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+            <div>
+              <h3 className="text-sm font-medium text-gray-600">{stat.label}</h3>
+              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
             </div>
           </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Timesheet Status Overview */}
+    <div className="bg-white rounded-lg border shadow-sm">
+      <div className="px-6 py-4 border-b">
+        <h2 className="text-lg font-semibold text-gray-800">Timesheet Status Overview</h2>
+        {timesheetStatus && (
+          <p className="text-sm text-gray-600 mt-1">
+            {timesheetStatus.checking_month} {timesheetStatus.checking_year} 
+            <span className="ml-2 text-gray-500">
+              (Deadline: {timesheetStatus.deadline_day}th)
+            </span>
+          </p>
         )}
+      </div>
+      <div className="p-6">
+        {timesheetStatus ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Received */}
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-green-800">Received</h3>
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <p className="text-3xl font-bold text-green-600">
+                {timesheetStatus.consultants?.filter(c => c.status === 'received').length || 0}
+              </p>
+              <p className="text-xs text-green-700 mt-1">Timesheets submitted</p>
+            </div>
+
+            {/* Waiting */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-yellow-800">Waiting</h3>
+                <AlertCircle className="h-5 w-5 text-yellow-600" />
+              </div>
+              <p className="text-3xl font-bold text-yellow-600">
+                {timesheetStatus.consultants?.filter(c => c.status === 'waiting').length || 0}
+              </p>
+              <p className="text-xs text-yellow-700 mt-1">Before deadline</p>
+            </div>
+
+            {/* Overdue */}
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-red-800">Overdue</h3>
+                <AlertCircle className="h-5 w-5 text-red-600" />
+              </div>
+              <p className="text-3xl font-bold text-red-600">
+                {timesheetStatus.consultants?.filter(c => c.status === 'overdue').length || 0}
+              </p>
+              <p className="text-xs text-red-700 mt-1">Past deadline</p>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center text-gray-500 py-8">
+            <p>Loading timesheet status...</p>
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* Monthly Revenue Overview */}
+    <div className="bg-white rounded-lg border shadow-sm">
+      <div className="px-6 py-4 border-b">
+        <h2 className="text-lg font-semibold text-gray-800">Monthly Revenue Overview</h2>
+      </div>
+      <div className="p-6">
+        {(() => {
+          // Calculate current month revenue
+          const now = new Date();
+          const currentMonth = now.getMonth();
+          const currentYear = now.getFullYear();
+          
+          const currentMonthInvoices = invoices.filter(inv => {
+            const invDate = new Date(inv.invoice_date);
+            return invDate.getMonth() === currentMonth && 
+                   invDate.getFullYear() === currentYear;
+          });
+          
+          const consultantRevenue = currentMonthInvoices
+            .filter(inv => inv.invoice_type === 'consultant')
+            .reduce((sum, inv) => sum + parseFloat(inv.total_amount), 0);
+            
+          const clientRevenue = currentMonthInvoices
+            .filter(inv => inv.invoice_type === 'client')
+            .reduce((sum, inv) => sum + parseFloat(inv.total_amount), 0);
+            
+          const profit = clientRevenue - consultantRevenue;
+          
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Client Revenue */}
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-2">Client Invoices</p>
+                <p className="text-3xl font-bold text-blue-600">{formatCurrency(clientRevenue)}</p>
+                <p className="text-xs text-gray-500 mt-1">{currentMonthInvoices.filter(i => i.invoice_type === 'client').length} invoices</p>
+              </div>
+              
+              {/* Consultant Costs */}
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-2">Consultant Costs</p>
+                <p className="text-3xl font-bold text-orange-600">{formatCurrency(consultantRevenue)}</p>
+                <p className="text-xs text-gray-500 mt-1">{currentMonthInvoices.filter(i => i.invoice_type === 'consultant').length} invoices</p>
+              </div>
+              
+              {/* Net Profit */}
+              <div className="text-center">
+                <p className="text-sm text-gray-600 mb-2">Net Profit</p>
+                <p className={`text-3xl font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {formatCurrency(profit)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+    </div>
+  </div>
+)}
 
         {/* Consultants Tab */}
         {activeTab === 'consultants' && (
