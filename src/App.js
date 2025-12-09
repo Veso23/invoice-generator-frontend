@@ -1683,28 +1683,27 @@ contract: {
               <th className="text-left p-4 font-medium text-gray-600">Purchase Price</th>
               <th className="text-left p-4 font-medium text-gray-600">Sell Price</th>
               <th className="text-left p-4 font-medium text-gray-600">Status</th>
-              <th className="text-left p-4 font-medium text-gray-600">Actions</th>
             </tr>
           </thead>
           <tbody>
             {contracts.map((contract) => {
               // Check if contract is currently active based on dates
-const today = new Date();
-today.setHours(0, 0, 0, 0); // Reset time to start of day
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
 
-const startDate = new Date(contract.from_date);
-startDate.setHours(0, 0, 0, 0);
+              const startDate = new Date(contract.from_date);
+              startDate.setHours(0, 0, 0, 0);
 
-const endDate = new Date(contract.to_date);
-endDate.setHours(23, 59, 59, 999); // Set to end of day
+              const endDate = new Date(contract.to_date);
+              endDate.setHours(23, 59, 59, 999);
 
-const isActive = today >= startDate && today <= endDate;
+              const isActive = today >= startDate && today <= endDate;
               
               return (
                 <tr key={contract.id} className="border-b hover:bg-gray-50">
                   <td className="p-4">
                     <div className="font-mono text-sm font-medium text-blue-600">
-                        {contract.contract_number || ''}
+                      {contract.contract_number || ''}
                     </div>
                   </td>
                   <td className="p-4">
@@ -1754,15 +1753,6 @@ const isActive = today >= startDate && today <= endDate;
                     }`}>
                       {isActive ? 'active' : 'inactive'}
                     </span>
-                  </td>
-                  <td className="p-4">
-                    <button
-                      onClick={() => generateInvoices(contract.id)}
-                      className="bg-blue-600 text-white px-3 py-1 rounded-md text-xs hover:bg-blue-700 flex items-center gap-1 transition"
-                    >
-                      <Calculator className="h-3 w-3" />
-                      Generate
-                    </button>
                   </td>
                 </tr>
               );
