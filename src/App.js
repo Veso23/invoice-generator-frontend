@@ -2415,13 +2415,6 @@ const openAddModal = (type) => {
             )}
           </div>
         )}
-
-
-      </div>
-    </div>
-  );
-};
-
 {/* Users Management Tab (Admin Only) */}  {/* ✅ MOVE IT HERE */}
         {activeTab === 'users' && user.role === 'admin' && (
           <div className="space-y-6">
@@ -2521,8 +2514,8 @@ const openAddModal = (type) => {
           </div>
         )}
 
-      </div>  {/* ← End of max-w-7xl div */}
-    </div>    {/* ← End of min-h-screen div */}
+      </div>
+    </div>
   );
 };
 
