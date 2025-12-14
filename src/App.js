@@ -295,14 +295,15 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
   const [formData, setFormData] = useState({});
 
   useEffect(() => {
-    if (isOpen) {
-      const initialData = {};
-      fields.forEach(field => {
-        initialData[field.name] = '';
-      });
-      setFormData(initialData);
-    }
-  }, [isOpen, fields]);
+  if (isOpen) {
+    const initialData = {};
+    fields.forEach(field => {
+      // ✅ Initialize checkboxes as false, everything else as empty string
+      initialData[field.name] = field.type === 'checkbox' ? false : '';
+    });
+    setFormData(initialData);
+  }
+}, [isOpen, fields]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
