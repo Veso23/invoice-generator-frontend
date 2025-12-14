@@ -328,6 +328,8 @@ const renderField = (field) => {
     );
   }
 
+
+
   if (field.type === 'select') {
     return (
       <div key={field.name} style={{ marginBottom: '15px' }}>
@@ -356,7 +358,9 @@ const renderField = (field) => {
   }
 
   // Dynamically disable VAT rate input if VAT is not enabled
-  const isDisabled = field.name === 'vatRate' && !formData.vatEnabled;
+  const isDisabled = 
+  (field.name === 'vatRate' && !formData.vatEnabled) ||
+  (field.name === 'consultantVatRate' && !formData.consultantVatEnabled);
 
   return (
     <div key={field.name} style={{ marginBottom: '15px' }}>
@@ -1269,8 +1273,14 @@ contract: {
     { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date' },
     { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
     { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' },
-    { name: 'vatEnabled', placeholder: 'Enable VAT', type: 'checkbox', label: 'Enable VAT for Client Invoices' },  // ← UPDATED LABEL
-    { name: 'vatRate', placeholder: 'VAT Rate (%)', type: 'number', step: '0.01', label: 'Client VAT Rate (%)' }  // ← UPDATED LABEL
+    
+    // ✅ Consultant VAT Section
+    { name: 'consultantVatEnabled', type: 'checkbox', label: 'Enable VAT for Consultant Invoices' },
+    { name: 'consultantVatRate', type: 'number', step: '0.01', label: 'Consultant VAT Rate (%)' },
+    
+    // ✅ Client VAT Section
+    { name: 'vatEnabled', type: 'checkbox', label: 'Enable VAT for Client Invoices' },
+    { name: 'vatRate', type: 'number', step: '0.01', label: 'Client VAT Rate (%)' }
   ],
   onSubmit: addContract
 }
@@ -1696,7 +1706,33 @@ contract: {
               <th className="text-left p-4 font-medium text-gray-600">Period</th>
               <th className="text-left p-4 font-medium text-gray-600">Purchase Price</th>
               <th className="text-left p-4 font-medium text-gray-600">Sell Price</th>
-              <th className="text-left p-4 font-medium text-gray-600">VAT</th>
+              <td className="p-4">
+  <div className="text-sm">
+    {/* Consultant VAT */}
+    <div className="mb-1">
+      <span className="text-xs text-gray-500">Consultant: </span>
+      {contract.consultant_vat_enabled ? (
+        <span className="text-green-600 font-medium">
+          {parseFloat(contract.consultant_vat_rate || 0).toFixed(0)}%
+        </span>
+      ) : (
+        <span className="text-gray-400 italic">No VAT</span>
+      )}
+    </div>
+    
+    {/* Client VAT */}
+    <div>
+      <span className="text-xs text-gray-500">Client: </span>
+      {contract.vat_enabled ? (
+        <span className="text-blue-600 font-medium">
+          {parseFloat(contract.vat_rate || 0).toFixed(0)}%
+        </span>
+      ) : (
+        <span className="text-gray-400 italic">No VAT</span>
+      )}
+    </div>
+  </div>
+</td>
               <th className="text-left p-4 font-medium text-gray-600">Status</th>
             </tr>
           </thead>
