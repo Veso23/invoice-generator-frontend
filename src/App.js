@@ -1706,33 +1706,7 @@ contract: {
               <th className="text-left p-4 font-medium text-gray-600">Period</th>
               <th className="text-left p-4 font-medium text-gray-600">Purchase Price</th>
               <th className="text-left p-4 font-medium text-gray-600">Sell Price</th>
-              <td className="p-4">
-  <div className="text-sm">
-    {/* Consultant VAT */}
-    <div className="mb-1">
-      <span className="text-xs text-gray-500">Consultant: </span>
-      {contract.consultant_vat_enabled ? (
-        <span className="text-green-600 font-medium">
-          {parseFloat(contract.consultant_vat_rate || 0).toFixed(0)}%
-        </span>
-      ) : (
-        <span className="text-gray-400 italic">No VAT</span>
-      )}
-    </div>
-    
-    {/* Client VAT */}
-    <div>
-      <span className="text-xs text-gray-500">Client: </span>
-      {contract.vat_enabled ? (
-        <span className="text-blue-600 font-medium">
-          {parseFloat(contract.vat_rate || 0).toFixed(0)}%
-        </span>
-      ) : (
-        <span className="text-gray-400 italic">No VAT</span>
-      )}
-    </div>
-  </div>
-</td>
+              <th className="text-left p-4 font-medium text-gray-600">VAT Rates</th>
               <th className="text-left p-4 font-medium text-gray-600">Status</th>
             </tr>
           </thead>
@@ -1798,18 +1772,34 @@ contract: {
                   </td>
                   <td className="p-4">{formatCurrency(contract.purchase_price)}</td>
                   <td className="p-4">{formatCurrency(contract.sell_price)}</td>
-                        <td className="p-4">
-  {contract.vat_enabled ? (
-    <div>
-      <span className="text-sm text-green-600 font-medium">
-        {parseFloat(contract.vat_rate || 21).toFixed(0)}%
-      </span>
-      <div className="text-xs text-gray-500">Client only</div>  {/* ← ADD THIS */}
-    </div>
-  ) : (
-    <span className="text-sm text-gray-400 italic">No VAT</span>
-  )}
-</td>
+                        {/* 8. VAT RATES - ✅ PLACE IT HERE */}
+        <td className="p-4">
+          <div className="text-sm">
+            {/* Consultant VAT */}
+            <div className="mb-1">
+              <span className="text-xs text-gray-500">Consultant: </span>
+              {contract.consultant_vat_enabled ? (
+                <span className="text-green-600 font-medium">
+                  {parseFloat(contract.consultant_vat_rate || 0).toFixed(0)}%
+                </span>
+              ) : (
+                <span className="text-gray-400 italic">No VAT</span>
+              )}
+            </div>
+            
+            {/* Client VAT */}
+            <div>
+              <span className="text-xs text-gray-500">Client: </span>
+              {contract.vat_enabled ? (
+                <span className="text-blue-600 font-medium">
+                  {parseFloat(contract.vat_rate || 0).toFixed(0)}%
+                </span>
+              ) : (
+                <span className="text-gray-400 italic">No VAT</span>
+              )}
+            </div>
+          </div>
+        </td>
                   <td className="p-4">
                     <span className={`px-2 py-1 rounded-full text-xs ${
                       isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
