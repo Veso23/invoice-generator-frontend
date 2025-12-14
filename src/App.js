@@ -1530,6 +1530,12 @@ const openAddModal = (type) => {
   currentDeadline={companySettings?.timesheet_deadline_day}
   onSubmit={(data) => updateCompanySettings({ ...companySettings, ...data })}
 />
+    {/* ✅ ADD CHANGE PASSWORD MODAL HERE */}
+<ChangePasswordModal
+  isOpen={changePasswordModalOpen}
+  onClose={() => setChangePasswordModalOpen(false)}
+  onSubmit={changePassword}
+/>
 
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
@@ -2416,103 +2422,108 @@ const openAddModal = (type) => {
   );
 };
 
-{/* Users Management Tab (Admin Only) */}
-{activeTab === 'users' && user.role === 'admin' && (
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h2 className="text-xl font-bold text-gray-800">User Management</h2>
-      <button
-        onClick={() => openAddModal('operator')}
-        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
-      >
-        <Plus className="h-4 w-4" />
-        Create Operator
-      </button>
-    </div>
-    
-    <div className="bg-white rounded-lg border shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left p-4 font-medium text-gray-600">Name</th>
-              <th className="text-left p-4 font-medium text-gray-600">Email</th>
-              <th className="text-left p-4 font-medium text-gray-600">Role</th>
-              <th className="text-left p-4 font-medium text-gray-600">Status</th>
-              <th className="text-left p-4 font-medium text-gray-600">Created By</th>
-              <th className="text-left p-4 font-medium text-gray-600">Last Login</th>
-              <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u.id} className="border-b hover:bg-gray-50">
-                <td className="p-4">
-                  <div className="font-medium">{u.first_name} {u.last_name}</div>
-                  {u.id === user.id && (
-                    <span className="text-xs text-blue-600">(You)</span>
-                  )}
-                </td>
-                <td className="p-4 text-sm">{u.email}</td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    u.role === 'admin' 
-                      ? 'bg-purple-100 text-purple-800' 
-                      : 'bg-gray-100 text-gray-800'
-                  }`}>
-                    {u.role}
-                  </span>
-                </td>
-                <td className="p-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    u.active 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {u.active ? 'Active' : 'Disabled'}
-                  </span>
-                </td>
-                <td className="p-4 text-sm">
-                  {u.created_by_first_name 
-                    ? `${u.created_by_first_name} ${u.created_by_last_name}` 
-                    : 'System'}
-                </td>
-                <td className="p-4 text-sm text-gray-600">
-                  {u.last_login ? new Date(u.last_login).toLocaleDateString('en-GB') : 'Never'}
-                </td>
-                <td className="p-4">
-                  <div className="flex gap-2">
-                    {u.id !== user.id && (
-                      <>
-                        <button
-                          onClick={() => toggleUserActive(u.id)}
-                          className={`px-3 py-1 text-xs rounded transition ${
-                            u.active
-                              ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                              : 'bg-green-100 text-green-800 hover:bg-green-200'
-                          }`}
-                          title={u.active ? 'Disable User' : 'Enable User'}
-                        >
-                          {u.active ? 'Disable' : 'Enable'}
-                        </button>
-                        <button
-                          onClick={() => deleteUser(u.id)}
-                          className="px-3 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition"
-                          title="Delete User"
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-)}
+{/* Users Management Tab (Admin Only) */}  {/* ✅ MOVE IT HERE */}
+        {activeTab === 'users' && user.role === 'admin' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800">User Management</h2>
+              <button
+                onClick={() => openAddModal('operator')}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
+              >
+                <Plus className="h-4 w-4" />
+                Create Operator
+              </button>
+            </div>
+            
+            <div className="bg-white rounded-lg border shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left p-4 font-medium text-gray-600">Name</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Email</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Role</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Status</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Created By</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Last Login</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id} className="border-b hover:bg-gray-50">
+                        <td className="p-4">
+                          <div className="font-medium">{u.first_name} {u.last_name}</div>
+                          {u.id === user.id && (
+                            <span className="text-xs text-blue-600">(You)</span>
+                          )}
+                        </td>
+                        <td className="p-4 text-sm">{u.email}</td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            u.role === 'admin' 
+                              ? 'bg-purple-100 text-purple-800' 
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {u.role}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            u.active 
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {u.active ? 'Active' : 'Disabled'}
+                          </span>
+                        </td>
+                        <td className="p-4 text-sm">
+                          {u.created_by_first_name 
+                            ? `${u.created_by_first_name} ${u.created_by_last_name}` 
+                            : 'System'}
+                        </td>
+                        <td className="p-4 text-sm text-gray-600">
+                          {u.last_login ? new Date(u.last_login).toLocaleDateString('en-GB') : 'Never'}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex gap-2">
+                            {u.id !== user.id && (
+                              <>
+                                <button
+                                  onClick={() => toggleUserActive(u.id)}
+                                  className={`px-3 py-1 text-xs rounded transition ${
+                                    u.active
+                                      ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                                      : 'bg-green-100 text-green-800 hover:bg-green-200'
+                                  }`}
+                                  title={u.active ? 'Disable User' : 'Enable User'}
+                                >
+                                  {u.active ? 'Disable' : 'Enable'}
+                                </button>
+                                <button
+                                  onClick={() => deleteUser(u.id)}
+                                  className="px-3 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition"
+                                  title="Delete User"
+                                >
+                                  Delete
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>  {/* ← End of max-w-7xl div */}
+    </div>    {/* ← End of min-h-screen div */}
+  );
+};
 
 export default InvoiceGeneratorApp;
