@@ -416,6 +416,113 @@ const renderField = (field) => {
   );
 };
 
+// Change Password Modal Component
+const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
+  const [formData, setFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [error, setError] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+    
+    if (formData.newPassword !== formData.confirmPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+    
+    if (formData.newPassword.length < 6) {
+      setError('New password must be at least 6 characters');
+      return;
+    }
+    
+    onSubmit({
+      currentPassword: formData.currentPassword,
+      newPassword: formData.newPassword
+    });
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 className="text-lg font-semibold mb-4">Change Password</h3>
+        
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            {error}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Current Password
+            </label>
+            <input
+              type="password"
+              value={formData.currentPassword}
+              onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              New Password
+            </label>
+            <input
+              type="password"
+              value={formData.newPassword}
+              onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Confirm New Password
+            </label>
+            <input
+              type="password"
+              value={formData.confirmPassword}
+              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              required
+            />
+          </div>
+
+          <div className="flex gap-2 pt-4">
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                setError('');
+                onClose();
+              }}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              Change Password
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // Settings Modal Component
 const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
   const [activeSettingsTab, setActiveSettingsTab] = useState('company');
@@ -884,6 +991,8 @@ const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 const [timesheetStatus, setTimesheetStatus] = useState(null);
 const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
+  const [users, setUsers] = useState([]);
+const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
 
   useEffect(() => {
   localStorage.setItem('activeTab', activeTab);
@@ -937,6 +1046,11 @@ const loadData = async () => {
     // Load company settings and timesheet status
     await loadCompanySettings().catch(err => console.error('Settings load failed:', err));
     await loadTimesheetStatus().catch(err => console.error('Timesheet status load failed:', err));
+    
+    // ✅ Load users if admin
+    if (user.role === 'admin') {
+      await loadUsers().catch(err => console.error('Users load failed:', err));
+    }
     
   } catch (error) {
     console.error('Failed to load data:', error);
@@ -1104,7 +1218,72 @@ const sendInvoiceEmail = async (invoice) => {
     setDataLoading(false);
   }
 };
+
+  // Load users (admin only)
+const loadUsers = async () => {
+  try {
+    const usersData = await apiCall('/users');
+    setUsers(usersData);
+  } catch (error) {
+    console.error('Failed to load users:', error);
+  }
+};
+
+// Create operator (admin only)
+const createOperator = async (operatorData) => {
+  try {
+    await apiCall('/users', {
+      method: 'POST',
+      body: JSON.stringify(operatorData)
+    });
+    showNotification('Operator created successfully!');
+    loadUsers();
+  } catch (error) {
+    showNotification('Failed to create operator: ' + error.message, 'error');
+  }
+};
+
+// Toggle user active status (admin only)
+const toggleUserActive = async (userId) => {
+  try {
+    await apiCall(`/users/${userId}/toggle-active`, {
+      method: 'PUT'
+    });
+    showNotification('User status updated successfully!');
+    loadUsers();
+  } catch (error) {
+    showNotification('Failed to update user status: ' + error.message, 'error');
+  }
+};
+
+// Delete user (admin only)
+const deleteUser = async (userId) => {
+  if (!window.confirm('Are you sure you want to delete this user?')) return;
   
+  try {
+    await apiCall(`/users/${userId}`, {
+      method: 'DELETE'
+    });
+    showNotification('User deleted successfully!');
+    loadUsers();
+  } catch (error) {
+    showNotification('Failed to delete user: ' + error.message, 'error');
+  }
+};
+
+// Change password (both roles)
+const changePassword = async (passwordData) => {
+  try {
+    await apiCall('/auth/change-password', {
+      method: 'PUT',
+      body: JSON.stringify(passwordData)
+    });
+    showNotification('Password changed successfully!');
+    setChangePasswordModalOpen(false);
+  } catch (error) {
+    showNotification('Failed to change password: ' + error.message, 'error');
+  }
+};
 
   // Add new consultant
   const addConsultant = async (consultantData) => {
@@ -1247,43 +1426,50 @@ const openAddModal = (type) => {
       ],
       onSubmit: addClient
     },
-contract: {
-  title: 'Add New Contract',
-  fields: [
-    { name: 'contractNumber', placeholder: 'Contract Number (e.g., CNT-2024-001)' },
-    { 
-      name: 'consultantId', 
-      placeholder: 'Select Consultant', 
-      type: 'select', 
-      options: consultants.map(c => ({ 
-        value: c.id, 
-        label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
-      })) 
+    contract: {
+      title: 'Add New Contract',
+      fields: [
+        { name: 'contractNumber', placeholder: 'Contract Number (e.g., CNT-2024-001)' },
+        { 
+          name: 'consultantId', 
+          placeholder: 'Select Consultant', 
+          type: 'select', 
+          options: consultants.map(c => ({ 
+            value: c.id, 
+            label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
+          })) 
+        },
+        { 
+          name: 'clientId', 
+          placeholder: 'Select Client', 
+          type: 'select', 
+          options: clients.map(c => ({ 
+            value: c.id, 
+            label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
+          })) 
+        },
+        { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date' },
+        { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date' },
+        { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
+        { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' },
+        { name: 'consultantVatEnabled', type: 'checkbox', label: 'Enable VAT for Consultant Invoices' },
+        { name: 'consultantVatRate', type: 'number', step: '0.01', label: 'Consultant VAT Rate (%)' },
+        { name: 'vatEnabled', type: 'checkbox', label: 'Enable VAT for Client Invoices' },
+        { name: 'vatRate', type: 'number', step: '0.01', label: 'Client VAT Rate (%)' }
+      ],
+      onSubmit: addContract
     },
-    { 
-      name: 'clientId', 
-      placeholder: 'Select Client', 
-      type: 'select', 
-      options: clients.map(c => ({ 
-        value: c.id, 
-        label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
-      })) 
-    },
-    { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date' },
-    { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date' },
-    { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
-    { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' },
-    
-    // ✅ Consultant VAT Section
-    { name: 'consultantVatEnabled', type: 'checkbox', label: 'Enable VAT for Consultant Invoices' },
-    { name: 'consultantVatRate', type: 'number', step: '0.01', label: 'Consultant VAT Rate (%)' },
-    
-    // ✅ Client VAT Section
-    { name: 'vatEnabled', type: 'checkbox', label: 'Enable VAT for Client Invoices' },
-    { name: 'vatRate', type: 'number', step: '0.01', label: 'Client VAT Rate (%)' }
-  ],
-  onSubmit: addContract
-}
+    // ✅ ADD THIS
+    operator: {
+      title: 'Create Operator Account',
+      fields: [
+        { name: 'firstName', placeholder: 'First Name' },
+        { name: 'lastName', placeholder: 'Last Name' },
+        { name: 'email', placeholder: 'Email', type: 'email' },
+        { name: 'password', placeholder: 'Password', type: 'password' }
+      ],
+      onSubmit: createOperator
+    }
   };
 
   setModalConfig(configs[type]);
@@ -1377,46 +1563,62 @@ contract: {
                 </button>
                 
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
-                    <button
-                      onClick={() => {
-                        setSettingsModalOpen(true);
-                        setUserMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                    >
-                      <Edit className="h-4 w-4" />
-                      Settings
-                    </button>
-                    <button
-                      onClick={logout}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Logout
-                    </button>
-                  </div>
-                )}
+  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
+    <button
+      onClick={() => {
+        setChangePasswordModalOpen(true);  // ✅ ADD THIS
+        setUserMenuOpen(false);
+      }}
+      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+    >
+      <Edit className="h-4 w-4" />
+      Change Password
+    </button>
+    
+    {user.role === 'admin' && (  // ✅ Admin only
+      <button
+        onClick={() => {
+          setSettingsModalOpen(true);
+          setUserMenuOpen(false);
+        }}
+        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-t"
+      >
+        <Edit className="h-4 w-4" />
+        Company Settings
+      </button>
+    )}
+    
+    <button
+      onClick={logout}
+      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t"
+    >
+      <LogOut className="h-4 w-4" />
+      Logout
+    </button>
+  </div>
+)}
               </div>
             </div>
           </div>
           
           {/* Navigation Tabs */}
-          <div className="flex gap-1 mt-6 bg-gray-100 p-1 rounded-lg w-fit">
-            {['dashboard', 'consultants', 'clients', 'contracts', 'timesheets', 'invoices'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-md capitalize text-sm font-medium transition ${
-                  activeTab === tab 
-                    ? 'bg-white text-blue-600 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
+<div className="flex gap-1 mt-6 bg-gray-100 p-1 rounded-lg w-fit">
+  {['dashboard', 'consultants', 'clients', 'contracts', 'timesheets', 'invoices', 
+    ...(user.role === 'admin' ? ['users'] : [])  // ✅ Add 'users' tab for admin only
+  ].map((tab) => (
+    <button
+      key={tab}
+      onClick={() => setActiveTab(tab)}
+      className={`px-4 py-2 rounded-md capitalize text-sm font-medium transition ${
+        activeTab === tab 
+          ? 'bg-white text-blue-600 shadow-sm' 
+          : 'text-gray-600 hover:text-gray-800'
+      }`}
+    >
+      {tab}
+    </button>
+  ))}
+</div>
         </div>
       </div>
 
@@ -1576,17 +1778,19 @@ contract: {
 
         {/* Consultants Tab */}
         {activeTab === 'consultants' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">Consultants</h2>
-              <button
-                onClick={() => openAddModal('consultant')}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
-              >
-                <Plus className="h-4 w-4" />
-                Add Consultant
-              </button>
-            </div>
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <h2 className="text-xl font-bold text-gray-800">Consultants</h2>
+      {user.role === 'admin' && (  // ✅ Admin only
+        <button
+          onClick={() => openAddModal('consultant')}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
+        >
+          <Plus className="h-4 w-4" />
+          Add Consultant
+        </button>
+      )}
+    </div>
             
             <div className="bg-white rounded-lg border shadow-sm">
               <div className="overflow-x-auto">
@@ -1629,17 +1833,19 @@ contract: {
 
         {/* Clients Tab */}
         {activeTab === 'clients' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">Clients</h2>
-              <button
-                onClick={() => openAddModal('client')}
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition"
-              >
-                <Plus className="h-4 w-4" />
-                Add Client
-              </button>
-            </div>
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <h2 className="text-xl font-bold text-gray-800">Clients</h2>
+      {user.role === 'admin' && (  // ✅ Admin only
+        <button
+          onClick={() => openAddModal('client')}
+          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition"
+        >
+          <Plus className="h-4 w-4" />
+          Add Client
+        </button>
+      )}
+    </div>
             
             <div className="bg-white rounded-lg border shadow-sm">
               <div className="overflow-x-auto">
@@ -1685,13 +1891,15 @@ contract: {
   <div className="space-y-6">
     <div className="flex justify-between items-center">
       <h2 className="text-xl font-bold text-gray-800">Contracts</h2>
-      <button
-        onClick={() => openAddModal('contract')}
-        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
-      >
-        <Plus className="h-4 w-4" />
-        Add Contract
-      </button>
+      {user.role === 'admin' && (  // ✅ Admin only
+        <button
+          onClick={() => openAddModal('contract')}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
+        >
+          <Plus className="h-4 w-4" />
+          Add Contract
+        </button>
+      )}
     </div>
     
     <div className="bg-white rounded-lg border shadow-sm">
@@ -2207,5 +2415,104 @@ contract: {
     </div>
   );
 };
+
+{/* Users Management Tab (Admin Only) */}
+{activeTab === 'users' && user.role === 'admin' && (
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <h2 className="text-xl font-bold text-gray-800">User Management</h2>
+      <button
+        onClick={() => openAddModal('operator')}
+        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
+      >
+        <Plus className="h-4 w-4" />
+        Create Operator
+      </button>
+    </div>
+    
+    <div className="bg-white rounded-lg border shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left p-4 font-medium text-gray-600">Name</th>
+              <th className="text-left p-4 font-medium text-gray-600">Email</th>
+              <th className="text-left p-4 font-medium text-gray-600">Role</th>
+              <th className="text-left p-4 font-medium text-gray-600">Status</th>
+              <th className="text-left p-4 font-medium text-gray-600">Created By</th>
+              <th className="text-left p-4 font-medium text-gray-600">Last Login</th>
+              <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.id} className="border-b hover:bg-gray-50">
+                <td className="p-4">
+                  <div className="font-medium">{u.first_name} {u.last_name}</div>
+                  {u.id === user.id && (
+                    <span className="text-xs text-blue-600">(You)</span>
+                  )}
+                </td>
+                <td className="p-4 text-sm">{u.email}</td>
+                <td className="p-4">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    u.role === 'admin' 
+                      ? 'bg-purple-100 text-purple-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {u.role}
+                  </span>
+                </td>
+                <td className="p-4">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    u.active 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {u.active ? 'Active' : 'Disabled'}
+                  </span>
+                </td>
+                <td className="p-4 text-sm">
+                  {u.created_by_first_name 
+                    ? `${u.created_by_first_name} ${u.created_by_last_name}` 
+                    : 'System'}
+                </td>
+                <td className="p-4 text-sm text-gray-600">
+                  {u.last_login ? new Date(u.last_login).toLocaleDateString('en-GB') : 'Never'}
+                </td>
+                <td className="p-4">
+                  <div className="flex gap-2">
+                    {u.id !== user.id && (
+                      <>
+                        <button
+                          onClick={() => toggleUserActive(u.id)}
+                          className={`px-3 py-1 text-xs rounded transition ${
+                            u.active
+                              ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                              : 'bg-green-100 text-green-800 hover:bg-green-200'
+                          }`}
+                          title={u.active ? 'Disable User' : 'Enable User'}
+                        >
+                          {u.active ? 'Disable' : 'Enable'}
+                        </button>
+                        <button
+                          onClick={() => deleteUser(u.id)}
+                          className="px-3 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition"
+                          title="Delete User"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+)}
 
 export default InvoiceGeneratorApp;
