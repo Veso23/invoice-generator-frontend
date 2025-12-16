@@ -294,12 +294,12 @@ const Notification = ({ notification, onClose }) => {
 const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
   const [formData, setFormData] = useState({});
 
-  useEffect(() => {
+useEffect(() => {
   if (isOpen) {
     const initialData = {};
     fields.forEach(field => {
-      // ✅ Initialize checkboxes as false, everything else as empty string
-      initialData[field.name] = field.type === 'checkbox' ? false : '';
+      // ✅ Use field.value if editing, otherwise default
+      initialData[field.name] = field.value !== undefined ? field.value : (field.type === 'checkbox' ? false : '');
     });
     setFormData(initialData);
   }
@@ -993,6 +993,20 @@ const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
   const [users, setUsers] = useState([]);
 const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+const [editModalOpen, setEditModalOpen] = useState(false);
+const [searchQueries, setSearchQueries] = useState({
+  consultants: '',
+  clients: '',
+  contracts: '',
+  invoices: ''
+});
+const [sortConfig, setSortConfig] = useState({
+  consultants: { key: null, direction: 'asc' },
+  clients: { key: null, direction: 'asc' },
+  contracts: { key: null, direction: 'asc' },
+  invoices: { key: null, direction: 'asc' }
+});
 
   useEffect(() => {
   localStorage.setItem('activeTab', activeTab);
@@ -1171,6 +1185,208 @@ const generatePDF = async (invoiceId) => {
   } finally {
     setDataLoading(false);
   }
+};
+
+  // Edit consultant/client/contract
+const editItem = (type, item) => {
+  setEditingItem({ type, item });
+  
+  const configs = {
+    consultant: {
+      title: 'Edit Consultant',
+      fields: [
+        { name: 'firstName', placeholder: 'First Name', value: item.first_name },
+        { name: 'lastName', placeholder: 'Last Name', value: item.last_name },
+        { name: 'companyName', placeholder: 'Company Name', value: item.company_name },
+        { name: 'companyAddress', placeholder: 'Company Address', value: item.company_address },
+        { name: 'companyVAT', placeholder: 'VAT Number', value: item.company_vat },
+        { name: 'consultantContractId', placeholder: 'Consultant Contract ID', value: item.consultant_contract_id },
+        { name: 'iban', placeholder: 'IBAN', value: item.iban },
+        { name: 'swift', placeholder: 'SWIFT Code', value: item.swift },
+        { name: 'email', placeholder: 'Email', type: 'email', value: item.email },
+        { name: 'phone', placeholder: 'Phone', value: item.phone }
+      ],
+      onSubmit: (data) => updateConsultant(item.id, data)
+    },
+    client: {
+      title: 'Edit Client',
+      fields: [
+        { name: 'firstName', placeholder: 'First Name', value: item.first_name },
+        { name: 'lastName', placeholder: 'Last Name', value: item.last_name },
+        { name: 'companyName', placeholder: 'Company Name', value: item.company_name },
+        { name: 'companyAddress', placeholder: 'Company Address', value: item.company_address },
+        { name: 'companyVAT', placeholder: 'VAT Number', value: item.company_vat },
+        { name: 'clientContractId', placeholder: 'Client Contract ID', value: item.client_contract_id },
+        { name: 'iban', placeholder: 'IBAN', value: item.iban },
+        { name: 'swift', placeholder: 'SWIFT Code', value: item.swift },
+        { name: 'email', placeholder: 'Email', type: 'email', value: item.email },
+        { name: 'phone', placeholder: 'Phone', value: item.phone }
+      ],
+      onSubmit: (data) => updateClient(item.id, data)
+    },
+    contract: {
+      title: 'Edit Contract',
+      fields: [
+        { name: 'contractNumber', placeholder: 'Contract Number', value: item.contract_number },
+        { 
+          name: 'consultantId', 
+          placeholder: 'Select Consultant', 
+          type: 'select',
+          value: item.consultant_id,
+          options: consultants.map(c => ({ 
+            value: c.id, 
+            label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
+          })) 
+        },
+        { 
+          name: 'clientId', 
+          placeholder: 'Select Client', 
+          type: 'select',
+          value: item.client_id,
+          options: clients.map(c => ({ 
+            value: c.id, 
+            label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
+          })) 
+        },
+        { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date', value: item.from_date },
+        { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date', value: item.to_date },
+        { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01', value: item.purchase_price },
+        { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01', value: item.sell_price },
+        { name: 'consultantVatEnabled', type: 'checkbox', label: 'Enable VAT for Consultant Invoices', value: item.consultant_vat_enabled },
+        { name: 'consultantVatRate', type: 'number', step: '0.01', label: 'Consultant VAT Rate (%)', value: item.consultant_vat_rate },
+        { name: 'vatEnabled', type: 'checkbox', label: 'Enable VAT for Client Invoices', value: item.vat_enabled },
+        { name: 'vatRate', type: 'number', step: '0.01', label: 'Client VAT Rate (%)', value: item.vat_rate }
+      ],
+      onSubmit: (data) => updateContract(item.id, data)
+    }
+  };
+
+  setModalConfig(configs[type]);
+  setEditModalOpen(true);
+};
+
+// Update functions
+const updateConsultant = async (id, consultantData) => {
+  try {
+    await apiCall(`/consultants/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(consultantData)
+    });
+    showNotification('Consultant updated successfully!');
+    setEditModalOpen(false);
+    setEditingItem(null);
+    loadData();
+  } catch (error) {
+    showNotification('Failed to update consultant: ' + error.message, 'error');
+  }
+};
+
+const updateClient = async (id, clientData) => {
+  try {
+    await apiCall(`/clients/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(clientData)
+    });
+    showNotification('Client updated successfully!');
+    setEditModalOpen(false);
+    setEditingItem(null);
+    loadData();
+  } catch (error) {
+    showNotification('Failed to update client: ' + error.message, 'error');
+  }
+};
+
+const updateContract = async (id, contractData) => {
+  try {
+    await apiCall(`/contracts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(contractData)
+    });
+    showNotification('Contract updated successfully!');
+    setEditModalOpen(false);
+    setEditingItem(null);
+    loadData();
+  } catch (error) {
+    showNotification('Failed to update contract: ' + error.message, 'error');
+  }
+};
+
+// Delete functions
+const deleteConsultant = async (id) => {
+  if (!window.confirm('Are you sure you want to delete this consultant? This action cannot be undone.')) return;
+  
+  try {
+    await apiCall(`/consultants/${id}`, {
+      method: 'DELETE'
+    });
+    showNotification('Consultant deleted successfully!');
+    loadData();
+  } catch (error) {
+    showNotification('Failed to delete consultant: ' + error.message, 'error');
+  }
+};
+
+const deleteClient = async (id) => {
+  if (!window.confirm('Are you sure you want to delete this client? This action cannot be undone.')) return;
+  
+  try {
+    await apiCall(`/clients/${id}`, {
+      method: 'DELETE'
+    });
+    showNotification('Client deleted successfully!');
+    loadData();
+  } catch (error) {
+    showNotification('Failed to delete client: ' + error.message, 'error');
+  }
+};
+
+const deleteContract = async (id) => {
+  if (!window.confirm('Are you sure you want to delete this contract? This action cannot be undone.')) return;
+  
+  try {
+    await apiCall(`/contracts/${id}`, {
+      method: 'DELETE'
+    });
+    showNotification('Contract deleted successfully!');
+    loadData();
+  } catch (error) {
+    showNotification('Failed to delete contract: ' + error.message, 'error');
+  }
+};
+
+// Search and sort functions
+const handleSearch = (tab, query) => {
+  setSearchQueries({ ...searchQueries, [tab]: query });
+};
+
+const handleSort = (tab, key) => {
+  const direction = sortConfig[tab].key === key && sortConfig[tab].direction === 'asc' ? 'desc' : 'asc';
+  setSortConfig({ ...sortConfig, [tab]: { key, direction } });
+};
+
+const filterAndSort = (data, tab) => {
+  const query = searchQueries[tab].toLowerCase();
+  
+  // Filter
+  let filtered = data.filter(item => {
+    return Object.values(item).some(val => 
+      String(val).toLowerCase().includes(query)
+    );
+  });
+  
+  // Sort
+  if (sortConfig[tab].key) {
+    filtered.sort((a, b) => {
+      const aVal = a[sortConfig[tab].key];
+      const bVal = b[sortConfig[tab].key];
+      
+      if (aVal < bVal) return sortConfig[tab].direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig[tab].direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+  
+  return filtered;
 };
 
 // Download PDF
@@ -1522,7 +1738,19 @@ const openAddModal = (type) => {
         settings={companySettings}
         onSubmit={updateCompanySettings}
       />
-          
+
+          {/* Edit Modal */}
+<SimpleModal
+  isOpen={editModalOpen}
+  onClose={() => {
+    setEditModalOpen(false);
+    setEditingItem(null);
+  }}
+  title={modalConfig.title}
+  fields={modalConfig.fields || []}
+  onSubmit={modalConfig.onSubmit}
+/>
+
           {/* Deadline Modal */}
 <DeadlineModal
   isOpen={deadlineModalOpen}
