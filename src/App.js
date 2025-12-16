@@ -291,6 +291,7 @@ const Notification = ({ notification, onClose }) => {
 };
 
 // Simple Form Modal Component
+// Simple Form Modal Component
 const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonText = 'Add' }) => {
   const [formData, setFormData] = useState({});
 
@@ -312,8 +313,80 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
 
   if (!isOpen) return null;
 
+  // ✅ renderField MUST BE INSIDE SimpleModal
   const renderField = (field) => {
-    // ... existing renderField code stays the same ...
+    if (field.type === 'checkbox') {
+      return (
+        <div key={field.name} style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input
+              type="checkbox"
+              checked={formData[field.name] || false}
+              onChange={(e) => setFormData({ ...formData, [field.name]: e.target.checked })}
+            />
+            {field.label}
+          </label>
+        </div>
+      );
+    }
+
+    if (field.type === 'select') {
+      return (
+        <div key={field.name} style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+            {field.label || field.placeholder}:
+          </label>
+          <select
+            value={formData[field.name] || ''}
+            onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+            required={field.required !== false}
+            style={{ 
+              width: '100%', 
+              padding: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="">Select {field.label || field.placeholder}</option>
+            {field.options?.map(opt => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+
+    // Dynamically disable VAT rate input if VAT is not enabled
+    const isDisabled = 
+      (field.name === 'vatRate' && !formData.vatEnabled) ||
+      (field.name === 'consultantVatRate' && !formData.consultantVatEnabled);
+
+    return (
+      <div key={field.name} style={{ marginBottom: '15px' }}>
+        {field.label && (
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+            {field.label}:
+          </label>
+        )}
+        <input
+          type={field.type || 'text'}
+          placeholder={field.placeholder}
+          value={formData[field.name] || ''}
+          onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+          disabled={isDisabled}
+          required={field.required !== false}
+          step={field.step}
+          style={{ 
+            width: '100%', 
+            padding: '8px',
+            opacity: isDisabled ? 0.6 : 1,
+            cursor: isDisabled ? 'not-allowed' : 'text',
+            backgroundColor: isDisabled ? '#f5f5f5' : 'white'
+          }}
+        />
+      </div>
+    );
   };
 
   return (
@@ -334,94 +407,7 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
               type="submit"
               className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
             >
-              {submitButtonText}  {/* ✅ CHANGED FROM "Add" */}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-
-  if (field.type === 'select') {
-    return (
-      <div key={field.name} style={{ marginBottom: '15px' }}>
-        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-          {field.label || field.placeholder}:
-        </label>
-        <select
-          value={formData[field.name] || ''}
-          onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-          required={field.required !== false}
-          style={{ 
-            width: '100%', 
-            padding: '8px',
-            cursor: 'pointer'
-          }}
-        >
-          <option value="">Select {field.label || field.placeholder}</option>
-          {field.options?.map(opt => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    );
-  }
-
-  // Dynamically disable VAT rate input if VAT is not enabled
-  const isDisabled = 
-  (field.name === 'vatRate' && !formData.vatEnabled) ||
-  (field.name === 'consultantVatRate' && !formData.consultantVatEnabled);
-
-  return (
-    <div key={field.name} style={{ marginBottom: '15px' }}>
-      {field.label && (
-        <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-          {field.label}:
-        </label>
-      )}
-      <input
-        type={field.type || 'text'}
-        placeholder={field.placeholder}
-        value={formData[field.name] || ''}
-        onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
-        disabled={isDisabled}
-        required={field.required !== false}
-        step={field.step}
-        style={{ 
-          width: '100%', 
-          padding: '8px',
-          opacity: isDisabled ? 0.6 : 1,
-          cursor: isDisabled ? 'not-allowed' : 'text',
-          backgroundColor: isDisabled ? '#f5f5f5' : 'white'
-        }}
-      />
-    </div>
-  );
-};
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold mb-4">{title}</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {fields.map(field => renderField(field))}
-          <div className="flex gap-2 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
-              Add
+              {submitButtonText}
             </button>
           </div>
         </form>
