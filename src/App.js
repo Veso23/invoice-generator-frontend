@@ -291,19 +291,18 @@ const Notification = ({ notification, onClose }) => {
 };
 
 // Simple Form Modal Component
-const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields }) => {
+const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonText = 'Add' }) => {
   const [formData, setFormData] = useState({});
 
-useEffect(() => {
-  if (isOpen) {
-    const initialData = {};
-    fields.forEach(field => {
-      // ✅ Use field.value if editing, otherwise default
-      initialData[field.name] = field.value !== undefined ? field.value : (field.type === 'checkbox' ? false : '');
-    });
-    setFormData(initialData);
-  }
-}, [isOpen, fields]);
+  useEffect(() => {
+    if (isOpen) {
+      const initialData = {};
+      fields.forEach(field => {
+        initialData[field.name] = field.value !== undefined ? field.value : (field.type === 'checkbox' ? false : '');
+      });
+      setFormData(initialData);
+    }
+  }, [isOpen, fields]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -312,22 +311,37 @@ useEffect(() => {
   };
 
   if (!isOpen) return null;
-const renderField = (field) => {
-  if (field.type === 'checkbox') {
-    return (
-      <div key={field.name} style={{ marginBottom: '15px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <input
-            type="checkbox"
-            checked={formData[field.name] || false}
-            onChange={(e) => setFormData({ ...formData, [field.name]: e.target.checked })}
-          />
-          {field.label}
-        </label>
-      </div>
-    );
-  }
 
+  const renderField = (field) => {
+    // ... existing renderField code stays the same ...
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 className="text-lg font-semibold mb-4">{title}</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {fields.map(field => renderField(field))}
+          <div className="flex gap-2 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            >
+              {submitButtonText}  {/* ✅ CHANGED FROM "Add" */}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 
   if (field.type === 'select') {
@@ -1722,14 +1736,15 @@ const openAddModal = (type) => {
         onClose={() => setNotification(null)} 
       />
 
-      {/* Modal */}
+      {/* ADD Modal */}
       <SimpleModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={modalConfig.title}
-        fields={modalConfig.fields || []}
-        onSubmit={modalConfig.onSubmit}
-      />
+  isOpen={modalOpen}
+  onClose={() => setModalOpen(false)}
+  title={modalConfig.title}
+  fields={modalConfig.fields || []}
+  onSubmit={modalConfig.onSubmit}
+  submitButtonText="Add"  {/* ✅ ADD THIS */}
+/>
 
       {/* Settings Modal */}
       <SettingsModal
@@ -1749,6 +1764,7 @@ const openAddModal = (type) => {
   title={modalConfig.title}
   fields={modalConfig.fields || []}
   onSubmit={modalConfig.onSubmit}
+  submitButtonText="Save"  {/* ✅ ADD THIS */}
 />
 
           {/* Deadline Modal */}
@@ -2040,43 +2056,73 @@ const openAddModal = (type) => {
     <div className="bg-white rounded-lg border shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th 
-                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('consultants', 'first_name')}
-              >
-                Name {sortConfig.consultants.key === 'first_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-              </th>
-              <th 
-                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('consultants', 'company_name')}
-              >
-                Company {sortConfig.consultants.key === 'company_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-              </th>
-              <th className="text-left p-4 font-medium text-gray-600">Address</th>
-              <th 
-                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('consultants', 'company_vat')}
-              >
-                VAT {sortConfig.consultants.key === 'company_vat' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-              </th>
-              <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
-              <th className="text-left p-4 font-medium text-gray-600">Phone</th>
-              <th className="text-left p-4 font-medium text-gray-600">Email</th>
-              <th className="text-left p-4 font-medium text-gray-600">IBAN</th>
-              <th className="text-left p-4 font-medium text-gray-600">SWIFT</th>
-              <th 
-                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('consultants', 'created_at')}
-              >
-                Created {sortConfig.consultants.key === 'created_at' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-              </th>
-              {user.role === 'admin' && (
-                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-              )}
-            </tr>
-          </thead>
+         <thead className="bg-gray-50">
+  <tr>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('consultants', 'first_name')}
+    >
+      Name {sortConfig.consultants.key === 'first_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('consultants', 'company_name')}
+    >
+      Company {sortConfig.consultants.key === 'company_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('consultants', 'company_address')}
+    >
+      Address {sortConfig.consultants.key === 'company_address' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('consultants', 'company_vat')}
+    >
+      VAT {sortConfig.consultants.key === 'company_vat' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('consultants', 'consultant_contract_id')}
+    >
+      Contract ID {sortConfig.consultants.key === 'consultant_contract_id' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('consultants', 'phone')}
+    >
+      Phone {sortConfig.consultants.key === 'phone' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('consultants', 'email')}
+    >
+      Email {sortConfig.consultants.key === 'email' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('consultants', 'iban')}
+    >
+      IBAN {sortConfig.consultants.key === 'iban' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('consultants', 'swift')}
+    >
+      SWIFT {sortConfig.consultants.key === 'swift' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('consultants', 'created_at')}
+    >
+      Created {sortConfig.consultants.key === 'created_at' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    {user.role === 'admin' && (
+      <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+    )}
+  </tr>
+</thead>
           <tbody>
             {filterAndSort(consultants, 'consultants').map((consultant) => (
               <tr key={consultant.id} className="border-b hover:bg-gray-50">
@@ -2149,43 +2195,73 @@ const openAddModal = (type) => {
     <div className="bg-white rounded-lg border shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th 
-                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('clients', 'first_name')}
-              >
-                Name {sortConfig.clients.key === 'first_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-              </th>
-              <th 
-                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('clients', 'company_name')}
-              >
-                Company {sortConfig.clients.key === 'company_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-              </th>
-              <th className="text-left p-4 font-medium text-gray-600">Address</th>
-              <th 
-                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('clients', 'company_vat')}
-              >
-                VAT {sortConfig.clients.key === 'company_vat' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-              </th>
-              <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
-              <th className="text-left p-4 font-medium text-gray-600">Phone</th>
-              <th className="text-left p-4 font-medium text-gray-600">Email</th>
-              <th className="text-left p-4 font-medium text-gray-600">IBAN</th>
-              <th className="text-left p-4 font-medium text-gray-600">SWIFT</th>
-              <th 
-                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('clients', 'created_at')}
-              >
-                Created {sortConfig.clients.key === 'created_at' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-              </th>
-              {user.role === 'admin' && (
-                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-              )}
-            </tr>
-          </thead>
+         <thead className="bg-gray-50">
+  <tr>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('clients', 'first_name')}
+    >
+      Name {sortConfig.clients.key === 'first_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('clients', 'company_name')}
+    >
+      Company {sortConfig.clients.key === 'company_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('clients', 'company_address')}
+    >
+      Address {sortConfig.clients.key === 'company_address' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('clients', 'company_vat')}
+    >
+      VAT {sortConfig.clients.key === 'company_vat' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('clients', 'client_contract_id')}
+    >
+      Contract ID {sortConfig.clients.key === 'client_contract_id' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('clients', 'phone')}
+    >
+      Phone {sortConfig.clients.key === 'phone' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('clients', 'email')}
+    >
+      Email {sortConfig.clients.key === 'email' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('clients', 'iban')}
+    >
+      IBAN {sortConfig.clients.key === 'iban' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('clients', 'swift')}
+    >
+      SWIFT {sortConfig.clients.key === 'swift' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('clients', 'created_at')}
+    >
+      Created {sortConfig.clients.key === 'created_at' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    {user.role === 'admin' && (
+      <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+    )}
+  </tr>
+</thead>
           <tbody>
             {filterAndSort(clients, 'clients').map((client) => (
               <tr key={client.id} className="border-b hover:bg-gray-50">
@@ -2259,41 +2335,56 @@ const openAddModal = (type) => {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50">
-            <tr>
-              <th 
-                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('contracts', 'contract_number')}
-              >
-                Contract Number {sortConfig.contracts.key === 'contract_number' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
-              </th>
-              <th className="text-left p-4 font-medium text-gray-600">Consultant</th>
-              <th className="text-left p-4 font-medium text-gray-600">Client</th>
-              <th className="text-left p-4 font-medium text-gray-600">Contract IDs</th>
-              <th 
-                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('contracts', 'from_date')}
-              >
-                Period {sortConfig.contracts.key === 'from_date' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
-              </th>
-              <th 
-                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('contracts', 'purchase_price')}
-              >
-                Purchase Price {sortConfig.contracts.key === 'purchase_price' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
-              </th>
-              <th 
-                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                onClick={() => handleSort('contracts', 'sell_price')}
-              >
-                Sell Price {sortConfig.contracts.key === 'sell_price' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
-              </th>
-              <th className="text-left p-4 font-medium text-gray-600">VAT Rates</th>
-              <th className="text-left p-4 font-medium text-gray-600">Status</th>
-              {user.role === 'admin' && (
-                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-              )}
-            </tr>
-          </thead>
+  <tr>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('contracts', 'contract_number')}
+    >
+      Contract Number {sortConfig.contracts.key === 'contract_number' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('contracts', 'consultant_first_name')}
+    >
+      Consultant {sortConfig.contracts.key === 'consultant_first_name' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('contracts', 'client_first_name')}
+    >
+      Client {sortConfig.contracts.key === 'client_first_name' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th className="text-left p-4 font-medium text-gray-600">Contract IDs</th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('contracts', 'from_date')}
+    >
+      Period {sortConfig.contracts.key === 'from_date' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('contracts', 'purchase_price')}
+    >
+      Purchase Price {sortConfig.contracts.key === 'purchase_price' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('contracts', 'sell_price')}
+    >
+      Sell Price {sortConfig.contracts.key === 'sell_price' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    <th className="text-left p-4 font-medium text-gray-600">VAT Rates</th>
+    <th 
+      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+      onClick={() => handleSort('contracts', 'status')}
+    >
+      Status {sortConfig.contracts.key === 'status' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
+    </th>
+    {user.role === 'admin' && (
+      <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+    )}
+  </tr>
+</thead>
           <tbody>
             {filterAndSort(contracts, 'contracts').map((contract) => {
               // Check if contract is currently active based on dates
