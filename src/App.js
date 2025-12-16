@@ -1729,7 +1729,7 @@ const openAddModal = (type) => {
   title={modalConfig.title}
   fields={modalConfig.fields || []}
   onSubmit={modalConfig.onSubmit}
-  submitButtonText="Add"  {/* ✅ ADD THIS */}
+  submitButtonText="Add"  
 />
 
       {/* Settings Modal */}
@@ -1750,7 +1750,7 @@ const openAddModal = (type) => {
   title={modalConfig.title}
   fields={modalConfig.fields || []}
   onSubmit={modalConfig.onSubmit}
-  submitButtonText="Save"  {/* ✅ ADD THIS */}
+  submitButtonText="Save" 
 />
 
           {/* Deadline Modal */}
