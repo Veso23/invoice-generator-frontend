@@ -2011,11 +2011,11 @@ const openAddModal = (type) => {
 )}
 
         {/* Consultants Tab */}
-        {activeTab === 'consultants' && (
+{activeTab === 'consultants' && (
   <div className="space-y-6">
     <div className="flex justify-between items-center">
       <h2 className="text-xl font-bold text-gray-800">Consultants</h2>
-      {user.role === 'admin' && (  // ✅ Admin only
+      {user.role === 'admin' && (
         <button
           onClick={() => openAddModal('consultant')}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
@@ -2025,52 +2025,106 @@ const openAddModal = (type) => {
         </button>
       )}
     </div>
-            
-            <div className="bg-white rounded-lg border shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-<thead className="bg-gray-50">
-  <tr>
-    <th className="text-left p-4 font-medium text-gray-600">Name</th>
-    <th className="text-left p-4 font-medium text-gray-600">Company</th>
-    <th className="text-left p-4 font-medium text-gray-600">Address</th>
-    <th className="text-left p-4 font-medium text-gray-600">VAT</th>
-    <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
-    <th className="text-left p-4 font-medium text-gray-600">Phone</th>
-    <th className="text-left p-4 font-medium text-gray-600">Email</th>
-    <th className="text-left p-4 font-medium text-gray-600">IBAN</th>
-    <th className="text-left p-4 font-medium text-gray-600">SWIFT</th>
-    <th className="text-left p-4 font-medium text-gray-600">Created</th>
-  </tr>
-</thead>
-<tbody>
-  {consultants.map((consultant) => (
-    <tr key={consultant.id} className="border-b hover:bg-gray-50">
-      <td className="p-4 font-medium">{consultant.first_name} {consultant.last_name}</td>
-      <td className="p-4">{consultant.company_name}</td>
-      <td className="p-4 text-sm">{consultant.company_address || '-'}</td>
-      <td className="p-4 font-mono text-sm">{consultant.company_vat}</td>
-      <td className="p-4 font-mono text-sm">{consultant.consultant_contract_id || '-'}</td>
-      <td className="p-4">{consultant.phone || '-'}</td>
-      <td className="p-4">{consultant.email || '-'}</td>
-      <td className="p-4 font-mono text-xs">{consultant.iban || '-'}</td>
-      <td className="p-4 font-mono text-xs">{consultant.swift || '-'}</td>
-      <td className="p-4 text-sm text-gray-600">{formatDate(consultant.created_at)}</td>
-    </tr>
-  ))}
-</tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Clients Tab */}
-        {activeTab === 'clients' && (
+    {/* Search Bar */}
+    <div className="bg-white rounded-lg border p-4">
+      <input
+        type="text"
+        placeholder="Search consultants by name, company, VAT, email..."
+        value={searchQueries.consultants}
+        onChange={(e) => handleSearch('consultants', e.target.value)}
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+      />
+    </div>
+    
+    <div className="bg-white rounded-lg border shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th 
+                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('consultants', 'first_name')}
+              >
+                Name {sortConfig.consultants.key === 'first_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              <th 
+                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('consultants', 'company_name')}
+              >
+                Company {sortConfig.consultants.key === 'company_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              <th className="text-left p-4 font-medium text-gray-600">Address</th>
+              <th 
+                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('consultants', 'company_vat')}
+              >
+                VAT {sortConfig.consultants.key === 'company_vat' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
+              <th className="text-left p-4 font-medium text-gray-600">Phone</th>
+              <th className="text-left p-4 font-medium text-gray-600">Email</th>
+              <th className="text-left p-4 font-medium text-gray-600">IBAN</th>
+              <th className="text-left p-4 font-medium text-gray-600">SWIFT</th>
+              <th 
+                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('consultants', 'created_at')}
+              >
+                Created {sortConfig.consultants.key === 'created_at' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              {user.role === 'admin' && (
+                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {filterAndSort(consultants, 'consultants').map((consultant) => (
+              <tr key={consultant.id} className="border-b hover:bg-gray-50">
+                <td className="p-4 font-medium">{consultant.first_name} {consultant.last_name}</td>
+                <td className="p-4">{consultant.company_name}</td>
+                <td className="p-4 text-sm">{consultant.company_address || '-'}</td>
+                <td className="p-4 font-mono text-sm">{consultant.company_vat}</td>
+                <td className="p-4 font-mono text-sm">{consultant.consultant_contract_id || '-'}</td>
+                <td className="p-4">{consultant.phone || '-'}</td>
+                <td className="p-4">{consultant.email || '-'}</td>
+                <td className="p-4 font-mono text-xs">{consultant.iban || '-'}</td>
+                <td className="p-4 font-mono text-xs">{consultant.swift || '-'}</td>
+                <td className="p-4 text-sm text-gray-600">{formatDate(consultant.created_at)}</td>
+                {user.role === 'admin' && (
+                  <td className="p-4">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => editItem('consultant', consultant)}
+                        className="text-blue-600 hover:text-blue-800 p-1 transition"
+                        title="Edit"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteConsultant(consultant.id)}
+                        className="text-red-600 hover:text-red-800 p-1 transition"
+                        title="Delete"
+                      >
+                        <AlertCircle className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+)}
+
+       {/* Clients Tab */}
+{activeTab === 'clients' && (
   <div className="space-y-6">
     <div className="flex justify-between items-center">
       <h2 className="text-xl font-bold text-gray-800">Clients</h2>
-      {user.role === 'admin' && (  // ✅ Admin only
+      {user.role === 'admin' && (
         <button
           onClick={() => openAddModal('client')}
           className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition"
@@ -2080,52 +2134,106 @@ const openAddModal = (type) => {
         </button>
       )}
     </div>
-            
-            <div className="bg-white rounded-lg border shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-<thead className="bg-gray-50">
-  <tr>
-    <th className="text-left p-4 font-medium text-gray-600">Name</th>
-    <th className="text-left p-4 font-medium text-gray-600">Company</th>
-    <th className="text-left p-4 font-medium text-gray-600">Address</th>
-    <th className="text-left p-4 font-medium text-gray-600">VAT</th>
-    <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
-    <th className="text-left p-4 font-medium text-gray-600">Phone</th>
-    <th className="text-left p-4 font-medium text-gray-600">Email</th>
-    <th className="text-left p-4 font-medium text-gray-600">IBAN</th>
-    <th className="text-left p-4 font-medium text-gray-600">SWIFT</th>
-    <th className="text-left p-4 font-medium text-gray-600">Created</th>
-  </tr>
-</thead>
-<tbody>
-  {clients.map((client) => (
-    <tr key={client.id} className="border-b hover:bg-gray-50">
-      <td className="p-4 font-medium">{client.first_name} {client.last_name}</td>
-      <td className="p-4">{client.company_name}</td>
-      <td className="p-4 text-sm">{client.company_address || '-'}</td>
-      <td className="p-4 font-mono text-sm">{client.company_vat}</td>
-      <td className="p-4 font-mono text-sm">{client.client_contract_id || '-'}</td>
-      <td className="p-4">{client.phone || '-'}</td>
-      <td className="p-4">{client.email || '-'}</td>
-      <td className="p-4 font-mono text-xs">{client.iban || '-'}</td>
-      <td className="p-4 font-mono text-xs">{client.swift || '-'}</td>
-      <td className="p-4 text-sm text-gray-600">{formatDate(client.created_at)}</td>
-    </tr>
-  ))}
-</tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
+
+    {/* Search Bar */}
+    <div className="bg-white rounded-lg border p-4">
+      <input
+        type="text"
+        placeholder="Search clients by name, company, VAT, email..."
+        value={searchQueries.clients}
+        onChange={(e) => handleSearch('clients', e.target.value)}
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+      />
+    </div>
+    
+    <div className="bg-white rounded-lg border shadow-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th 
+                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('clients', 'first_name')}
+              >
+                Name {sortConfig.clients.key === 'first_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              <th 
+                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('clients', 'company_name')}
+              >
+                Company {sortConfig.clients.key === 'company_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              <th className="text-left p-4 font-medium text-gray-600">Address</th>
+              <th 
+                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('clients', 'company_vat')}
+              >
+                VAT {sortConfig.clients.key === 'company_vat' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
+              <th className="text-left p-4 font-medium text-gray-600">Phone</th>
+              <th className="text-left p-4 font-medium text-gray-600">Email</th>
+              <th className="text-left p-4 font-medium text-gray-600">IBAN</th>
+              <th className="text-left p-4 font-medium text-gray-600">SWIFT</th>
+              <th 
+                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('clients', 'created_at')}
+              >
+                Created {sortConfig.clients.key === 'created_at' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              {user.role === 'admin' && (
+                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {filterAndSort(clients, 'clients').map((client) => (
+              <tr key={client.id} className="border-b hover:bg-gray-50">
+                <td className="p-4 font-medium">{client.first_name} {client.last_name}</td>
+                <td className="p-4">{client.company_name}</td>
+                <td className="p-4 text-sm">{client.company_address || '-'}</td>
+                <td className="p-4 font-mono text-sm">{client.company_vat}</td>
+                <td className="p-4 font-mono text-sm">{client.client_contract_id || '-'}</td>
+                <td className="p-4">{client.phone || '-'}</td>
+                <td className="p-4">{client.email || '-'}</td>
+                <td className="p-4 font-mono text-xs">{client.iban || '-'}</td>
+                <td className="p-4 font-mono text-xs">{client.swift || '-'}</td>
+                <td className="p-4 text-sm text-gray-600">{formatDate(client.created_at)}</td>
+                {user.role === 'admin' && (
+                  <td className="p-4">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => editItem('client', client)}
+                        className="text-blue-600 hover:text-blue-800 p-1 transition"
+                        title="Edit"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteClient(client.id)}
+                        className="text-red-600 hover:text-red-800 p-1 transition"
+                        title="Delete"
+                      >
+                        <AlertCircle className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+)}
 
 {/* Contracts Tab */}
 {activeTab === 'contracts' && (
   <div className="space-y-6">
     <div className="flex justify-between items-center">
       <h2 className="text-xl font-bold text-gray-800">Contracts</h2>
-      {user.role === 'admin' && (  // ✅ Admin only
+      {user.role === 'admin' && (
         <button
           onClick={() => openAddModal('contract')}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
@@ -2135,25 +2243,59 @@ const openAddModal = (type) => {
         </button>
       )}
     </div>
+
+    {/* Search Bar */}
+    <div className="bg-white rounded-lg border p-4">
+      <input
+        type="text"
+        placeholder="Search contracts by number, consultant, client..."
+        value={searchQueries.contracts}
+        onChange={(e) => handleSearch('contracts', e.target.value)}
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+      />
+    </div>
     
     <div className="bg-white rounded-lg border shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="text-left p-4 font-medium text-gray-600">Contract Number</th>
+              <th 
+                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('contracts', 'contract_number')}
+              >
+                Contract Number {sortConfig.contracts.key === 'contract_number' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
+              </th>
               <th className="text-left p-4 font-medium text-gray-600">Consultant</th>
               <th className="text-left p-4 font-medium text-gray-600">Client</th>
               <th className="text-left p-4 font-medium text-gray-600">Contract IDs</th>
-              <th className="text-left p-4 font-medium text-gray-600">Period</th>
-              <th className="text-left p-4 font-medium text-gray-600">Purchase Price</th>
-              <th className="text-left p-4 font-medium text-gray-600">Sell Price</th>
+              <th 
+                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('contracts', 'from_date')}
+              >
+                Period {sortConfig.contracts.key === 'from_date' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              <th 
+                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('contracts', 'purchase_price')}
+              >
+                Purchase Price {sortConfig.contracts.key === 'purchase_price' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
+              </th>
+              <th 
+                className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                onClick={() => handleSort('contracts', 'sell_price')}
+              >
+                Sell Price {sortConfig.contracts.key === 'sell_price' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
+              </th>
               <th className="text-left p-4 font-medium text-gray-600">VAT Rates</th>
               <th className="text-left p-4 font-medium text-gray-600">Status</th>
+              {user.role === 'admin' && (
+                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+              )}
             </tr>
           </thead>
           <tbody>
-            {contracts.map((contract) => {
+            {filterAndSort(contracts, 'contracts').map((contract) => {
               // Check if contract is currently active based on dates
               const today = new Date();
               today.setHours(0, 0, 0, 0);
@@ -2214,34 +2356,33 @@ const openAddModal = (type) => {
                   </td>
                   <td className="p-4">{formatCurrency(contract.purchase_price)}</td>
                   <td className="p-4">{formatCurrency(contract.sell_price)}</td>
-                        {/* 8. VAT RATES - ✅ PLACE IT HERE */}
-        <td className="p-4">
-          <div className="text-sm">
-            {/* Consultant VAT */}
-            <div className="mb-1">
-              <span className="text-xs text-gray-500">Consultant: </span>
-              {contract.consultant_vat_enabled ? (
-                <span className="text-green-600 font-medium">
-                  {parseFloat(contract.consultant_vat_rate || 0).toFixed(0)}%
-                </span>
-              ) : (
-                <span className="text-gray-400 italic">No VAT</span>
-              )}
-            </div>
-            
-            {/* Client VAT */}
-            <div>
-              <span className="text-xs text-gray-500">Client: </span>
-              {contract.vat_enabled ? (
-                <span className="text-blue-600 font-medium">
-                  {parseFloat(contract.vat_rate || 0).toFixed(0)}%
-                </span>
-              ) : (
-                <span className="text-gray-400 italic">No VAT</span>
-              )}
-            </div>
-          </div>
-        </td>
+                  <td className="p-4">
+                    <div className="text-sm">
+                      {/* Consultant VAT */}
+                      <div className="mb-1">
+                        <span className="text-xs text-gray-500">Consultant: </span>
+                        {contract.consultant_vat_enabled ? (
+                          <span className="text-green-600 font-medium">
+                            {parseFloat(contract.consultant_vat_rate || 0).toFixed(0)}%
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 italic">No VAT</span>
+                        )}
+                      </div>
+                      
+                      {/* Client VAT */}
+                      <div>
+                        <span className="text-xs text-gray-500">Client: </span>
+                        {contract.vat_enabled ? (
+                          <span className="text-blue-600 font-medium">
+                            {parseFloat(contract.vat_rate || 0).toFixed(0)}%
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 italic">No VAT</span>
+                        )}
+                      </div>
+                    </div>
+                  </td>
                   <td className="p-4">
                     <span className={`px-2 py-1 rounded-full text-xs ${
                       isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
@@ -2249,6 +2390,26 @@ const openAddModal = (type) => {
                       {isActive ? 'active' : 'inactive'}
                     </span>
                   </td>
+                  {user.role === 'admin' && (
+                    <td className="p-4">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => editItem('contract', contract)}
+                          className="text-blue-600 hover:text-blue-800 p-1 transition"
+                          title="Edit"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => deleteContract(contract.id)}
+                          className="text-red-600 hover:text-red-800 p-1 transition"
+                          title="Delete"
+                        >
+                          <AlertCircle className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -2439,40 +2600,68 @@ const openAddModal = (type) => {
 
  
         {/* Invoices Tab */}
-        {activeTab === 'invoices' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">Generated Invoices</h2>
-              <p className="text-sm text-gray-600">{invoices.length} invoices total</p>
-            </div>
-            
-            {invoices.length === 0 ? (
-              <div className="bg-white rounded-lg p-12 text-center border shadow-sm">
-                <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-800 mb-2">No invoices generated yet</h3>
-                <p className="text-gray-600">Go to the dashboard to generate invoices from your contracts</p>
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg border shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="text-left p-4 font-medium text-gray-600">Invoice #</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Name</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Date</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Period</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Days</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Daily Rate</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Subtotal</th>
-                        <th className="text-left p-4 font-medium text-gray-600">VAT</th>  {/* ← ADD */}
-                        <th className="text-left p-4 font-medium text-gray-600">Total</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-  {invoices.map((invoice) => {
+{activeTab === 'invoices' && (
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <h2 className="text-xl font-bold text-gray-800">Generated Invoices</h2>
+      <p className="text-sm text-gray-600">{invoices.length} invoices total</p>
+    </div>
+
+    {/* ✅ ADD SEARCH BAR */}
+    {invoices.length > 0 && (
+      <div className="bg-white rounded-lg border p-4">
+        <input
+          type="text"
+          placeholder="Search invoices by number, name, company..."
+          value={searchQueries.invoices}
+          onChange={(e) => handleSearch('invoices', e.target.value)}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+        />
+      </div>
+    )}
+    
+    {invoices.length === 0 ? (
+      <div className="bg-white rounded-lg p-12 text-center border shadow-sm">
+        <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-800 mb-2">No invoices generated yet</h3>
+        <p className="text-gray-600">Go to the dashboard to generate invoices from your contracts</p>
+      </div>
+    ) : (
+      <div className="bg-white rounded-lg border shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th 
+                  className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('invoices', 'invoice_number')}
+                >
+                  Invoice # {sortConfig.invoices.key === 'invoice_number' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
+                </th>
+                <th className="text-left p-4 font-medium text-gray-600">Name</th>
+                <th 
+                  className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('invoices', 'invoice_date')}
+                >
+                  Date {sortConfig.invoices.key === 'invoice_date' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
+                </th>
+                <th className="text-left p-4 font-medium text-gray-600">Period</th>
+                <th className="text-left p-4 font-medium text-gray-600">Days</th>
+                <th className="text-left p-4 font-medium text-gray-600">Daily Rate</th>
+                <th className="text-left p-4 font-medium text-gray-600">Subtotal</th>
+                <th className="text-left p-4 font-medium text-gray-600">VAT</th>
+                <th 
+                  className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('invoices', 'total_amount')}
+                >
+                  Total {sortConfig.invoices.key === 'total_amount' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
+                </th>
+                <th className="text-left p-4 font-medium text-gray-600">Status</th>
+                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filterAndSort(invoices, 'invoices').map((invoice) => {
     // Calculate amounts
     const subtotal = parseFloat(invoice.subtotal);
     const vatRate = parseFloat(invoice.vat_rate);
