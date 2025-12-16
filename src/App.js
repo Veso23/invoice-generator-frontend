@@ -396,20 +396,20 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
         <form onSubmit={handleSubmit} className="space-y-4">
           {fields.map(field => renderField(field))}
           <div className="flex gap-2 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
-              {submitButtonText}
-            </button>
-          </div>
+  <button
+    type="submit"
+    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+  >
+    {submitButtonText}
+  </button>
+  <button
+    type="button"
+    onClick={onClose}
+    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+  >
+    Cancel
+  </button>
+</div>
         </form>
       </div>
     </div>
