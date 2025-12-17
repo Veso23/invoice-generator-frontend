@@ -44,7 +44,6 @@ const apiCall = async (endpoint, options = {}) => {
 const useAuth = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-const [generatingInvoice, setGeneratingInvoice] = useState(null);
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const userData = localStorage.getItem('userData');
@@ -987,6 +986,7 @@ const InvoiceGeneratorApp = () => {
   const [contracts, setContracts] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [automationLogs, setAutomationLogs] = useState([]);
+  const [generatingInvoice, setGeneratingInvoice] = useState(null);  // ✅ ADD THIS LINE HERE
   const [activeTab, setActiveTab] = useState(() => {
   // Load saved tab from localStorage, default to 'dashboard'
   return localStorage.getItem('activeTab') || 'dashboard';
