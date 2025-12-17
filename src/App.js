@@ -44,7 +44,7 @@ const apiCall = async (endpoint, options = {}) => {
 const useAuth = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-
+const [generatingInvoice, setGeneratingInvoice] = useState(null);
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const userData = localStorage.getItem('userData');
@@ -2652,26 +2652,43 @@ const openAddModal = (type) => {
                           <Eye className="h-4 w-4" />
                         </button>
                       )}
-                      {timesheet && !timesheet.invoice_generated && (
-                        <button
-                          onClick={async () => {
-                            try {
-                              await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
-                                method: 'POST'
-                              });
-                              showNotification('Invoice generated successfully!');
-                              loadData();
-                            } catch (error) {
-                              showNotification('Failed to generate invoice: ' + error.message, 'error');
-                            }
-                          }}
-                          className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition flex items-center gap-1"
-                          title="Generate Invoice"
-                        >
-                          <FileText className="h-3 w-3" />
-                          Invoice
-                        </button>
-                      )}
+                     {timesheet && !timesheet.invoice_generated && (
+  <button
+    onClick={async () => {
+      try {
+        setGeneratingInvoice(timesheet.id); // ✅ Set loading state
+        await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
+          method: 'POST'
+        });
+        showNotification('Invoice generated successfully!');
+        loadData(); // Reload to hide button
+      } catch (error) {
+        showNotification('Failed to generate invoice: ' + error.message, 'error');
+      } finally {
+        setGeneratingInvoice(null); // ✅ Clear loading state
+      }
+    }}
+    disabled={generatingInvoice === timesheet.id} // ✅ Disable while loading
+    className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
+      generatingInvoice === timesheet.id 
+        ? 'bg-green-400 cursor-not-allowed' 
+        : 'bg-green-600 text-white'
+    }`}
+    title="Generate Invoice"
+  >
+    {generatingInvoice === timesheet.id ? (
+      <>
+        <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
+        Generating...
+      </>
+    ) : (
+      <>
+        <FileText className="h-3 w-3" />
+        Invoice
+      </>
+    )}
+  </button>
+)}
                       {timesheet?.invoice_generated && (
                         <span className="text-xs text-green-600 flex items-center gap-1">
                           <CheckCircle className="h-3 w-3" />
