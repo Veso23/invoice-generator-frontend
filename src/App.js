@@ -1133,19 +1133,45 @@ useEffect(() => {
   };
 
   // Update invoice number
-  const updateInvoiceNumber = async (invoiceId) => {
-    try {
-      await apiCall(`/invoices/${invoiceId}/number`, {
-        method: 'PUT',
-        body: JSON.stringify({ invoiceNumber: editInvoiceNumberValue })
-      });
-      showNotification('Invoice number updated successfully!');
-      setEditingInvoiceNumber(null);
-      loadData();
-    } catch (error) {
-      showNotification('Failed to update invoice number: ' + error.message, 'error');
-    }
-  };
+// Update invoice number
+const updateInvoiceNumber = async (invoiceId) => {
+  try {
+    await apiCall(`/invoices/${invoiceId}/number`, {
+      method: 'PUT',
+      body: JSON.stringify({ invoiceNumber: editInvoiceNumberValue })
+    });
+    showNotification('Invoice number updated successfully!');
+    setEditingInvoiceNumber(null);
+    loadData();
+  } catch (error) {
+    showNotification('Failed to update invoice number: ' + error.message, 'error');
+  }
+};
+
+// ✅ ADD THIS FUNCTION
+// Cancel editing invoice number
+const cancelEditInvoiceNumber = () => {
+  setEditingInvoiceNumber(null);
+  setEditInvoiceNumberValue('');
+};
+
+// ✅ ADD THIS FUNCTION
+// Generate PDF for invoice
+const generatePDF = async (invoiceId) => {
+  try {
+    setDataLoading(true);
+    const response = await apiCall(`/invoices/${invoiceId}/generate-pdf`, {
+      method: 'POST'
+    });
+    showNotification('PDF generated successfully!');
+    loadData(); // Refresh to get the PDF URL
+    return response.pdfUrl;
+  } catch (error) {
+    showNotification('Failed to generate PDF: ' + error.message, 'error');
+  } finally {
+    setDataLoading(false);
+  }
+};
 
 // View timesheet for invoice - Opens the actual PDF file
 const viewTimesheet = async (invoice) => {
