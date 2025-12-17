@@ -981,6 +981,23 @@ const DeadlineModal = ({ isOpen, onClose, currentDeadline, onSubmit }) => {
 // Main Application
 const InvoiceGeneratorApp = () => {
   const { user, login, register, logout, loading } = useAuth();
+   const fixTimesheetUrl = (url) => {
+    if (!url) return null;
+    
+    // Fix 1: Add /public/ if missing
+    let fixedUrl = url;
+    if (url.includes('/storage/v1/object/timesheets/') && !url.includes('/storage/v1/object/public/')) {
+      fixedUrl = url.replace('/storage/v1/object/timesheets/', '/storage/v1/object/public/timesheets/');
+    }
+    
+    // Fix 2: Encode special characters in filename
+    const parts = fixedUrl.split('/');
+    const filename = parts[parts.length - 1];
+    const encodedFilename = encodeURIComponent(filename);
+    const encodedUrl = parts.slice(0, -1).join('/') + '/' + encodedFilename;
+    
+    return encodedUrl;
+  };
   const [consultants, setConsultants] = useState([]);
   const [clients, setClients] = useState([]);
   const [contracts, setContracts] = useState([]);
@@ -1135,11 +1152,9 @@ const viewTimesheet = async (invoice) => {
   try {
     setDataLoading(true);
     
-    // Extract month from invoice period
     const periodDate = new Date(invoice.period_to);
     const month = periodDate.toLocaleDateString('en-US', { month: 'long' });
     
-    // Get consultant email from contract
     const contract = contracts.find(c => c.id === invoice.contract_id);
     if (!contract) {
       showNotification('Contract not found', 'error');
@@ -1152,20 +1167,19 @@ const viewTimesheet = async (invoice) => {
       return;
     }
     
-    // Find matching timesheet - use /all endpoint to get processed timesheets too
     const response = await apiCall('/timesheets/all');
     const allTimesheets = response;
     
-    // Find timesheet that matches consultant email and month
     const matchingTimesheet = allTimesheets.find(ts => 
       ts.sender_email === consultant.email && 
       ts.month?.toLowerCase() === month.toLowerCase()
     );
     
     if (matchingTimesheet && matchingTimesheet.timesheet_file_url) {
-  // Open the actual PDF file in new tab
-  window.open(matchingTimesheet.timesheet_file_url, '_blank');
-} else if (matchingTimesheet) {
+      // ✅ USE THE HELPER FUNCTION
+      const fixedUrl = fixTimesheetUrl(matchingTimesheet.timesheet_file_url);
+      window.open(fixedUrl, '_blank');
+    } else if (matchingTimesheet) {
       showNotification('No PDF file available for this timesheet', 'error');
     } else {
       showNotification(`No timesheet found for ${consultant.email} in ${month}`, 'error');
@@ -1176,31 +1190,7 @@ const viewTimesheet = async (invoice) => {
     setDataLoading(false);
   }
 };
-
-  // Cancel editing invoice number
-  const cancelEditInvoiceNumber = () => {
-    setEditingInvoiceNumber(null);
-    setEditInvoiceNumberValue('');
-  };
-
-
-// Generate PDF for invoice
-const generatePDF = async (invoiceId) => {
-  try {
-    setDataLoading(true);
-    const response = await apiCall(`/invoices/${invoiceId}/generate-pdf`, {
-      method: 'POST'
-    });
-    showNotification('PDF generated successfully!');
-    loadData(); // Refresh to get the PDF URL
-    return response.pdfUrl;
-  } catch (error) {
-    showNotification('Failed to generate PDF: ' + error.message, 'error');
-  } finally {
-    setDataLoading(false);
-  }
-};
-
+  
   // Edit consultant/client/contract
 const editItem = (type, item) => {
   setEditingItem({ type, item });
@@ -2646,12 +2636,8 @@ const openAddModal = (type) => {
                      {timesheet?.timesheet_file_url && (
   <button
     onClick={() => {
-      const url = timesheet.timesheet_file_url;
-      const parts = url.split('/');
-      const filename = parts[parts.length - 1];
-      const encodedFilename = encodeURIComponent(filename);
-      const encodedUrl = parts.slice(0, -1).join('/') + '/' + encodedFilename;
-      window.open(encodedUrl, '_blank');
+      const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
+      window.open(fixedUrl, '_blank');
     }}
     className="text-blue-600 hover:text-blue-800 p-1 transition"
     title="View Timesheet PDF"
