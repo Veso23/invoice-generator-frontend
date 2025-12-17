@@ -643,6 +643,20 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                       />
                     </div>
+
+  <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">Timesheet Email</label>
+  <input
+    type="email"
+    value={formData.timesheet_email}
+    onChange={(e) => setFormData({ ...formData, timesheet_email: e.target.value })}
+    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+    placeholder="timesheets@yourcompany.com"
+  />
+  <p className="text-xs text-gray-500 mt-1">
+    Email address where consultants send timesheets
+  </p>
+</div>
                     
                     <div className="col-span-2">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Company Address</label>
