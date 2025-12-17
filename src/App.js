@@ -1163,9 +1163,9 @@ const viewTimesheet = async (invoice) => {
     );
     
     if (matchingTimesheet && matchingTimesheet.timesheet_file_url) {
-      // Open the actual PDF file in new tab
-      window.open(matchingTimesheet.timesheet_file_url, '_blank');
-    } else if (matchingTimesheet) {
+  // Open the actual PDF file in new tab
+  window.open(matchingTimesheet.timesheet_file_url, '_blank');
+} else if (matchingTimesheet) {
       showNotification('No PDF file available for this timesheet', 'error');
     } else {
       showNotification(`No timesheet found for ${consultant.email} in ${month}`, 'error');
@@ -2643,15 +2643,22 @@ const openAddModal = (type) => {
                   </td>
                   <td className="p-4">
                     <div className="flex gap-2">
-                      {timesheet?.timesheet_file_url && (
+                     {timesheet?.timesheet_file_url && (
   <button
-    onClick={() => window.open(timesheet.timesheet_file_url, '_blank')}
-                          className="text-blue-600 hover:text-blue-800 p-1 transition"
-                          title="View Timesheet PDF"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                      )}
+    onClick={() => {
+      const url = timesheet.timesheet_file_url;
+      const parts = url.split('/');
+      const filename = parts[parts.length - 1];
+      const encodedFilename = encodeURIComponent(filename);
+      const encodedUrl = parts.slice(0, -1).join('/') + '/' + encodedFilename;
+      window.open(encodedUrl, '_blank');
+    }}
+    className="text-blue-600 hover:text-blue-800 p-1 transition"
+    title="View Timesheet PDF"
+  >
+    <Eye className="h-4 w-4" />
+  </button>
+)}
                      {timesheet && !timesheet.invoice_generated && (
   <button
     onClick={async () => {
