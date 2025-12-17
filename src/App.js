@@ -2596,56 +2596,87 @@ const openAddModal = (type) => {
                     <div className="text-xs text-gray-600">{consultant.company_name}</div>
                   </td>
                   <td className="p-4 text-sm font-mono">{consultant.email}</td>
-                  <td className="p-4 text-sm font-medium">
+                 {/* Month Column */}
+<td className="p-4 text-sm font-medium">
+  {(() => {
+    if (timesheet) {
+      if (timesheet.month) {
+        // PDF month available - show it normally
+        return `${timesheet.month} ${consultant.checking_year}`;
+      } else {
+        // Month not processed yet - show estimated from email date
+        const estimatedMonth = new Date(timesheet.created_at).toLocaleDateString('en-US', { month: 'long' });
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600">{estimatedMonth} {consultant.checking_year}</span>
+            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" />
+              Pending
+            </span>
+          </div>
+        );
+      }
+    } else {
+      return `${consultant.checking_month} ${consultant.checking_year}`;
+    }
+  })()}
+</td>
                     {consultant.checking_month} {consultant.checking_year}
                   </td>
-                  <td className="p-4">
-                    {timesheet ? (
-                      editingDays === timesheet.id ? (
-                        <div className="flex items-center gap-1">
-                          <input
-                            type="number"
-                            step="0.5"
-                            value={editDaysValue}
-                            onChange={(e) => setEditDaysValue(e.target.value)}
-                            className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                            autoFocus
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') updateDays(timesheet.id, editDaysValue);
-                              if (e.key === 'Escape') cancelEditDays();
-                            }}
-                          />
-                          <button
-                            onClick={() => updateDays(timesheet.id, editDaysValue)}
-                            className="text-green-600 hover:text-green-800 p-1"
-                            title="Save"
-                          >
-                              
-                            <CheckCircle className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={cancelEditDays}
-                            className="text-gray-400 hover:text-gray-600 p-1"
-                            title="Cancel"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ) : (
-                        <div
-                          onClick={() => startEditDays(timesheet)}
-                          className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-block"
-                          title="Click to edit"
-                        >
-                          <span className="font-bold text-blue-600">
-                            {timesheet.pdf_days || timesheet.email_days || '-'}
-                          </span>
-                        </div>
-                      )
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
+                  {/* Days Worked Column */}
+<td className="p-4">
+  {timesheet ? (
+    timesheet.pdf_days || timesheet.email_days ? (
+      editingDays === timesheet.id ? (
+        <div className="flex items-center gap-1">
+          <input
+            type="number"
+            step="0.5"
+            value={editDaysValue}
+            onChange={(e) => setEditDaysValue(e.target.value)}
+            className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+            autoFocus
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') updateDays(timesheet.id, editDaysValue);
+              if (e.key === 'Escape') cancelEditDays();
+            }}
+          />
+          <button
+            onClick={() => updateDays(timesheet.id, editDaysValue)}
+            className="text-green-600 hover:text-green-800 p-1"
+            title="Save"
+          >
+            <CheckCircle className="h-4 w-4" />
+          </button>
+          <button
+            onClick={cancelEditDays}
+            className="text-gray-400 hover:text-gray-600 p-1"
+            title="Cancel"
+          >
+            ×
+          </button>
+        </div>
+      ) : (
+        <div
+          onClick={() => startEditDays(timesheet)}
+          className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-block"
+          title="Click to edit"
+        >
+          <span className="font-bold text-blue-600">
+            {timesheet.pdf_days || timesheet.email_days || '-'}
+          </span>
+        </div>
+      )
+    ) : (
+      <span className="text-yellow-600 italic text-sm flex items-center gap-1">
+        <AlertCircle className="h-3 w-3" />
+        Processing...
+      </span>
+    )
+  ) : (
+    <span className="text-gray-400">-</span>
+  )}
+</td>
                   <td className="p-4">
                     {timesheet ? (
                       <span className={`text-sm ${
@@ -2913,17 +2944,75 @@ const openAddModal = (type) => {
         </td>
 
 {/* Actions */}
+{/* Actions Column */}
 <td className="p-4">
   <div className="flex gap-2">
-    {/* View Timesheet */}
-    <button
-      onClick={() => viewTimesheet(invoice)}
-      className="text-blue-600 hover:text-blue-800 p-1 transition"
-      title="View Timesheet"
-      disabled={dataLoading}
-    >
-      <Eye className="h-4 w-4" />
-    </button>
+    {timesheet?.timesheet_file_url && (
+      <button
+        onClick={() => {
+          const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
+          window.open(fixedUrl, '_blank');
+        }}
+        className="text-blue-600 hover:text-blue-800 p-1 transition"
+        title="View Timesheet PDF"
+      >
+        <Eye className="h-4 w-4" />
+      </button>
+    )}
+    
+    {timesheet && !timesheet.invoice_generated && timesheet.month && timesheet.pdf_days && (
+      <button
+        onClick={async () => {
+          try {
+            setGeneratingInvoice(timesheet.id);
+            await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
+              method: 'POST'
+            });
+            showNotification('Invoice generated successfully!');
+            loadData();
+          } catch (error) {
+            showNotification('Failed to generate invoice: ' + error.message, 'error');
+          } finally {
+            setGeneratingInvoice(null);
+          }
+        }}
+        disabled={generatingInvoice === timesheet.id}
+        className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
+          generatingInvoice === timesheet.id 
+            ? 'bg-green-400 cursor-not-allowed' 
+            : 'bg-green-600 text-white'
+        }`}
+        title="Generate Invoice"
+      >
+        {generatingInvoice === timesheet.id ? (
+          <>
+            <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
+            Generating...
+          </>
+        ) : (
+          <>
+            <FileText className="h-3 w-3" />
+            Invoice
+          </>
+        )}
+      </button>
+    )}
+    
+    {timesheet && (!timesheet.month || !timesheet.pdf_days) && (
+      <span className="text-xs text-yellow-600 flex items-center gap-1">
+        <AlertCircle className="h-3 w-3" />
+        Processing
+      </span>
+    )}
+    
+    {timesheet?.invoice_generated && (
+      <span className="text-xs text-green-600 flex items-center gap-1">
+        <CheckCircle className="h-3 w-3" />
+        Invoiced
+      </span>
+    )}
+  </div>
+</td>
     
     {/* View/Download PDF */}
     <button
