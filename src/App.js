@@ -1023,6 +1023,8 @@ const [timesheetStatus, setTimesheetStatus] = useState(null);
 const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
   const [users, setUsers] = useState([]);
+  const [editingMonth, setEditingMonth] = useState(null);
+const [editMonthValue, setEditMonthValue] = useState('');
 const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 const [editModalOpen, setEditModalOpen] = useState(false);
@@ -1637,6 +1639,34 @@ const cancelEditDays = () => {
   setEditDaysValue('');
 };
 
+  // Start editing month
+const startEditMonth = (timesheet) => {
+  setEditingMonth(timesheet.id);
+  setEditMonthValue(timesheet.month || '');
+};
+
+// Update month
+const updateMonth = async (timesheetId, newMonth) => {
+  try {
+    await apiCall(`/timesheets/${timesheetId}/month`, {
+      method: 'PUT',
+      body: JSON.stringify({ month: newMonth })
+    });
+    showNotification('Month updated successfully!');
+    setEditingMonth(null);
+    setEditMonthValue('');
+    loadData();
+  } catch (error) {
+    showNotification('Failed to update month: ' + error.message, 'error');
+  }
+};
+
+// Cancel editing month
+const cancelEditMonth = () => {
+  setEditingMonth(null);
+  setEditMonthValue('');
+};
+  
 // Open modal for adding items
 const openAddModal = (type) => {
   const configs = {
@@ -2597,31 +2627,73 @@ const openAddModal = (type) => {
                   </td>
                   <td className="p-4 text-sm font-mono">{consultant.email}</td>
                  {/* Month Column */}
+{/* Month Column - Editable */}
 <td className="p-4 text-sm font-medium">
   {(() => {
     if (timesheet) {
       if (timesheet.month) {
-        // PDF month available - show it normally
+        // Month exists - show it normally
         return `${timesheet.month} ${consultant.checking_year}`;
       } else {
-        // Month not processed yet - show estimated from email date
-        const estimatedMonth = new Date(timesheet.created_at).toLocaleDateString('en-US', { month: 'long' });
-        return (
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600">{estimatedMonth} {consultant.checking_year}</span>
-            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              Pending
-            </span>
-          </div>
-        );
+        // Month is NULL - show editable dropdown
+        if (editingMonth === timesheet.id) {
+          return (
+            <div className="flex items-center gap-1">
+              <select
+                value={editMonthValue}
+                onChange={(e) => setEditMonthValue(e.target.value)}
+                className="border border-blue-500 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                autoFocus
+              >
+                <option value="">Select Month</option>
+                <option value="January">January</option>
+                <option value="February">February</option>
+                <option value="March">March</option>
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+                <option value="October">October</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
+              </select>
+              <button
+                onClick={() => updateMonth(timesheet.id, editMonthValue)}
+                className="text-green-600 hover:text-green-800 p-1"
+                title="Save"
+                disabled={!editMonthValue}
+              >
+                <CheckCircle className="h-4 w-4" />
+              </button>
+              <button
+                onClick={cancelEditMonth}
+                className="text-gray-400 hover:text-gray-600 p-1"
+                title="Cancel"
+              >
+                ×
+              </button>
+            </div>
+          );
+        } else {
+          return (
+            <div
+              onClick={() => startEditMonth(timesheet)}
+              className="cursor-pointer hover:bg-yellow-100 px-2 py-1 rounded transition inline-flex items-center gap-2"
+              title="Click to set month"
+            >
+              <span className="text-yellow-600 italic">Click to set month</span>
+              <Edit className="h-3 w-3 text-yellow-600" />
+            </div>
+          );
+        }
       }
     } else {
       return `${consultant.checking_month} ${consultant.checking_year}`;
     }
   })()}
 </td>
- 
                   {/* Days Worked Column */}
 <td className="p-4">
   {timesheet ? (
