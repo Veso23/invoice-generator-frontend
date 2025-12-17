@@ -2621,8 +2621,7 @@ const openAddModal = (type) => {
     }
   })()}
 </td>
-                    {consultant.checking_month} {consultant.checking_year}
-                  </td>
+ 
                   {/* Days Worked Column */}
 <td className="p-4">
   {timesheet ? (
@@ -2943,7 +2942,6 @@ const openAddModal = (type) => {
           </span>
         </td>
 
-{/* Actions */}
 {/* Actions Column */}
 <td className="p-4">
   <div className="flex gap-2">
