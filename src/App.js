@@ -2604,6 +2604,16 @@ const openAddModal = (type) => {
                             className="text-green-600 hover:text-green-800 p-1"
                             title="Save"
                           >
+
+                              // In App.js, temporarily add this somewhere visible
+<button onClick={async () => {
+  const response = await apiCall('/debug/me');
+  console.log('Current user:', response);
+  alert(JSON.stringify(response, null, 2));
+}}>
+  Debug: Show My Company ID
+</button>
+                              
                             <CheckCircle className="h-4 w-4" />
                           </button>
                           <button
