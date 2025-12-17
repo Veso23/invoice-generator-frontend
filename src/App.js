@@ -2945,72 +2945,14 @@ const openAddModal = (type) => {
 {/* Actions Column */}
 <td className="p-4">
   <div className="flex gap-2">
-    {timesheet?.timesheet_file_url && (
-      <button
-        onClick={() => {
-          const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
-          window.open(fixedUrl, '_blank');
-        }}
-        className="text-blue-600 hover:text-blue-800 p-1 transition"
-        title="View Timesheet PDF"
-      >
-        <Eye className="h-4 w-4" />
-      </button>
-    )}
-    
-    {timesheet && !timesheet.invoice_generated && timesheet.month && timesheet.pdf_days && (
-      <button
-        onClick={async () => {
-          try {
-            setGeneratingInvoice(timesheet.id);
-            await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
-              method: 'POST'
-            });
-            showNotification('Invoice generated successfully!');
-            loadData();
-          } catch (error) {
-            showNotification('Failed to generate invoice: ' + error.message, 'error');
-          } finally {
-            setGeneratingInvoice(null);
-          }
-        }}
-        disabled={generatingInvoice === timesheet.id}
-        className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
-          generatingInvoice === timesheet.id 
-            ? 'bg-green-400 cursor-not-allowed' 
-            : 'bg-green-600 text-white'
-        }`}
-        title="Generate Invoice"
-      >
-        {generatingInvoice === timesheet.id ? (
-          <>
-            <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
-            Generating...
-          </>
-        ) : (
-          <>
-            <FileText className="h-3 w-3" />
-            Invoice
-          </>
-        )}
-      </button>
-    )}
-    
-    {timesheet && (!timesheet.month || !timesheet.pdf_days) && (
-      <span className="text-xs text-yellow-600 flex items-center gap-1">
-        <AlertCircle className="h-3 w-3" />
-        Processing
-      </span>
-    )}
-    
-    {timesheet?.invoice_generated && (
-      <span className="text-xs text-green-600 flex items-center gap-1">
-        <CheckCircle className="h-3 w-3" />
-        Invoiced
-      </span>
-    )}
-  </div>
-</td>
+    {/* View Timesheet for this invoice */}
+    <button
+      onClick={() => viewTimesheet(invoice)}
+      className="text-blue-600 hover:text-blue-800 p-1 transition"
+      title="View Timesheet"
+    >
+      <Eye className="h-4 w-4" />
+    </button>
     
     {/* View/Download PDF */}
     <button
@@ -3022,19 +2964,19 @@ const openAddModal = (type) => {
       <Download className="h-4 w-4" />
     </button>
     
-{/* Send Email */}
-<button
-  onClick={() => sendInvoiceEmail(invoice)}
-  className={`p-1 transition ${
-    invoice.email_sent 
-      ? 'text-green-600 hover:text-green-800' 
-      : 'text-purple-600 hover:text-purple-800'
-  }`}
-  title={invoice.email_sent ? `Sent to ${invoice.email_sent_to}` : "Send Invoice Email"}
-  disabled={dataLoading}
->
-  {invoice.email_sent ? <CheckCircle className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-</button>
+    {/* Send Email */}
+    <button
+      onClick={() => sendInvoiceEmail(invoice)}
+      className={`p-1 transition ${
+        invoice.email_sent 
+          ? 'text-green-600 hover:text-green-800' 
+          : 'text-purple-600 hover:text-purple-800'
+      }`}
+      title={invoice.email_sent ? `Sent to ${invoice.email_sent_to}` : "Send Invoice Email"}
+      disabled={dataLoading}
+    >
+      {invoice.email_sent ? <CheckCircle className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+    </button>
   </div>
 </td>
       </tr>
