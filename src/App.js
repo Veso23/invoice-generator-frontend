@@ -11,14 +11,14 @@ const apiCall = async (endpoint, options = {}) => {
   const config = {
     headers: {
       'Content-Type': 'application/json',
-      ...(token && { Authorization: `Bearer ${token}` }),
+      ...(token && { Authorization: \`Bearer \${token}\` }),
       ...options.headers,
     },
     ...options,
   };
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    const response = await fetch(\`\${API_BASE_URL}\${endpoint}\`, config);
     const data = await response.json();
 
     if (!response.ok) {
@@ -29,7 +29,7 @@ const apiCall = async (endpoint, options = {}) => {
         throw new Error('Session expired. Please log in again.');
       }
       
-      throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(data.error || \`HTTP \${response.status}: \${response.statusText}\`);
     }
 
     return data;
@@ -263,11 +263,11 @@ const Notification = ({ notification, onClose }) => {
   if (!notification) return null;
 
   return (
-    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
+    <div className={\`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm \${
       notification.type === 'error' 
         ? 'bg-red-500 text-white' 
         : 'bg-green-500 text-white'
-    }`}>
+    }\`}>
       <div className="flex items-start">
         {notification.type === 'success' ? (
           <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
@@ -590,33 +590,33 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
           <button
             type="button"
             onClick={() => setActiveSettingsTab('company')}
-            className={`px-4 py-2 rounded-t-lg font-medium transition ${
+            className={\`px-4 py-2 rounded-t-lg font-medium transition \${
               activeSettingsTab === 'company'
                 ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-            }`}
+            }\`}
           >
             Company & Bank
           </button>
           <button
             type="button"
             onClick={() => setActiveSettingsTab('email')}
-            className={`px-4 py-2 rounded-t-lg font-medium transition ${
+            className={\`px-4 py-2 rounded-t-lg font-medium transition \${
               activeSettingsTab === 'email'
                 ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-            }`}
+            }\`}
           >
             Email (SMTP)
           </button>
           <button
             type="button"
             onClick={() => setActiveSettingsTab('invoice')}
-            className={`px-4 py-2 rounded-t-lg font-medium transition ${
+            className={\`px-4 py-2 rounded-t-lg font-medium transition \${
               activeSettingsTab === 'invoice'
                 ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-            }`}
+            }\`}
           >
             Invoice Settings
           </button>
@@ -980,7 +980,30 @@ const DeadlineModal = ({ isOpen, onClose, currentDeadline, onSubmit }) => {
 // Main Application
 const InvoiceGeneratorApp = () => {
   const { user, login, register, logout, loading } = useAuth();
-   const fixTimesheetUrl = (url) => {
+  
+  // ✅ Helper function to calculate total days (days + hours/8)
+  const calculateTotalDays = (timesheet) => {
+    if (!timesheet) return null;
+    
+    // Get days (prefer PDF, fallback to email)
+    const days = parseFloat(timesheet.pdf_days) || parseFloat(timesheet.email_days) || 0;
+    
+    // Get hours (prefer PDF, fallback to email)
+    const hours = parseFloat(timesheet.pdf_hours) || parseFloat(timesheet.email_hours) || 0;
+    
+    // Calculate total: days + (hours / 8)
+    const totalDays = days + (hours / 8);
+    
+    // Return null if no data at all
+    if (totalDays === 0 && !timesheet.pdf_days && !timesheet.email_days && !timesheet.pdf_hours && !timesheet.email_hours) {
+      return null;
+    }
+    
+    // Return with up to 2 decimal places, removing trailing zeros
+    return parseFloat(totalDays.toFixed(2));
+  };
+
+  const fixTimesheetUrl = (url) => {
     if (!url) return null;
     
     // Fix 1: Add /public/ if missing
@@ -1001,11 +1024,10 @@ const InvoiceGeneratorApp = () => {
   const [clients, setClients] = useState([]);
   const [contracts, setContracts] = useState([]);
   const [invoices, setInvoices] = useState([]);
-  const [generatingInvoice, setGeneratingInvoice] = useState(null);  // ✅ ADD THIS LINE HERE
+  const [generatingInvoice, setGeneratingInvoice] = useState(null);
   const [activeTab, setActiveTab] = useState(() => {
-  // Load saved tab from localStorage, default to 'dashboard'
-  return localStorage.getItem('activeTab') || 'dashboard';
-});
+    return localStorage.getItem('activeTab') || 'dashboard';
+  });
   const [dataLoading, setDataLoading] = useState(false);
   const [notification, setNotification] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -1013,501 +1035,471 @@ const InvoiceGeneratorApp = () => {
   const [timesheets, setTimesheets] = useState([]);
   const [editingDays, setEditingDays] = useState(null);
   const [editDaysValue, setEditDaysValue] = useState('');
-  const [editingInvoiceNumber, setEditingInvoiceNumber] = useState(null);  // ← ADD
-  const [editInvoiceNumberValue, setEditInvoiceNumberValue] = useState(''); // ← ADD
+  const [editingInvoiceNumber, setEditingInvoiceNumber] = useState(null);
+  const [editInvoiceNumberValue, setEditInvoiceNumberValue] = useState('');
   const [companySettings, setCompanySettings] = useState(null);
-const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-const [timesheetStatus, setTimesheetStatus] = useState(null);
-const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [timesheetStatus, setTimesheetStatus] = useState(null);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
   const [users, setUsers] = useState([]);
   const [editingMonth, setEditingMonth] = useState(null);
-const [editMonthValue, setEditMonthValue] = useState('');
-const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
-const [editModalOpen, setEditModalOpen] = useState(false);
- const [activeTimesheetTab, setActiveTimesheetTab] = useState('current');
-const [searchQueries, setSearchQueries] = useState({
-  consultants: '',
-  clients: '',
-  contracts: '',
-  invoices: ''
-});
-const [sortConfig, setSortConfig] = useState({
-  consultants: { key: null, direction: 'asc' },
-  clients: { key: null, direction: 'asc' },
-  contracts: { key: null, direction: 'asc' },
-  invoices: { key: null, direction: 'asc' }
-});
+  const [editMonthValue, setEditMonthValue] = useState('');
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [activeTimesheetTab, setActiveTimesheetTab] = useState('current');
+  const [searchQueries, setSearchQueries] = useState({
+    consultants: '',
+    clients: '',
+    contracts: '',
+    invoices: ''
+  });
+  const [sortConfig, setSortConfig] = useState({
+    consultants: { key: null, direction: 'asc' },
+    clients: { key: null, direction: 'asc' },
+    contracts: { key: null, direction: 'asc' },
+    invoices: { key: null, direction: 'asc' }
+  });
 
   useEffect(() => {
-  localStorage.setItem('activeTab', activeTab);
-}, [activeTab]);
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
   
   // Show notification
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
   };
 
- // Load data from API
-const loadData = async () => {
-  if (!user) return;
-  
-  setDataLoading(true);
-  try {
-const [consultantsData, clientsData, contractsData, invoicesData, timesheetsData] = await Promise.all([
-      apiCall('/consultants').catch(err => {
-        console.error('Failed to load consultants:', err);
-        return [];
-      }),
-      apiCall('/clients').catch(err => {
-        console.error('Failed to load clients:', err);
-        return [];
-      }),
-      apiCall('/contracts').catch(err => {
-        console.error('Failed to load contracts:', err);
-        return [];
-      }),
-      apiCall('/invoices').catch(err => {
-        console.error('Failed to load invoices:', err);
-        return [];
-      }),
-      apiCall('/timesheets').catch(err => {
-        console.error('Failed to load timesheets:', err);
-        return [];
-      })
-    ]);
+  // Load data from API
+  const loadData = async () => {
+    if (!user) return;
+    
+    setDataLoading(true);
+    try {
+      const [consultantsData, clientsData, contractsData, invoicesData, timesheetsData] = await Promise.all([
+        apiCall('/consultants').catch(err => {
+          console.error('Failed to load consultants:', err);
+          return [];
+        }),
+        apiCall('/clients').catch(err => {
+          console.error('Failed to load clients:', err);
+          return [];
+        }),
+        apiCall('/contracts').catch(err => {
+          console.error('Failed to load contracts:', err);
+          return [];
+        }),
+        apiCall('/invoices').catch(err => {
+          console.error('Failed to load invoices:', err);
+          return [];
+        }),
+        apiCall('/timesheets').catch(err => {
+          console.error('Failed to load timesheets:', err);
+          return [];
+        })
+      ]);
 
-    setConsultants(consultantsData);
-    setClients(clientsData);
-    setContracts(contractsData);
-    setInvoices(invoicesData);
-    setTimesheets(timesheetsData);
-    
-    // Load company settings and timesheet status
-    await loadCompanySettings().catch(err => console.error('Settings load failed:', err));
-    await loadTimesheetStatus().catch(err => console.error('Timesheet status load failed:', err));
-    
-    // ✅ Load users if admin
-    if (user.role === 'admin') {
-      await loadUsers().catch(err => console.error('Users load failed:', err));
+      setConsultants(consultantsData);
+      setClients(clientsData);
+      setContracts(contractsData);
+      setInvoices(invoicesData);
+      setTimesheets(timesheetsData);
+      
+      await loadCompanySettings().catch(err => console.error('Settings load failed:', err));
+      await loadTimesheetStatus().catch(err => console.error('Timesheet status load failed:', err));
+      
+      if (user.role === 'admin') {
+        await loadUsers().catch(err => console.error('Users load failed:', err));
+      }
+      
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      showNotification('Failed to load some data. Please refresh the page.', 'error');
     }
-    
-  } catch (error) {
-    console.error('Failed to load data:', error);
-    showNotification('Failed to load some data. Please refresh the page.', 'error');
-  }
-  setDataLoading(false);
-};
+    setDataLoading(false);
+  };
 
-useEffect(() => {
-  if (user) {
-    loadData();
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [user]);
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
-  // Start editing invoice number
   const startEditInvoiceNumber = (invoice) => {
     setEditingInvoiceNumber(invoice.id);
     setEditInvoiceNumberValue(invoice.invoice_number);
   };
 
-  // Update invoice number
-// Update invoice number
-const updateInvoiceNumber = async (invoiceId) => {
-  try {
-    await apiCall(`/invoices/${invoiceId}/number`, {
-      method: 'PUT',
-      body: JSON.stringify({ invoiceNumber: editInvoiceNumberValue })
-    });
-    showNotification('Invoice number updated successfully!');
-    setEditingInvoiceNumber(null);
-    loadData();
-  } catch (error) {
-    showNotification('Failed to update invoice number: ' + error.message, 'error');
-  }
-};
-
-// ✅ ADD THIS FUNCTION
-// Cancel editing invoice number
-const cancelEditInvoiceNumber = () => {
-  setEditingInvoiceNumber(null);
-  setEditInvoiceNumberValue('');
-};
-
-// ✅ ADD THIS FUNCTION
-// Generate PDF for invoice
-const generatePDF = async (invoiceId) => {
-  try {
-    setDataLoading(true);
-    const response = await apiCall(`/invoices/${invoiceId}/generate-pdf`, {
-      method: 'POST'
-    });
-    showNotification('PDF generated successfully!');
-    loadData(); // Refresh to get the PDF URL
-    return response.pdfUrl;
-  } catch (error) {
-    showNotification('Failed to generate PDF: ' + error.message, 'error');
-  } finally {
-    setDataLoading(false);
-  }
-};
-
-// View timesheet for invoice - Opens the actual PDF file
-const viewTimesheet = async (invoice) => {
-  try {
-    setDataLoading(true);
-    
-    const periodDate = new Date(invoice.period_to);
-    const month = periodDate.toLocaleDateString('en-US', { month: 'long' });
-    
-    const contract = contracts.find(c => c.id === invoice.contract_id);
-    if (!contract) {
-      showNotification('Contract not found', 'error');
-      return;
-    }
-    
-    const consultant = consultants.find(c => c.id === contract.consultant_id);
-    if (!consultant) {
-      showNotification('Consultant not found', 'error');
-      return;
-    }
-    
-    const response = await apiCall('/timesheets/all');
-    const allTimesheets = response;
-    
-    const matchingTimesheet = allTimesheets.find(ts => 
-      ts.sender_email === consultant.email && 
-      ts.month?.toLowerCase() === month.toLowerCase()
-    );
-    
-    if (matchingTimesheet && matchingTimesheet.timesheet_file_url) {
-      // ✅ USE THE HELPER FUNCTION
-      const fixedUrl = fixTimesheetUrl(matchingTimesheet.timesheet_file_url);
-      window.open(fixedUrl, '_blank');
-    } else if (matchingTimesheet) {
-      showNotification('No PDF file available for this timesheet', 'error');
-    } else {
-      showNotification(`No timesheet found for ${consultant.email} in ${month}`, 'error');
-    }
-  } catch (error) {
-    showNotification('Failed to load timesheet: ' + error.message, 'error');
-  } finally {
-    setDataLoading(false);
-  }
-};
-  
-  // Edit consultant/client/contract
-const editItem = (type, item) => {
-  
-  const configs = {
-    consultant: {
-      title: 'Edit Consultant',
-      fields: [
-        { name: 'firstName', placeholder: 'First Name', value: item.first_name },
-        { name: 'lastName', placeholder: 'Last Name', value: item.last_name },
-        { name: 'companyName', placeholder: 'Company Name', value: item.company_name },
-        { name: 'companyAddress', placeholder: 'Company Address', value: item.company_address },
-        { name: 'companyVAT', placeholder: 'VAT Number', value: item.company_vat },
-        { name: 'consultantContractId', placeholder: 'Consultant Contract ID', value: item.consultant_contract_id },
-        { name: 'iban', placeholder: 'IBAN', value: item.iban },
-        { name: 'swift', placeholder: 'SWIFT Code', value: item.swift },
-        { name: 'email', placeholder: 'Email', type: 'email', value: item.email },
-        { name: 'phone', placeholder: 'Phone', value: item.phone }
-      ],
-      onSubmit: (data) => updateConsultant(item.id, data)
-    },
-    client: {
-      title: 'Edit Client',
-      fields: [
-        { name: 'firstName', placeholder: 'First Name', value: item.first_name },
-        { name: 'lastName', placeholder: 'Last Name', value: item.last_name },
-        { name: 'companyName', placeholder: 'Company Name', value: item.company_name },
-        { name: 'companyAddress', placeholder: 'Company Address', value: item.company_address },
-        { name: 'companyVAT', placeholder: 'VAT Number', value: item.company_vat },
-        { name: 'clientContractId', placeholder: 'Client Contract ID', value: item.client_contract_id },
-        { name: 'iban', placeholder: 'IBAN', value: item.iban },
-        { name: 'swift', placeholder: 'SWIFT Code', value: item.swift },
-        { name: 'email', placeholder: 'Email', type: 'email', value: item.email },
-        { name: 'phone', placeholder: 'Phone', value: item.phone }
-      ],
-      onSubmit: (data) => updateClient(item.id, data)
-    },
-    contract: {
-      title: 'Edit Contract',
-      fields: [
-        { name: 'contractNumber', placeholder: 'Contract Number', value: item.contract_number },
-        { 
-          name: 'consultantId', 
-          placeholder: 'Select Consultant', 
-          type: 'select',
-          value: item.consultant_id,
-          options: consultants.map(c => ({ 
-            value: c.id, 
-            label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
-          })) 
-        },
-        { 
-          name: 'clientId', 
-          placeholder: 'Select Client', 
-          type: 'select',
-          value: item.client_id,
-          options: clients.map(c => ({ 
-            value: c.id, 
-            label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
-          })) 
-        },
-        { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date', value: item.from_date },
-        { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date', value: item.to_date },
-        { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01', value: item.purchase_price },
-        { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01', value: item.sell_price },
-        { name: 'consultantVatEnabled', type: 'checkbox', label: 'Enable VAT for Consultant Invoices', value: item.consultant_vat_enabled },
-        { name: 'consultantVatRate', type: 'number', step: '0.01', label: 'Consultant VAT Rate (%)', value: item.consultant_vat_rate },
-        { name: 'vatEnabled', type: 'checkbox', label: 'Enable VAT for Client Invoices', value: item.vat_enabled },
-        { name: 'vatRate', type: 'number', step: '0.01', label: 'Client VAT Rate (%)', value: item.vat_rate }
-      ],
-      onSubmit: (data) => updateContract(item.id, data)
+  const updateInvoiceNumber = async (invoiceId) => {
+    try {
+      await apiCall(\`/invoices/\${invoiceId}/number\`, {
+        method: 'PUT',
+        body: JSON.stringify({ invoiceNumber: editInvoiceNumberValue })
+      });
+      showNotification('Invoice number updated successfully!');
+      setEditingInvoiceNumber(null);
+      loadData();
+    } catch (error) {
+      showNotification('Failed to update invoice number: ' + error.message, 'error');
     }
   };
 
-  setModalConfig(configs[type]);
-  setEditModalOpen(true);
-};
+  const cancelEditInvoiceNumber = () => {
+    setEditingInvoiceNumber(null);
+    setEditInvoiceNumberValue('');
+  };
 
-// Update functions
-const updateConsultant = async (id, consultantData) => {
-  try {
-    await apiCall(`/consultants/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(consultantData)
-    });
-    showNotification('Consultant updated successfully!');
-    setEditModalOpen(false);
-    loadData();
-  } catch (error) {
-    showNotification('Failed to update consultant: ' + error.message, 'error');
-  }
-};
-
-const updateClient = async (id, clientData) => {
-  try {
-    await apiCall(`/clients/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(clientData)
-    });
-    showNotification('Client updated successfully!');
-    setEditModalOpen(false);
-    loadData();
-  } catch (error) {
-    showNotification('Failed to update client: ' + error.message, 'error');
-  }
-};
-
-const updateContract = async (id, contractData) => {
-  try {
-    await apiCall(`/contracts/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(contractData)
-    });
-    showNotification('Contract updated successfully!');
-    setEditModalOpen(false);
-    loadData();
-  } catch (error) {
-    showNotification('Failed to update contract: ' + error.message, 'error');
-  }
-};
-
-// Delete functions
-const deleteConsultant = async (id) => {
-  if (!window.confirm('Are you sure you want to delete this consultant? This action cannot be undone.')) return;
-  
-  try {
-    await apiCall(`/consultants/${id}`, {
-      method: 'DELETE'
-    });
-    showNotification('Consultant deleted successfully!');
-    loadData();
-  } catch (error) {
-    showNotification('Failed to delete consultant: ' + error.message, 'error');
-  }
-};
-
-const deleteClient = async (id) => {
-  if (!window.confirm('Are you sure you want to delete this client? This action cannot be undone.')) return;
-  
-  try {
-    await apiCall(`/clients/${id}`, {
-      method: 'DELETE'
-    });
-    showNotification('Client deleted successfully!');
-    loadData();
-  } catch (error) {
-    showNotification('Failed to delete client: ' + error.message, 'error');
-  }
-};
-
-const deleteContract = async (id) => {
-  if (!window.confirm('Are you sure you want to delete this contract? This action cannot be undone.')) return;
-  
-  try {
-    await apiCall(`/contracts/${id}`, {
-      method: 'DELETE'
-    });
-    showNotification('Contract deleted successfully!');
-    loadData();
-  } catch (error) {
-    showNotification('Failed to delete contract: ' + error.message, 'error');
-  }
-};
-
-// Search and sort functions
-const handleSearch = (tab, query) => {
-  setSearchQueries({ ...searchQueries, [tab]: query });
-};
-
-const handleSort = (tab, key) => {
-  const direction = sortConfig[tab].key === key && sortConfig[tab].direction === 'asc' ? 'desc' : 'asc';
-  setSortConfig({ ...sortConfig, [tab]: { key, direction } });
-};
-
-const filterAndSort = (data, tab) => {
-  const query = searchQueries[tab].toLowerCase();
-  
-  // Filter
-  let filtered = data.filter(item => {
-    return Object.values(item).some(val => 
-      String(val).toLowerCase().includes(query)
-    );
-  });
-  
-  // Sort
-  if (sortConfig[tab].key) {
-    filtered.sort((a, b) => {
-      const aVal = a[sortConfig[tab].key];
-      const bVal = b[sortConfig[tab].key];
-      
-      if (aVal < bVal) return sortConfig[tab].direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortConfig[tab].direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-  
-  return filtered;
-};
-
-// Download PDF
-const downloadPDF = async (invoice) => {
-  try {
-    // If no PDF exists, generate it first
-    if (!invoice.pdf_url) {
-      const pdfUrl = await generatePDF(invoice.id);
-      if (pdfUrl) {
-        window.open(pdfUrl, '_blank');
-      }
-    } else {
-      // PDF already exists, just open it
-      window.open(invoice.pdf_url, '_blank');
+  const generatePDF = async (invoiceId) => {
+    try {
+      setDataLoading(true);
+      const response = await apiCall(\`/invoices/\${invoiceId}/generate-pdf\`, {
+        method: 'POST'
+      });
+      showNotification('PDF generated successfully!');
+      loadData();
+      return response.pdfUrl;
+    } catch (error) {
+      showNotification('Failed to generate PDF: ' + error.message, 'error');
+    } finally {
+      setDataLoading(false);
     }
-  } catch (error) {
-    showNotification('Failed to download PDF: ' + error.message, 'error');
-  }
-};
+  };
 
-  // Send invoice email
-const sendInvoiceEmail = async (invoice) => {
-  try {
-    setDataLoading(true);
-    
-    // First, ensure PDF exists
-    if (!invoice.pdf_url) {
-      const pdfUrl = await generatePDF(invoice.id);
-      if (!pdfUrl) {
-        showNotification('Failed to generate PDF', 'error');
+  const viewTimesheet = async (invoice) => {
+    try {
+      setDataLoading(true);
+      
+      const periodDate = new Date(invoice.period_to);
+      const month = periodDate.toLocaleDateString('en-US', { month: 'long' });
+      
+      const contract = contracts.find(c => c.id === invoice.contract_id);
+      if (!contract) {
+        showNotification('Contract not found', 'error');
         return;
       }
+      
+      const consultant = consultants.find(c => c.id === contract.consultant_id);
+      if (!consultant) {
+        showNotification('Consultant not found', 'error');
+        return;
+      }
+      
+      const response = await apiCall('/timesheets/all');
+      const allTimesheets = response;
+      
+      const matchingTimesheet = allTimesheets.find(ts => 
+        ts.sender_email === consultant.email && 
+        ts.month?.toLowerCase() === month.toLowerCase()
+      );
+      
+      if (matchingTimesheet && matchingTimesheet.timesheet_file_url) {
+        const fixedUrl = fixTimesheetUrl(matchingTimesheet.timesheet_file_url);
+        window.open(fixedUrl, '_blank');
+      } else if (matchingTimesheet) {
+        showNotification('No PDF file available for this timesheet', 'error');
+      } else {
+        showNotification(\`No timesheet found for \${consultant.email} in \${month}\`, 'error');
+      }
+    } catch (error) {
+      showNotification('Failed to load timesheet: ' + error.message, 'error');
+    } finally {
+      setDataLoading(false);
+    }
+  };
+  
+  const editItem = (type, item) => {
+    const configs = {
+      consultant: {
+        title: 'Edit Consultant',
+        fields: [
+          { name: 'firstName', placeholder: 'First Name', value: item.first_name },
+          { name: 'lastName', placeholder: 'Last Name', value: item.last_name },
+          { name: 'companyName', placeholder: 'Company Name', value: item.company_name },
+          { name: 'companyAddress', placeholder: 'Company Address', value: item.company_address },
+          { name: 'companyVAT', placeholder: 'VAT Number', value: item.company_vat },
+          { name: 'consultantContractId', placeholder: 'Consultant Contract ID', value: item.consultant_contract_id },
+          { name: 'iban', placeholder: 'IBAN', value: item.iban },
+          { name: 'swift', placeholder: 'SWIFT Code', value: item.swift },
+          { name: 'email', placeholder: 'Email', type: 'email', value: item.email },
+          { name: 'phone', placeholder: 'Phone', value: item.phone }
+        ],
+        onSubmit: (data) => updateConsultant(item.id, data)
+      },
+      client: {
+        title: 'Edit Client',
+        fields: [
+          { name: 'firstName', placeholder: 'First Name', value: item.first_name },
+          { name: 'lastName', placeholder: 'Last Name', value: item.last_name },
+          { name: 'companyName', placeholder: 'Company Name', value: item.company_name },
+          { name: 'companyAddress', placeholder: 'Company Address', value: item.company_address },
+          { name: 'companyVAT', placeholder: 'VAT Number', value: item.company_vat },
+          { name: 'clientContractId', placeholder: 'Client Contract ID', value: item.client_contract_id },
+          { name: 'iban', placeholder: 'IBAN', value: item.iban },
+          { name: 'swift', placeholder: 'SWIFT Code', value: item.swift },
+          { name: 'email', placeholder: 'Email', type: 'email', value: item.email },
+          { name: 'phone', placeholder: 'Phone', value: item.phone }
+        ],
+        onSubmit: (data) => updateClient(item.id, data)
+      },
+      contract: {
+        title: 'Edit Contract',
+        fields: [
+          { name: 'contractNumber', placeholder: 'Contract Number', value: item.contract_number },
+          { 
+            name: 'consultantId', 
+            placeholder: 'Select Consultant', 
+            type: 'select',
+            value: item.consultant_id,
+            options: consultants.map(c => ({ 
+              value: c.id, 
+              label: \`\${c.first_name} \${c.last_name} - \${c.company_name}\` 
+            })) 
+          },
+          { 
+            name: 'clientId', 
+            placeholder: 'Select Client', 
+            type: 'select',
+            value: item.client_id,
+            options: clients.map(c => ({ 
+              value: c.id, 
+              label: \`\${c.first_name} \${c.last_name} - \${c.company_name}\` 
+            })) 
+          },
+          { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date', value: item.from_date },
+          { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date', value: item.to_date },
+          { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01', value: item.purchase_price },
+          { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01', value: item.sell_price },
+          { name: 'consultantVatEnabled', type: 'checkbox', label: 'Enable VAT for Consultant Invoices', value: item.consultant_vat_enabled },
+          { name: 'consultantVatRate', type: 'number', step: '0.01', label: 'Consultant VAT Rate (%)', value: item.consultant_vat_rate },
+          { name: 'vatEnabled', type: 'checkbox', label: 'Enable VAT for Client Invoices', value: item.vat_enabled },
+          { name: 'vatRate', type: 'number', step: '0.01', label: 'Client VAT Rate (%)', value: item.vat_rate }
+        ],
+        onSubmit: (data) => updateContract(item.id, data)
+      }
+    };
+
+    setModalConfig(configs[type]);
+    setEditModalOpen(true);
+  };
+
+  const updateConsultant = async (id, consultantData) => {
+    try {
+      await apiCall(\`/consultants/\${id}\`, {
+        method: 'PUT',
+        body: JSON.stringify(consultantData)
+      });
+      showNotification('Consultant updated successfully!');
+      setEditModalOpen(false);
+      loadData();
+    } catch (error) {
+      showNotification('Failed to update consultant: ' + error.message, 'error');
+    }
+  };
+
+  const updateClient = async (id, clientData) => {
+    try {
+      await apiCall(\`/clients/\${id}\`, {
+        method: 'PUT',
+        body: JSON.stringify(clientData)
+      });
+      showNotification('Client updated successfully!');
+      setEditModalOpen(false);
+      loadData();
+    } catch (error) {
+      showNotification('Failed to update client: ' + error.message, 'error');
+    }
+  };
+
+  const updateContract = async (id, contractData) => {
+    try {
+      await apiCall(\`/contracts/\${id}\`, {
+        method: 'PUT',
+        body: JSON.stringify(contractData)
+      });
+      showNotification('Contract updated successfully!');
+      setEditModalOpen(false);
+      loadData();
+    } catch (error) {
+      showNotification('Failed to update contract: ' + error.message, 'error');
+    }
+  };
+
+  const deleteConsultant = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this consultant? This action cannot be undone.')) return;
+    
+    try {
+      await apiCall(\`/consultants/\${id}\`, {
+        method: 'DELETE'
+      });
+      showNotification('Consultant deleted successfully!');
+      loadData();
+    } catch (error) {
+      showNotification('Failed to delete consultant: ' + error.message, 'error');
+    }
+  };
+
+  const deleteClient = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this client? This action cannot be undone.')) return;
+    
+    try {
+      await apiCall(\`/clients/\${id}\`, {
+        method: 'DELETE'
+      });
+      showNotification('Client deleted successfully!');
+      loadData();
+    } catch (error) {
+      showNotification('Failed to delete client: ' + error.message, 'error');
+    }
+  };
+
+  const deleteContract = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this contract? This action cannot be undone.')) return;
+    
+    try {
+      await apiCall(\`/contracts/\${id}\`, {
+        method: 'DELETE'
+      });
+      showNotification('Contract deleted successfully!');
+      loadData();
+    } catch (error) {
+      showNotification('Failed to delete contract: ' + error.message, 'error');
+    }
+  };
+
+  const handleSearch = (tab, query) => {
+    setSearchQueries({ ...searchQueries, [tab]: query });
+  };
+
+  const handleSort = (tab, key) => {
+    const direction = sortConfig[tab].key === key && sortConfig[tab].direction === 'asc' ? 'desc' : 'asc';
+    setSortConfig({ ...sortConfig, [tab]: { key, direction } });
+  };
+
+  const filterAndSort = (data, tab) => {
+    const query = searchQueries[tab].toLowerCase();
+    
+    let filtered = data.filter(item => {
+      return Object.values(item).some(val => 
+        String(val).toLowerCase().includes(query)
+      );
+    });
+    
+    if (sortConfig[tab].key) {
+      filtered.sort((a, b) => {
+        const aVal = a[sortConfig[tab].key];
+        const bVal = b[sortConfig[tab].key];
+        
+        if (aVal < bVal) return sortConfig[tab].direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig[tab].direction === 'asc' ? 1 : -1;
+        return 0;
+      });
     }
     
-    // Send email
-    await apiCall(`/invoices/${invoice.id}/send-email`, {
-      method: 'POST'
-    });
+    return filtered;
+  };
+
+  const downloadPDF = async (invoice) => {
+    try {
+      if (!invoice.pdf_url) {
+        const pdfUrl = await generatePDF(invoice.id);
+        if (pdfUrl) {
+          window.open(pdfUrl, '_blank');
+        }
+      } else {
+        window.open(invoice.pdf_url, '_blank');
+      }
+    } catch (error) {
+      showNotification('Failed to download PDF: ' + error.message, 'error');
+    }
+  };
+
+  const sendInvoiceEmail = async (invoice) => {
+    try {
+      setDataLoading(true);
+      
+      if (!invoice.pdf_url) {
+        const pdfUrl = await generatePDF(invoice.id);
+        if (!pdfUrl) {
+          showNotification('Failed to generate PDF', 'error');
+          return;
+        }
+      }
+      
+      await apiCall(\`/invoices/\${invoice.id}/send-email\`, {
+        method: 'POST'
+      });
+      
+      showNotification('Invoice email sent successfully!');
+      loadData();
+    } catch (error) {
+      showNotification('Failed to send email: ' + error.message, 'error');
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const usersData = await apiCall('/users');
+      setUsers(usersData);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+    }
+  };
+
+  const createOperator = async (operatorData) => {
+    try {
+      await apiCall('/users', {
+        method: 'POST',
+        body: JSON.stringify(operatorData)
+      });
+      showNotification('Operator created successfully!');
+      loadUsers();
+    } catch (error) {
+      showNotification('Failed to create operator: ' + error.message, 'error');
+    }
+  };
+
+  const toggleUserActive = async (userId) => {
+    try {
+      await apiCall(\`/users/\${userId}/toggle-active\`, {
+        method: 'PUT'
+      });
+      showNotification('User status updated successfully!');
+      loadUsers();
+    } catch (error) {
+      showNotification('Failed to update user status: ' + error.message, 'error');
+    }
+  };
+
+  const deleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
     
-    showNotification('Invoice email sent successfully!');
-    loadData(); // Refresh to update email status
-  } catch (error) {
-    showNotification('Failed to send email: ' + error.message, 'error');
-  } finally {
-    setDataLoading(false);
-  }
-};
+    try {
+      await apiCall(\`/users/\${userId}\`, {
+        method: 'DELETE'
+      });
+      showNotification('User deleted successfully!');
+      loadUsers();
+    } catch (error) {
+      showNotification('Failed to delete user: ' + error.message, 'error');
+    }
+  };
 
-  // Load users (admin only)
-const loadUsers = async () => {
-  try {
-    const usersData = await apiCall('/users');
-    setUsers(usersData);
-  } catch (error) {
-    console.error('Failed to load users:', error);
-  }
-};
+  const changePassword = async (passwordData) => {
+    try {
+      await apiCall('/auth/change-password', {
+        method: 'PUT',
+        body: JSON.stringify(passwordData)
+      });
+      showNotification('Password changed successfully!');
+      setChangePasswordModalOpen(false);
+    } catch (error) {
+      showNotification('Failed to change password: ' + error.message, 'error');
+    }
+  };
 
-// Create operator (admin only)
-const createOperator = async (operatorData) => {
-  try {
-    await apiCall('/users', {
-      method: 'POST',
-      body: JSON.stringify(operatorData)
-    });
-    showNotification('Operator created successfully!');
-    loadUsers();
-  } catch (error) {
-    showNotification('Failed to create operator: ' + error.message, 'error');
-  }
-};
-
-// Toggle user active status (admin only)
-const toggleUserActive = async (userId) => {
-  try {
-    await apiCall(`/users/${userId}/toggle-active`, {
-      method: 'PUT'
-    });
-    showNotification('User status updated successfully!');
-    loadUsers();
-  } catch (error) {
-    showNotification('Failed to update user status: ' + error.message, 'error');
-  }
-};
-
-// Delete user (admin only)
-const deleteUser = async (userId) => {
-  if (!window.confirm('Are you sure you want to delete this user?')) return;
-  
-  try {
-    await apiCall(`/users/${userId}`, {
-      method: 'DELETE'
-    });
-    showNotification('User deleted successfully!');
-    loadUsers();
-  } catch (error) {
-    showNotification('Failed to delete user: ' + error.message, 'error');
-  }
-};
-
-// Change password (both roles)
-const changePassword = async (passwordData) => {
-  try {
-    await apiCall('/auth/change-password', {
-      method: 'PUT',
-      body: JSON.stringify(passwordData)
-    });
-    showNotification('Password changed successfully!');
-    setChangePasswordModalOpen(false);
-  } catch (error) {
-    showNotification('Failed to change password: ' + error.message, 'error');
-  }
-};
-
-  // Add new consultant
   const addConsultant = async (consultantData) => {
     try {
       await apiCall('/consultants', {
@@ -1521,60 +1513,53 @@ const changePassword = async (passwordData) => {
     }
   };
 
-  // Load company settings
-const loadCompanySettings = async () => {
-  try {
-    const settings = await apiCall('/company/settings');
-    setCompanySettings(settings);
-  } catch (error) {
-    console.error('Failed to load company settings:', error);
-  }
-};
+  const loadCompanySettings = async () => {
+    try {
+      const settings = await apiCall('/company/settings');
+      setCompanySettings(settings);
+    } catch (error) {
+      console.error('Failed to load company settings:', error);
+    }
+  };
 
-// Update company settings
-const updateCompanySettings = async (settingsData) => {
-  try {
-    await apiCall('/company/settings', {
-      method: 'PUT',
-      body: JSON.stringify(settingsData)
-    });
-    showNotification('Settings updated successfully!');
-    await loadCompanySettings();
-    await loadTimesheetStatus(); // ← ADD THIS LINE
-    setSettingsModalOpen(false);
-    setDeadlineModalOpen(false);
-  } catch (error) {
-    showNotification('Failed to update settings: ' + error.message, 'error');
-  }
-};
+  const updateCompanySettings = async (settingsData) => {
+    try {
+      await apiCall('/company/settings', {
+        method: 'PUT',
+        body: JSON.stringify(settingsData)
+      });
+      showNotification('Settings updated successfully!');
+      await loadCompanySettings();
+      await loadTimesheetStatus();
+      setSettingsModalOpen(false);
+      setDeadlineModalOpen(false);
+    } catch (error) {
+      showNotification('Failed to update settings: ' + error.message, 'error');
+    }
+  };
 
-  
-// Load timesheet status
-const loadTimesheetStatus = async () => {
-  try {
-    const status = await apiCall('/timesheets/status');
-    setTimesheetStatus(status);
-  } catch (error) {
-    console.error('Failed to load timesheet status:', error);
-  }
-};
+  const loadTimesheetStatus = async () => {
+    try {
+      const status = await apiCall('/timesheets/status');
+      setTimesheetStatus(status);
+    } catch (error) {
+      console.error('Failed to load timesheet status:', error);
+    }
+  };
 
-  // Add new contract
-const addContract = async (contractData) => {
-  try {
-    await apiCall('/contracts', {
-      method: 'POST',
-      body: JSON.stringify(contractData)
-    });
-    showNotification('Contract added successfully!');
-    loadData();
-  } catch (error) {
-    showNotification('Failed to add contract: ' + error.message, 'error');
-  }
-};
+  const addContract = async (contractData) => {
+    try {
+      await apiCall('/contracts', {
+        method: 'POST',
+        body: JSON.stringify(contractData)
+      });
+      showNotification('Contract added successfully!');
+      loadData();
+    } catch (error) {
+      showNotification('Failed to add contract: ' + error.message, 'error');
+    }
+  };
 
-
-  // Add new client
   const addClient = async (clientData) => {
     try {
       await apiCall('/clients', {
@@ -1588,143 +1573,140 @@ const addContract = async (contractData) => {
     }
   };
 
-const updateDays = async (timesheetId, newDays) => {
-  try {
-    await apiCall(`/timesheets/${timesheetId}/days`, {
-      method: 'PUT',
-      body: JSON.stringify({ days: parseFloat(newDays) })  // ← CHANGED from parseInt
-    });
-    showNotification('Days updated successfully!');
-    setEditingDays(null);
-    setEditDaysValue('');
-    loadData();
-  } catch (error) {
-    showNotification('Failed to update days: ' + error.message, 'error');
-  }
-};
-
-const startEditDays = (timesheet) => {
-  setEditingDays(timesheet.id);
-  setEditDaysValue(timesheet.pdf_days || timesheet.email_days || '');
-};
-
-const cancelEditDays = () => {
-  setEditingDays(null);
-  setEditDaysValue('');
-};
-
-  // Start editing month
-const startEditMonth = (timesheet) => {
-  setEditingMonth(timesheet.id);
-  setEditMonthValue(timesheet.month || '');
-};
-
-// Update month
-const updateMonth = async (timesheetId, newMonth) => {
-  try {
-    await apiCall(`/timesheets/${timesheetId}/month`, {
-      method: 'PUT',
-      body: JSON.stringify({ month: newMonth })
-    });
-    showNotification('Month updated successfully!');
-    setEditingMonth(null);
-    setEditMonthValue('');
-    loadData();
-  } catch (error) {
-    showNotification('Failed to update month: ' + error.message, 'error');
-  }
-};
-
-// Cancel editing month
-const cancelEditMonth = () => {
-  setEditingMonth(null);
-  setEditMonthValue('');
-};
-  
-// Open modal for adding items
-const openAddModal = (type) => {
-  const configs = {
-    consultant: {
-      title: 'Add New Consultant',
-      fields: [
-        { name: 'firstName', placeholder: 'First Name' },
-        { name: 'lastName', placeholder: 'Last Name' },
-        { name: 'companyName', placeholder: 'Company Name' },
-        { name: 'companyAddress', placeholder: 'Company Address' },
-        { name: 'companyVAT', placeholder: 'VAT Number' },
-        { name: 'consultantContractId', placeholder: 'Consultant Contract ID' },
-        { name: 'iban', placeholder: 'IBAN' },
-        { name: 'swift', placeholder: 'SWIFT Code' },
-        { name: 'email', placeholder: 'Email', type: 'email' },
-        { name: 'phone', placeholder: 'Phone' }
-      ],
-      onSubmit: addConsultant
-    },
-    client: {
-      title: 'Add New Client',
-      fields: [
-        { name: 'firstName', placeholder: 'First Name' },
-        { name: 'lastName', placeholder: 'Last Name' },
-        { name: 'companyName', placeholder: 'Company Name' },
-        { name: 'companyAddress', placeholder: 'Company Address' },
-        { name: 'companyVAT', placeholder: 'VAT Number' },
-        { name: 'clientContractId', placeholder: 'Client Contract ID' },
-        { name: 'iban', placeholder: 'IBAN' },
-        { name: 'swift', placeholder: 'SWIFT Code' },
-        { name: 'email', placeholder: 'Email', type: 'email' },
-        { name: 'phone', placeholder: 'Phone' }
-      ],
-      onSubmit: addClient
-    },
-    contract: {
-      title: 'Add New Contract',
-      fields: [
-        { name: 'contractNumber', placeholder: 'Contract Number (e.g., CNT-2024-001)' },
-        { 
-          name: 'consultantId', 
-          placeholder: 'Select Consultant', 
-          type: 'select', 
-          options: consultants.map(c => ({ 
-            value: c.id, 
-            label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
-          })) 
-        },
-        { 
-          name: 'clientId', 
-          placeholder: 'Select Client', 
-          type: 'select', 
-          options: clients.map(c => ({ 
-            value: c.id, 
-            label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
-          })) 
-        },
-        { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date' },
-        { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date' },
-        { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
-        { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' },
-        { name: 'consultantVatEnabled', type: 'checkbox', label: 'Enable VAT for Consultant Invoices' },
-        { name: 'consultantVatRate', type: 'number', step: '0.01', label: 'Consultant VAT Rate (%)' },
-        { name: 'vatEnabled', type: 'checkbox', label: 'Enable VAT for Client Invoices' },
-        { name: 'vatRate', type: 'number', step: '0.01', label: 'Client VAT Rate (%)' }
-      ],
-      onSubmit: addContract
-    },
-    // ✅ ADD THIS
-    operator: {
-      title: 'Create Operator Account',
-      fields: [
-        { name: 'firstName', placeholder: 'First Name' },
-        { name: 'lastName', placeholder: 'Last Name' },
-        { name: 'email', placeholder: 'Email', type: 'email' },
-        { name: 'password', placeholder: 'Password', type: 'password' }
-      ],
-      onSubmit: createOperator
+  const updateDays = async (timesheetId, newDays) => {
+    try {
+      await apiCall(\`/timesheets/\${timesheetId}/days\`, {
+        method: 'PUT',
+        body: JSON.stringify({ days: parseFloat(newDays) })
+      });
+      showNotification('Days updated successfully!');
+      setEditingDays(null);
+      setEditDaysValue('');
+      loadData();
+    } catch (error) {
+      showNotification('Failed to update days: ' + error.message, 'error');
     }
   };
 
-  setModalConfig(configs[type]);
-  setModalOpen(true);
-};
+  const startEditDays = (timesheet) => {
+    setEditingDays(timesheet.id);
+    // Use calculated total days as initial value
+    const totalDays = calculateTotalDays(timesheet);
+    setEditDaysValue(totalDays || '');
+  };
+
+  const cancelEditDays = () => {
+    setEditingDays(null);
+    setEditDaysValue('');
+  };
+
+  const startEditMonth = (timesheet) => {
+    setEditingMonth(timesheet.id);
+    setEditMonthValue(timesheet.month || '');
+  };
+
+  const updateMonth = async (timesheetId, newMonth) => {
+    try {
+      await apiCall(\`/timesheets/\${timesheetId}/month\`, {
+        method: 'PUT',
+        body: JSON.stringify({ month: newMonth })
+      });
+      showNotification('Month updated successfully!');
+      setEditingMonth(null);
+      setEditMonthValue('');
+      loadData();
+    } catch (error) {
+      showNotification('Failed to update month: ' + error.message, 'error');
+    }
+  };
+
+  const cancelEditMonth = () => {
+    setEditingMonth(null);
+    setEditMonthValue('');
+  };
+  
+  const openAddModal = (type) => {
+    const configs = {
+      consultant: {
+        title: 'Add New Consultant',
+        fields: [
+          { name: 'firstName', placeholder: 'First Name' },
+          { name: 'lastName', placeholder: 'Last Name' },
+          { name: 'companyName', placeholder: 'Company Name' },
+          { name: 'companyAddress', placeholder: 'Company Address' },
+          { name: 'companyVAT', placeholder: 'VAT Number' },
+          { name: 'consultantContractId', placeholder: 'Consultant Contract ID' },
+          { name: 'iban', placeholder: 'IBAN' },
+          { name: 'swift', placeholder: 'SWIFT Code' },
+          { name: 'email', placeholder: 'Email', type: 'email' },
+          { name: 'phone', placeholder: 'Phone' }
+        ],
+        onSubmit: addConsultant
+      },
+      client: {
+        title: 'Add New Client',
+        fields: [
+          { name: 'firstName', placeholder: 'First Name' },
+          { name: 'lastName', placeholder: 'Last Name' },
+          { name: 'companyName', placeholder: 'Company Name' },
+          { name: 'companyAddress', placeholder: 'Company Address' },
+          { name: 'companyVAT', placeholder: 'VAT Number' },
+          { name: 'clientContractId', placeholder: 'Client Contract ID' },
+          { name: 'iban', placeholder: 'IBAN' },
+          { name: 'swift', placeholder: 'SWIFT Code' },
+          { name: 'email', placeholder: 'Email', type: 'email' },
+          { name: 'phone', placeholder: 'Phone' }
+        ],
+        onSubmit: addClient
+      },
+      contract: {
+        title: 'Add New Contract',
+        fields: [
+          { name: 'contractNumber', placeholder: 'Contract Number (e.g., CNT-2024-001)' },
+          { 
+            name: 'consultantId', 
+            placeholder: 'Select Consultant', 
+            type: 'select', 
+            options: consultants.map(c => ({ 
+              value: c.id, 
+              label: \`\${c.first_name} \${c.last_name} - \${c.company_name}\` 
+            })) 
+          },
+          { 
+            name: 'clientId', 
+            placeholder: 'Select Client', 
+            type: 'select', 
+            options: clients.map(c => ({ 
+              value: c.id, 
+              label: \`\${c.first_name} \${c.last_name} - \${c.company_name}\` 
+            })) 
+          },
+          { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date' },
+          { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date' },
+          { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
+          { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' },
+          { name: 'consultantVatEnabled', type: 'checkbox', label: 'Enable VAT for Consultant Invoices' },
+          { name: 'consultantVatRate', type: 'number', step: '0.01', label: 'Consultant VAT Rate (%)' },
+          { name: 'vatEnabled', type: 'checkbox', label: 'Enable VAT for Client Invoices' },
+          { name: 'vatRate', type: 'number', step: '0.01', label: 'Client VAT Rate (%)' }
+        ],
+        onSubmit: addContract
+      },
+      operator: {
+        title: 'Create Operator Account',
+        fields: [
+          { name: 'firstName', placeholder: 'First Name' },
+          { name: 'lastName', placeholder: 'Last Name' },
+          { name: 'email', placeholder: 'Email', type: 'email' },
+          { name: 'password', placeholder: 'Password', type: 'password' }
+        ],
+        onSubmit: createOperator
+      }
+    };
+
+    setModalConfig(configs[type]);
+    setModalOpen(true);
+  };
 
   if (loading) {
     return (
@@ -1738,8 +1720,7 @@ const openAddModal = (type) => {
     return <LoginForm onLogin={login} onRegister={register} />;
   }
 
-
-  const formatCurrency = (amount) => `€${parseFloat(amount).toFixed(2)}`;
+  const formatCurrency = (amount) => \`€\${parseFloat(amount).toFixed(2)}\`;
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString();
 
   return (
@@ -1752,13 +1733,13 @@ const openAddModal = (type) => {
 
       {/* ADD Modal */}
       <SimpleModal
-  isOpen={modalOpen}
-  onClose={() => setModalOpen(false)}
-  title={modalConfig.title}
-  fields={modalConfig.fields || []}
-  onSubmit={modalConfig.onSubmit}
-  submitButtonText="Add"  
-/>
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title={modalConfig.title}
+        fields={modalConfig.fields || []}
+        onSubmit={modalConfig.onSubmit}
+        submitButtonText="Add"  
+      />
 
       {/* Settings Modal */}
       <SettingsModal
@@ -1768,31 +1749,32 @@ const openAddModal = (type) => {
         onSubmit={updateCompanySettings}
       />
 
-          {/* Edit Modal */}
-<SimpleModal
-  isOpen={editModalOpen}
-  onClose={() => {
-    setEditModalOpen(false);
-  }}
-  title={modalConfig.title}
-  fields={modalConfig.fields || []}
-  onSubmit={modalConfig.onSubmit}
-  submitButtonText="Save" 
-/>
+      {/* Edit Modal */}
+      <SimpleModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+        }}
+        title={modalConfig.title}
+        fields={modalConfig.fields || []}
+        onSubmit={modalConfig.onSubmit}
+        submitButtonText="Save" 
+      />
 
-          {/* Deadline Modal */}
-<DeadlineModal
-  isOpen={deadlineModalOpen}
-  onClose={() => setDeadlineModalOpen(false)}
-  currentDeadline={companySettings?.timesheet_deadline_day}
-  onSubmit={(data) => updateCompanySettings({ ...companySettings, ...data })}
-/>
-    {/* ✅ ADD CHANGE PASSWORD MODAL HERE */}
-<ChangePasswordModal
-  isOpen={changePasswordModalOpen}
-  onClose={() => setChangePasswordModalOpen(false)}
-  onSubmit={changePassword}
-/>
+      {/* Deadline Modal */}
+      <DeadlineModal
+        isOpen={deadlineModalOpen}
+        onClose={() => setDeadlineModalOpen(false)}
+        currentDeadline={companySettings?.timesheet_deadline_day}
+        onSubmit={(data) => updateCompanySettings({ ...companySettings, ...data })}
+      />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={changePasswordModalOpen}
+        onClose={() => setChangePasswordModalOpen(false)}
+        onSubmit={changePassword}
+      />
 
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
@@ -1809,7 +1791,7 @@ const openAddModal = (type) => {
                 </div>
               </div>
             </div>
-<div className="flex items-center gap-4">
+            <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-sm font-medium text-gray-700">{user.firstName} {user.lastName}</p>
                 <p className="text-xs text-gray-500">{user.email}</p>
@@ -1826,62 +1808,62 @@ const openAddModal = (type) => {
                 </button>
                 
                 {userMenuOpen && (
-  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
-    <button
-      onClick={() => {
-        setChangePasswordModalOpen(true);  // ✅ ADD THIS
-        setUserMenuOpen(false);
-      }}
-      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-    >
-      <Edit className="h-4 w-4" />
-      Change Password
-    </button>
-    
-    {user.role === 'admin' && (  // ✅ Admin only
-      <button
-        onClick={() => {
-          setSettingsModalOpen(true);
-          setUserMenuOpen(false);
-        }}
-        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-t"
-      >
-        <Edit className="h-4 w-4" />
-        Company Settings
-      </button>
-    )}
-    
-    <button
-      onClick={logout}
-      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t"
-    >
-      <LogOut className="h-4 w-4" />
-      Logout
-    </button>
-  </div>
-)}
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
+                    <button
+                      onClick={() => {
+                        setChangePasswordModalOpen(true);
+                        setUserMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <Edit className="h-4 w-4" />
+                      Change Password
+                    </button>
+                    
+                    {user.role === 'admin' && (
+                      <button
+                        onClick={() => {
+                          setSettingsModalOpen(true);
+                          setUserMenuOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-t"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Company Settings
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={logout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
           
           {/* Navigation Tabs */}
-<div className="flex gap-1 mt-6 bg-gray-100 p-1 rounded-lg w-fit">
-  {['dashboard', 'consultants', 'clients', 'contracts', 'timesheets', 'invoices', 
-    ...(user.role === 'admin' ? ['users'] : [])  // ✅ Add 'users' tab for admin only
-  ].map((tab) => (
-    <button
-      key={tab}
-      onClick={() => setActiveTab(tab)}
-      className={`px-4 py-2 rounded-md capitalize text-sm font-medium transition ${
-        activeTab === tab 
-          ? 'bg-white text-blue-600 shadow-sm' 
-          : 'text-gray-600 hover:text-gray-800'
-      }`}
-    >
-      {tab}
-    </button>
-  ))}
-</div>
+          <div className="flex gap-1 mt-6 bg-gray-100 p-1 rounded-lg w-fit">
+            {['dashboard', 'consultants', 'clients', 'contracts', 'timesheets', 'invoices', 
+              ...(user.role === 'admin' ? ['users'] : [])
+            ].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={\`px-4 py-2 rounded-md capitalize text-sm font-medium transition \${
+                  activeTab === tab 
+                    ? 'bg-white text-blue-600 shadow-sm' 
+                    : 'text-gray-600 hover:text-gray-800'
+                }\`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -1892,1298 +1874,1032 @@ const openAddModal = (type) => {
           </div>
         )}
 
-       {/* Dashboard Tab */}
-{activeTab === 'dashboard' && (
-  <div className="space-y-6">
-    {/* Stats Cards */}
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-      {[
-        { label: 'Consultants', value: consultants.length, icon: Users, color: 'blue' },
-        { label: 'Clients', value: clients.length, icon: Building, color: 'green' },
-        { label: 'Contracts', value: contracts.length, icon: FileText, color: 'purple' },
-        { label: 'Invoices', value: invoices.length, icon: FileText, color: 'orange' }
-      ].map((stat, index) => (
-        <div key={index} className="bg-white rounded-lg p-6 border shadow-sm">
-          <div className="flex items-center">
-            <div className={`p-3 rounded-lg bg-${stat.color}-100 mr-4`}>
-              <stat.icon className={`h-6 w-6 text-${stat.color}-600`} />
-            </div>
-            <div>
-              <h3 className="text-sm font-medium text-gray-600">{stat.label}</h3>
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-
-    {/* Timesheet Status Overview */}
-    <div className="bg-white rounded-lg border shadow-sm">
-      <div className="px-6 py-4 border-b">
-        <h2 className="text-lg font-semibold text-gray-800">Timesheet Status Overview</h2>
-        {timesheetStatus && (
-          <p className="text-sm text-gray-600 mt-1">
-            {timesheetStatus.checking_month} {timesheetStatus.checking_year} 
-            <span className="ml-2 text-gray-500">
-              (Deadline: {timesheetStatus.deadline_day}th)
-            </span>
-          </p>
-        )}
-      </div>
-      <div className="p-6">
-        {timesheetStatus ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Received */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-green-800">Received</h3>
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              </div>
-              <p className="text-3xl font-bold text-green-600">
-                {timesheetStatus.consultants?.filter(c => c.status === 'received').length || 0}
-              </p>
-              <p className="text-xs text-green-700 mt-1">Timesheets submitted</p>
-            </div>
-
-            {/* Waiting */}
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-yellow-800">Waiting</h3>
-                <AlertCircle className="h-5 w-5 text-yellow-600" />
-              </div>
-              <p className="text-3xl font-bold text-yellow-600">
-                {timesheetStatus.consultants?.filter(c => c.status === 'waiting').length || 0}
-              </p>
-              <p className="text-xs text-yellow-700 mt-1">Before deadline</p>
-            </div>
-
-            {/* Overdue */}
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-red-800">Overdue</h3>
-                <AlertCircle className="h-5 w-5 text-red-600" />
-              </div>
-              <p className="text-3xl font-bold text-red-600">
-                {timesheetStatus.consultants?.filter(c => c.status === 'overdue').length || 0}
-              </p>
-              <p className="text-xs text-red-700 mt-1">Past deadline</p>
-            </div>
-          </div>
-        ) : (
-          <div className="text-center text-gray-500 py-8">
-            <p>Loading timesheet status...</p>
-          </div>
-        )}
-      </div>
-    </div>
-
-    {/* Monthly Revenue Overview */}
-    <div className="bg-white rounded-lg border shadow-sm">
-      <div className="px-6 py-4 border-b">
-        <h2 className="text-lg font-semibold text-gray-800">Monthly Revenue Overview</h2>
-      </div>
-      <div className="p-6">
-        {(() => {
-          // Calculate current month revenue
-          const now = new Date();
-          const currentMonth = now.getMonth();
-          const currentYear = now.getFullYear();
-          
-          const currentMonthInvoices = invoices.filter(inv => {
-            const invDate = new Date(inv.invoice_date);
-            return invDate.getMonth() === currentMonth && 
-                   invDate.getFullYear() === currentYear;
-          });
-          
-          const consultantRevenue = currentMonthInvoices
-            .filter(inv => inv.invoice_type === 'consultant')
-            .reduce((sum, inv) => sum + parseFloat(inv.total_amount), 0);
-            
-          const clientRevenue = currentMonthInvoices
-            .filter(inv => inv.invoice_type === 'client')
-            .reduce((sum, inv) => sum + parseFloat(inv.total_amount), 0);
-            
-          const profit = clientRevenue - consultantRevenue;
-          
-          return (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Client Revenue */}
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-2">Client Invoices</p>
-                <p className="text-3xl font-bold text-blue-600">{formatCurrency(clientRevenue)}</p>
-                <p className="text-xs text-gray-500 mt-1">{currentMonthInvoices.filter(i => i.invoice_type === 'client').length} invoices</p>
-              </div>
-              
-              {/* Consultant Costs */}
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-2">Consultant Costs</p>
-                <p className="text-3xl font-bold text-orange-600">{formatCurrency(consultantRevenue)}</p>
-                <p className="text-xs text-gray-500 mt-1">{currentMonthInvoices.filter(i => i.invoice_type === 'consultant').length} invoices</p>
-              </div>
-              
-              {/* Net Profit */}
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-2">Net Profit</p>
-                <p className={`text-3xl font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(profit)}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                </p>
-              </div>
-            </div>
-          );
-        })()}
-      </div>
-    </div>
-  </div>
-)}
-
-        {/* Consultants Tab */}
-{activeTab === 'consultants' && (
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h2 className="text-xl font-bold text-gray-800">Consultants</h2>
-      {user.role === 'admin' && (
-        <button
-          onClick={() => openAddModal('consultant')}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
-        >
-          <Plus className="h-4 w-4" />
-          Add Consultant
-        </button>
-      )}
-    </div>
-
-    {/* Search Bar */}
-    <div className="bg-white rounded-lg border p-4">
-      <input
-        type="text"
-        placeholder="Search consultants by name, company, VAT, email..."
-        value={searchQueries.consultants}
-        onChange={(e) => handleSearch('consultants', e.target.value)}
-        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-      />
-    </div>
-    
-    <div className="bg-white rounded-lg border shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-         <thead className="bg-gray-50">
-  <tr>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('consultants', 'first_name')}
-    >
-      Name {sortConfig.consultants.key === 'first_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('consultants', 'company_name')}
-    >
-      Company {sortConfig.consultants.key === 'company_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('consultants', 'company_address')}
-    >
-      Address {sortConfig.consultants.key === 'company_address' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('consultants', 'company_vat')}
-    >
-      VAT {sortConfig.consultants.key === 'company_vat' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('consultants', 'consultant_contract_id')}
-    >
-      Contract ID {sortConfig.consultants.key === 'consultant_contract_id' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('consultants', 'phone')}
-    >
-      Phone {sortConfig.consultants.key === 'phone' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('consultants', 'email')}
-    >
-      Email {sortConfig.consultants.key === 'email' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('consultants', 'iban')}
-    >
-      IBAN {sortConfig.consultants.key === 'iban' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('consultants', 'swift')}
-    >
-      SWIFT {sortConfig.consultants.key === 'swift' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('consultants', 'created_at')}
-    >
-      Created {sortConfig.consultants.key === 'created_at' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    {user.role === 'admin' && (
-      <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-    )}
-  </tr>
-</thead>
-          <tbody>
-            {filterAndSort(consultants, 'consultants').map((consultant) => (
-              <tr key={consultant.id} className="border-b hover:bg-gray-50">
-                <td className="p-4 font-medium">{consultant.first_name} {consultant.last_name}</td>
-                <td className="p-4">{consultant.company_name}</td>
-                <td className="p-4 text-sm">{consultant.company_address || '-'}</td>
-                <td className="p-4 font-mono text-sm">{consultant.company_vat}</td>
-                <td className="p-4 font-mono text-sm">{consultant.consultant_contract_id || '-'}</td>
-                <td className="p-4">{consultant.phone || '-'}</td>
-                <td className="p-4">{consultant.email || '-'}</td>
-                <td className="p-4 font-mono text-xs">{consultant.iban || '-'}</td>
-                <td className="p-4 font-mono text-xs">{consultant.swift || '-'}</td>
-                <td className="p-4 text-sm text-gray-600">{formatDate(consultant.created_at)}</td>
-                {user.role === 'admin' && (
-                  <td className="p-4">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => editItem('consultant', consultant)}
-                        className="text-blue-600 hover:text-blue-800 p-1 transition"
-                        title="Edit"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => deleteConsultant(consultant.id)}
-                        className="text-red-600 hover:text-red-800 p-1 transition"
-                        title="Delete"
-                      >
-                        <AlertCircle className="h-4 w-4" />
-                      </button>
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
+          <div className="space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {[
+                { label: 'Consultants', value: consultants.length, icon: Users, color: 'blue' },
+                { label: 'Clients', value: clients.length, icon: Building, color: 'green' },
+                { label: 'Contracts', value: contracts.length, icon: FileText, color: 'purple' },
+                { label: 'Invoices', value: invoices.length, icon: FileText, color: 'orange' }
+              ].map((stat, index) => (
+                <div key={index} className="bg-white rounded-lg p-6 border shadow-sm">
+                  <div className="flex items-center">
+                    <div className={\`p-3 rounded-lg bg-\${stat.color}-100 mr-4\`}>
+                      <stat.icon className={\`h-6 w-6 text-\${stat.color}-600\`} />
                     </div>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-)}
-
-       {/* Clients Tab */}
-{activeTab === 'clients' && (
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h2 className="text-xl font-bold text-gray-800">Clients</h2>
-      {user.role === 'admin' && (
-        <button
-          onClick={() => openAddModal('client')}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition"
-        >
-          <Plus className="h-4 w-4" />
-          Add Client
-        </button>
-      )}
-    </div>
-
-    {/* Search Bar */}
-    <div className="bg-white rounded-lg border p-4">
-      <input
-        type="text"
-        placeholder="Search clients by name, company, VAT, email..."
-        value={searchQueries.clients}
-        onChange={(e) => handleSearch('clients', e.target.value)}
-        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-      />
-    </div>
-    
-    <div className="bg-white rounded-lg border shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-         <thead className="bg-gray-50">
-  <tr>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('clients', 'first_name')}
-    >
-      Name {sortConfig.clients.key === 'first_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('clients', 'company_name')}
-    >
-      Company {sortConfig.clients.key === 'company_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('clients', 'company_address')}
-    >
-      Address {sortConfig.clients.key === 'company_address' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('clients', 'company_vat')}
-    >
-      VAT {sortConfig.clients.key === 'company_vat' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('clients', 'client_contract_id')}
-    >
-      Contract ID {sortConfig.clients.key === 'client_contract_id' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('clients', 'phone')}
-    >
-      Phone {sortConfig.clients.key === 'phone' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('clients', 'email')}
-    >
-      Email {sortConfig.clients.key === 'email' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('clients', 'iban')}
-    >
-      IBAN {sortConfig.clients.key === 'iban' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('clients', 'swift')}
-    >
-      SWIFT {sortConfig.clients.key === 'swift' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('clients', 'created_at')}
-    >
-      Created {sortConfig.clients.key === 'created_at' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    {user.role === 'admin' && (
-      <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-    )}
-  </tr>
-</thead>
-          <tbody>
-            {filterAndSort(clients, 'clients').map((client) => (
-              <tr key={client.id} className="border-b hover:bg-gray-50">
-                <td className="p-4 font-medium">{client.first_name} {client.last_name}</td>
-                <td className="p-4">{client.company_name}</td>
-                <td className="p-4 text-sm">{client.company_address || '-'}</td>
-                <td className="p-4 font-mono text-sm">{client.company_vat}</td>
-                <td className="p-4 font-mono text-sm">{client.client_contract_id || '-'}</td>
-                <td className="p-4">{client.phone || '-'}</td>
-                <td className="p-4">{client.email || '-'}</td>
-                <td className="p-4 font-mono text-xs">{client.iban || '-'}</td>
-                <td className="p-4 font-mono text-xs">{client.swift || '-'}</td>
-                <td className="p-4 text-sm text-gray-600">{formatDate(client.created_at)}</td>
-                {user.role === 'admin' && (
-                  <td className="p-4">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => editItem('client', client)}
-                        className="text-blue-600 hover:text-blue-800 p-1 transition"
-                        title="Edit"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => deleteClient(client.id)}
-                        className="text-red-600 hover:text-red-800 p-1 transition"
-                        title="Delete"
-                      >
-                        <AlertCircle className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                )}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-)}
-
-{/* Contracts Tab */}
-{activeTab === 'contracts' && (
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h2 className="text-xl font-bold text-gray-800">Contracts</h2>
-      {user.role === 'admin' && (
-        <button
-          onClick={() => openAddModal('contract')}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
-        >
-          <Plus className="h-4 w-4" />
-          Add Contract
-        </button>
-      )}
-    </div>
-
-    {/* Search Bar */}
-    <div className="bg-white rounded-lg border p-4">
-      <input
-        type="text"
-        placeholder="Search contracts by number, consultant, client..."
-        value={searchQueries.contracts}
-        onChange={(e) => handleSearch('contracts', e.target.value)}
-        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-      />
-    </div>
-    
-    <div className="bg-white rounded-lg border shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-  <tr>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('contracts', 'contract_number')}
-    >
-      Contract Number {sortConfig.contracts.key === 'contract_number' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('contracts', 'consultant_first_name')}
-    >
-      Consultant {sortConfig.contracts.key === 'consultant_first_name' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('contracts', 'client_first_name')}
-    >
-      Client {sortConfig.contracts.key === 'client_first_name' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th className="text-left p-4 font-medium text-gray-600">Contract IDs</th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('contracts', 'from_date')}
-    >
-      Period {sortConfig.contracts.key === 'from_date' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('contracts', 'purchase_price')}
-    >
-      Purchase Price {sortConfig.contracts.key === 'purchase_price' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('contracts', 'sell_price')}
-    >
-      Sell Price {sortConfig.contracts.key === 'sell_price' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    <th className="text-left p-4 font-medium text-gray-600">VAT Rates</th>
-    <th 
-      className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-      onClick={() => handleSort('contracts', 'status')}
-    >
-      Status {sortConfig.contracts.key === 'status' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
-    </th>
-    {user.role === 'admin' && (
-      <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-    )}
-  </tr>
-</thead>
-          <tbody>
-            {filterAndSort(contracts, 'contracts').map((contract) => {
-              // Check if contract is currently active based on dates
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-
-              const startDate = new Date(contract.from_date);
-              startDate.setHours(0, 0, 0, 0);
-
-              const endDate = new Date(contract.to_date);
-              endDate.setHours(23, 59, 59, 999);
-
-              const isActive = today >= startDate && today <= endDate;
-              
-              return (
-                <tr key={contract.id} className="border-b hover:bg-gray-50">
-                  <td className="p-4">
-                    <div className="font-mono text-sm font-medium text-blue-600">
-                      {contract.contract_number || ''}
-                    </div>
-                  </td>
-                  <td className="p-4">
                     <div>
-                      <div className="font-medium">
-                        {contract.consultant_first_name} {contract.consultant_last_name}
-                      </div>
-                      <div className="text-gray-600">
-                        {contract.consultant_company_name}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        VAT: {contract.consultant_company_vat || 'N/A'}
-                      </div>
+                      <h3 className="text-sm font-medium text-gray-600">{stat.label}</h3>
+                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
                     </div>
-                  </td>
-                  <td className="p-4">
-                    <div>
-                      <div className="font-medium">
-                        {contract.client_first_name} {contract.client_last_name}
-                      </div>
-                      <div className="text-gray-600">
-                        {contract.client_company_name}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        VAT: {contract.client_company_vat || 'N/A'}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="text-sm">
-                      <div className="font-mono text-xs text-gray-600">
-                        <span className="font-medium">Consultant:</span> {contract.consultant_contract_id || 'N/A'}
-                      </div>
-                      <div className="font-mono text-xs text-gray-600 mt-1">
-                        <span className="font-medium">Client:</span> {contract.client_contract_id || 'N/A'}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4 text-sm">
-                    {formatDate(contract.from_date)} - {formatDate(contract.to_date)}
-                  </td>
-                  <td className="p-4">{formatCurrency(contract.purchase_price)}</td>
-                  <td className="p-4">{formatCurrency(contract.sell_price)}</td>
-                  <td className="p-4">
-                    <div className="text-sm">
-                      {/* Consultant VAT */}
-                      <div className="mb-1">
-                        <span className="text-xs text-gray-500">Consultant: </span>
-                        {contract.consultant_vat_enabled ? (
-                          <span className="text-green-600 font-medium">
-                            {parseFloat(contract.consultant_vat_rate || 0).toFixed(0)}%
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 italic">No VAT</span>
-                        )}
-                      </div>
-                      
-                      {/* Client VAT */}
-                      <div>
-                        <span className="text-xs text-gray-500">Client: </span>
-                        {contract.vat_enabled ? (
-                          <span className="text-blue-600 font-medium">
-                            {parseFloat(contract.vat_rate || 0).toFixed(0)}%
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 italic">No VAT</span>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {isActive ? 'active' : 'inactive'}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Timesheet Status Overview */}
+            <div className="bg-white rounded-lg border shadow-sm">
+              <div className="px-6 py-4 border-b">
+                <h2 className="text-lg font-semibold text-gray-800">Timesheet Status Overview</h2>
+                {timesheetStatus && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    {timesheetStatus.checking_month} {timesheetStatus.checking_year} 
+                    <span className="ml-2 text-gray-500">
+                      (Deadline: {timesheetStatus.deadline_day}th)
                     </span>
-                  </td>
-                  {user.role === 'admin' && (
-                    <td className="p-4">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => editItem('contract', contract)}
-                          className="text-blue-600 hover:text-blue-800 p-1 transition"
-                          title="Edit"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteContract(contract.id)}
-                          className="text-red-600 hover:text-red-800 p-1 transition"
-                          title="Delete"
-                        >
-                          <AlertCircle className="h-4 w-4" />
-                        </button>
+                  </p>
+                )}
+              </div>
+              <div className="p-6">
+                {timesheetStatus ? (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-medium text-green-800">Received</h3>
+                        <CheckCircle className="h-5 w-5 text-green-600" />
                       </div>
-                    </td>
-                  )}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-)}
+                      <p className="text-3xl font-bold text-green-600">
+                        {timesheetStatus.consultants?.filter(c => c.status === 'received').length || 0}
+                      </p>
+                      <p className="text-xs text-green-700 mt-1">Timesheets submitted</p>
+                    </div>
 
-{/* Timesheets Tab */}
-{activeTab === 'timesheets' && (
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <div>
-        <h2 className="text-xl font-bold text-gray-800">Timesheet Management</h2>
-        {timesheetStatus && (
-          <p className="text-sm text-gray-600 mt-1">
-            Checking {timesheetStatus.checking_month} {timesheetStatus.checking_year} timesheets 
-            (Deadline: {timesheetStatus.deadline_day}th of each month)
-          </p>
-        )}
-      </div>
-    </div>
-
-    {/* ✅ ADD SUBTABS HERE */}
-    <div className="bg-white rounded-lg border shadow-sm">
-      {/* Subtab Navigation */}
-      <div className="flex gap-2 px-6 pt-4 border-b">
-        <button
-          type="button"
-          onClick={() => setActiveTimesheetTab('current')}
-          className={`px-4 py-2 rounded-t-lg font-medium transition ${
-            activeTimesheetTab === 'current'
-              ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-          }`}
-        >
-          Current Month ({timesheetStatus?.checking_month})
-          <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs">
-            {timesheetStatus?.consultants?.filter(c => c.has_timesheet && c.timesheet_processed).length || 0}
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTimesheetTab('needs-review')}
-          className={`px-4 py-2 rounded-t-lg font-medium transition ${
-            activeTimesheetTab === 'needs-review'
-              ? 'bg-yellow-100 text-yellow-600 border-b-2 border-yellow-600'
-              : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-          }`}
-        >
-          Needs Review
-          <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-            {timesheets.filter(ts => !ts.month).length}
-          </span>
-        </button>
-      </div>
-
-      {/* ✅ CURRENT MONTH TAB CONTENT */}
-      {activeTimesheetTab === 'current' && (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left p-4 font-medium text-gray-600">Date Received</th>
-                <th className="text-left p-4 font-medium text-gray-600">Name</th>
-                <th className="text-left p-4 font-medium text-gray-600">Email</th>
-                <th className="text-left p-4 font-medium text-gray-600">Month</th>
-                <th className="text-left p-4 font-medium text-gray-600">Days Worked</th>
-                <th className="text-left p-4 font-medium text-gray-600">Match Status</th>
-                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {timesheetStatus?.consultants?.map((consultant) => {
-                const timesheet = timesheets.find(ts => {
-                  if (ts.sender_email !== consultant.email) return false;
-                  if (ts.month) {
-                    return ts.month.toLowerCase() === consultant.checking_month?.toLowerCase();
-                  }
-                  const checkingDate = new Date(consultant.checking_year, 
-                    ['January', 'February', 'March', 'April', 'May', 'June', 
-                     'July', 'August', 'September', 'October', 'November', 'December']
-                    .indexOf(consultant.checking_month), 1);
-                  const timesheetDate = new Date(ts.created_at);
-                  return timesheetDate.getMonth() === checkingDate.getMonth() &&
-                         timesheetDate.getFullYear() === checkingDate.getFullYear();
-                });
-                
-                let rowBgColor = '';
-                if (consultant.status === 'received') {
-                  rowBgColor = 'bg-green-50';
-                } else if (consultant.status === 'waiting') {
-                  rowBgColor = 'bg-yellow-50';
-                } else if (consultant.status === 'overdue') {
-                  rowBgColor = 'bg-red-50';
-                }
-                
-                let matchStatus = '-';
-                if (timesheet) {
-                  const pdfDays = parseFloat(timesheet.pdf_days);
-                  const emailDays = parseFloat(timesheet.email_days);
-                  if (pdfDays && emailDays) {
-                    matchStatus = pdfDays === emailDays ? 
-                      'Days Match ✓' : 
-                      `Days Don't Match (PDF: ${pdfDays}, Email: ${emailDays})`;
-                  }
-                }
-                
-                return (
-                  <tr key={consultant.id} className={`border-b hover:opacity-80 transition ${rowBgColor}`}>
-                    <td className="p-4 text-sm">
-                      {timesheet ? new Date(timesheet.created_at).toLocaleDateString('en-GB') : '-'}
-                    </td>
-                    <td className="p-4">
-                      <div className="font-medium">{consultant.first_name} {consultant.last_name}</div>
-                      <div className="text-xs text-gray-600">{consultant.company_name}</div>
-                    </td>
-                    <td className="p-4 text-sm font-mono">{consultant.email}</td>
-                    <td className="p-4 text-sm font-medium">
-                      {timesheet?.month ? (
-                        <span>{timesheet.month} {consultant.checking_year}</span>
-                      ) : (
-                        <span>{consultant.checking_month} {consultant.checking_year}</span>
-                      )}
-                    </td>
-                    <td className="p-4">
-                      {timesheet ? (
-                        timesheet.pdf_days || timesheet.email_days ? (
-                          editingDays === timesheet.id ? (
-                            <div className="flex items-center gap-1">
-                              <input
-                                type="number"
-                                step="0.5"
-                                value={editDaysValue}
-                                onChange={(e) => setEditDaysValue(e.target.value)}
-                                className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                autoFocus
-                                onKeyPress={(e) => {
-                                  if (e.key === 'Enter') updateDays(timesheet.id, editDaysValue);
-                                  if (e.key === 'Escape') cancelEditDays();
-                                }}
-                              />
-                              <button
-                                onClick={() => updateDays(timesheet.id, editDaysValue)}
-                                className="text-green-600 hover:text-green-800 p-1"
-                                title="Save"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={cancelEditDays}
-                                className="text-gray-400 hover:text-gray-600 p-1"
-                                title="Cancel"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ) : (
-                            <div
-                              onClick={() => startEditDays(timesheet)}
-                              className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-block"
-                              title="Click to edit"
-                            >
-                              <span className="font-bold text-blue-600">
-                                {timesheet.pdf_days || timesheet.email_days || '-'}
-                              </span>
-                            </div>
-                          )
-                        ) : (
-                          <span className="text-yellow-600 italic text-sm flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            Processing...
-                          </span>
-                        )
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="p-4">
-                      {timesheet ? (
-                        <span className={`text-sm ${
-                          matchStatus.includes('Match ✓') ? 'text-green-600 font-medium' : 'text-red-600'
-                        }`}>
-                          {matchStatus}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="p-4">
-                      <div className="flex gap-2">
-                        {timesheet?.timesheet_file_url && (
-                          <button
-                            onClick={() => {
-                              const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
-                              window.open(fixedUrl, '_blank');
-                            }}
-                            className="text-blue-600 hover:text-blue-800 p-1 transition"
-                            title="View Timesheet PDF"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                        )}
-                        {timesheet && !timesheet.invoice_generated && (
-                          <button
-                            onClick={async () => {
-                              try {
-                                setGeneratingInvoice(timesheet.id);
-                                await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
-                                  method: 'POST'
-                                });
-                                showNotification('Invoice generated successfully!');
-                                loadData();
-                              } catch (error) {
-                                showNotification('Failed to generate invoice: ' + error.message, 'error');
-                              } finally {
-                                setGeneratingInvoice(null);
-                              }
-                            }}
-                            disabled={generatingInvoice === timesheet.id}
-                            className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
-                              generatingInvoice === timesheet.id 
-                                ? 'bg-green-400 cursor-not-allowed' 
-                                : 'bg-green-600 text-white'
-                            }`}
-                            title="Generate Invoice"
-                          >
-                            {generatingInvoice === timesheet.id ? (
-                              <>
-                                <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
-                                Generating...
-                              </>
-                            ) : (
-                              <>
-                                <FileText className="h-3 w-3" />
-                                Invoice
-                              </>
-                            )}
-                          </button>
-                        )}
-                        {timesheet?.invoice_generated && (
-                          <span className="text-xs text-green-600 flex items-center gap-1">
-                            <CheckCircle className="h-3 w-3" />
-                            Invoiced
-                          </span>
-                        )}
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-medium text-yellow-800">Waiting</h3>
+                        <AlertCircle className="h-5 w-5 text-yellow-600" />
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                      <p className="text-3xl font-bold text-yellow-600">
+                        {timesheetStatus.consultants?.filter(c => c.status === 'waiting').length || 0}
+                      </p>
+                      <p className="text-xs text-yellow-700 mt-1">Before deadline</p>
+                    </div>
 
-      {/* ✅ NEEDS REVIEW TAB CONTENT */}
-      {activeTimesheetTab === 'needs-review' && (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left p-4 font-medium text-gray-600">Date Received</th>
-                <th className="text-left p-4 font-medium text-gray-600">Name</th>
-                <th className="text-left p-4 font-medium text-gray-600">Email</th>
-                <th className="text-left p-4 font-medium text-gray-600">Month (Set Manually)</th>
-                <th className="text-left p-4 font-medium text-gray-600">Days Worked</th>
-                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {timesheets.filter(ts => !ts.month).length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="p-8 text-center text-gray-500">
-                    <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-2" />
-                    <p className="font-medium">All timesheets have been processed!</p>
-                    <p className="text-sm">No timesheets need manual review.</p>
-                  </td>
-                </tr>
-              ) : (
-                timesheets.filter(ts => !ts.month).map((timesheet) => {
-                  // Find consultant by email
-                  const consultant = consultants.find(c => 
-                    c.email?.toLowerCase() === timesheet.sender_email?.toLowerCase()
-                  );
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-sm font-medium text-red-800">Overdue</h3>
+                        <AlertCircle className="h-5 w-5 text-red-600" />
+                      </div>
+                      <p className="text-3xl font-bold text-red-600">
+                        {timesheetStatus.consultants?.filter(c => c.status === 'overdue').length || 0}
+                      </p>
+                      <p className="text-xs text-red-700 mt-1">Past deadline</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500 py-8">
+                    <p>Loading timesheet status...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Monthly Revenue Overview */}
+            <div className="bg-white rounded-lg border shadow-sm">
+              <div className="px-6 py-4 border-b">
+                <h2 className="text-lg font-semibold text-gray-800">Monthly Revenue Overview</h2>
+              </div>
+              <div className="p-6">
+                {(() => {
+                  const now = new Date();
+                  const currentMonth = now.getMonth();
+                  const currentYear = now.getFullYear();
+                  
+                  const currentMonthInvoices = invoices.filter(inv => {
+                    const invDate = new Date(inv.invoice_date);
+                    return invDate.getMonth() === currentMonth && 
+                           invDate.getFullYear() === currentYear;
+                  });
+                  
+                  const consultantRevenue = currentMonthInvoices
+                    .filter(inv => inv.invoice_type === 'consultant')
+                    .reduce((sum, inv) => sum + parseFloat(inv.total_amount), 0);
+                    
+                  const clientRevenue = currentMonthInvoices
+                    .filter(inv => inv.invoice_type === 'client')
+                    .reduce((sum, inv) => sum + parseFloat(inv.total_amount), 0);
+                    
+                  const profit = clientRevenue - consultantRevenue;
                   
                   return (
-                    <tr key={timesheet.id} className="border-b hover:bg-yellow-50 transition">
-                      <td className="p-4 text-sm">
-                        {new Date(timesheet.created_at).toLocaleDateString('en-GB')}
-                      </td>
-                      <td className="p-4">
-                        {consultant ? (
-                          <>
-                            <div className="font-medium">{consultant.first_name} {consultant.last_name}</div>
-                            <div className="text-xs text-gray-600">{consultant.company_name}</div>
-                          </>
-                        ) : (
-                          <div className="text-yellow-600 italic">Unknown Consultant</div>
-                        )}
-                      </td>
-                      <td className="p-4 text-sm font-mono">{timesheet.sender_email}</td>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 mb-2">Client Invoices</p>
+                        <p className="text-3xl font-bold text-blue-600">{formatCurrency(clientRevenue)}</p>
+                        <p className="text-xs text-gray-500 mt-1">{currentMonthInvoices.filter(i => i.invoice_type === 'client').length} invoices</p>
+                      </div>
                       
-                      {/* MONTH DROPDOWN - ALWAYS VISIBLE */}
-                      <td className="p-4">
-                        {editingMonth === timesheet.id ? (
-                          <div className="flex items-center gap-1">
-                            <select
-                              value={editMonthValue}
-                              onChange={(e) => setEditMonthValue(e.target.value)}
-                              className="border border-yellow-500 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-300 min-w-[150px]"
-                              autoFocus
-                            >
-                              <option value="">Select Month</option>
-                              <option value="January">January</option>
-                              <option value="February">February</option>
-                              <option value="March">March</option>
-                              <option value="April">April</option>
-                              <option value="May">May</option>
-                              <option value="June">June</option>
-                              <option value="July">July</option>
-                              <option value="August">August</option>
-                              <option value="September">September</option>
-                              <option value="October">October</option>
-                              <option value="November">November</option>
-                              <option value="December">December</option>
-                            </select>
-                            <button
-                              onClick={() => updateMonth(timesheet.id, editMonthValue)}
-                              className="text-green-600 hover:text-green-800 p-1"
-                              title="Save"
-                              disabled={!editMonthValue}
-                            >
-                              <CheckCircle className="h-5 w-5" />
-                            </button>
-                            <button
-                              onClick={cancelEditMonth}
-                              className="text-gray-400 hover:text-gray-600 p-1"
-                              title="Cancel"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => startEditMonth(timesheet)}
-                            className="w-full text-left bg-yellow-100 hover:bg-yellow-200 px-3 py-2 rounded transition flex items-center gap-2 border border-yellow-300"
-                          >
-                            <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0" />
-                            <span className="text-yellow-700 font-medium">Click to set month</span>
-                            <Edit className="h-3 w-3 text-yellow-600 ml-auto" />
-                          </button>
-                        )}
-                      </td>
-
-                      {/* DAYS WORKED */}
-                      <td className="p-4">
-                        {timesheet.pdf_days || timesheet.email_days ? (
-                          editingDays === timesheet.id ? (
-                            <div className="flex items-center gap-1">
-                              <input
-                                type="number"
-                                step="0.5"
-                                value={editDaysValue}
-                                onChange={(e) => setEditDaysValue(e.target.value)}
-                                className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                autoFocus
-                                onKeyPress={(e) => {
-                                  if (e.key === 'Enter') updateDays(timesheet.id, editDaysValue);
-                                  if (e.key === 'Escape') cancelEditDays();
-                                }}
-                              />
-                              <button
-                                onClick={() => updateDays(timesheet.id, editDaysValue)}
-                                className="text-green-600 hover:text-green-800 p-1"
-                                title="Save"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={cancelEditDays}
-                                className="text-gray-400 hover:text-gray-600 p-1"
-                                title="Cancel"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ) : (
-                            <div
-                              onClick={() => startEditDays(timesheet)}
-                              className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-block"
-                              title="Click to edit"
-                            >
-                              <span className="font-bold text-blue-600">
-                                {timesheet.pdf_days || timesheet.email_days || '-'}
-                              </span>
-                            </div>
-                          )
-                        ) : (
-                          <span className="text-yellow-600 italic text-sm flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            Processing...
-                          </span>
-                        )}
-                      </td>
-
-                      {/* ACTIONS */}
-                      <td className="p-4">
-                        <div className="flex gap-2">
-                          {timesheet.timesheet_file_url && (
-                            <button
-                              onClick={() => {
-                                const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
-                                window.open(fixedUrl, '_blank');
-                              }}
-                              className="text-blue-600 hover:text-blue-800 p-1 transition"
-                              title="View Timesheet PDF"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 mb-2">Consultant Costs</p>
+                        <p className="text-3xl font-bold text-orange-600">{formatCurrency(consultantRevenue)}</p>
+                        <p className="text-xs text-gray-500 mt-1">{currentMonthInvoices.filter(i => i.invoice_type === 'consultant').length} invoices</p>
+                      </div>
+                      
+                      <div className="text-center">
+                        <p className="text-sm text-gray-600 mb-2">Net Profit</p>
+                        <p className={\`text-3xl font-bold \${profit >= 0 ? 'text-green-600' : 'text-red-600'}\`}>
+                          {formatCurrency(profit)}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
                   );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  </div>
-)}
- 
-        {/* Invoices Tab */}
-{activeTab === 'invoices' && (
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h2 className="text-xl font-bold text-gray-800">Generated Invoices</h2>
-      <p className="text-sm text-gray-600">{invoices.length} invoices total</p>
-    </div>
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
 
-    {/* ✅ ADD SEARCH BAR */}
-    {invoices.length > 0 && (
-      <div className="bg-white rounded-lg border p-4">
-        <input
-          type="text"
-          placeholder="Search invoices by number, name, company..."
-          value={searchQueries.invoices}
-          onChange={(e) => handleSearch('invoices', e.target.value)}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-        />
-      </div>
-    )}
-    
-    {invoices.length === 0 ? (
-      <div className="bg-white rounded-lg p-12 text-center border shadow-sm">
-        <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-800 mb-2">No invoices generated yet</h3>
-        <p className="text-gray-600">Go to the dashboard to generate invoices from your contracts</p>
-      </div>
-    ) : (
-      <div className="bg-white rounded-lg border shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th 
-                  className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('invoices', 'invoice_number')}
+        {/* Consultants Tab */}
+        {activeTab === 'consultants' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800">Consultants</h2>
+              {user.role === 'admin' && (
+                <button
+                  onClick={() => openAddModal('consultant')}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
                 >
-                  Invoice # {sortConfig.invoices.key === 'invoice_number' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
-                </th>
-                <th className="text-left p-4 font-medium text-gray-600">Name</th>
-                <th 
-                  className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('invoices', 'invoice_date')}
-                >
-                  Date {sortConfig.invoices.key === 'invoice_date' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
-                </th>
-                <th className="text-left p-4 font-medium text-gray-600">Period</th>
-                <th className="text-left p-4 font-medium text-gray-600">Days</th>
-                <th className="text-left p-4 font-medium text-gray-600">Daily Rate</th>
-                <th className="text-left p-4 font-medium text-gray-600">Subtotal</th>
-                <th className="text-left p-4 font-medium text-gray-600">VAT</th>
-                <th 
-                  className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('invoices', 'total_amount')}
-                >
-                  Total {sortConfig.invoices.key === 'total_amount' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
-                </th>
-                <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filterAndSort(invoices, 'invoices').map((invoice) => {
-    // Calculate amounts
-    const subtotal = parseFloat(invoice.subtotal);
-    const vatRate = parseFloat(invoice.vat_rate);
-    const vatEnabled = invoice.vat_enabled !== false; // default true
-    const vatAmount = vatEnabled ? (subtotal * vatRate / 100) : 0;
-    const total = subtotal + vatAmount;
-    
-    return (
-      <tr key={invoice.id} className="border-b hover:bg-gray-50 group">
-        {/* Invoice Number - Editable */}
-        <td className="p-4 font-mono text-xs">
-          {editingInvoiceNumber === invoice.id ? (
-            <div className="flex items-center gap-1">
+                  <Plus className="h-4 w-4" />
+                  Add Consultant
+                </button>
+              )}
+            </div>
+
+            <div className="bg-white rounded-lg border p-4">
               <input
                 type="text"
-                value={editInvoiceNumberValue}
-                onChange={(e) => setEditInvoiceNumberValue(e.target.value)}
-                className="border border-blue-500 rounded px-2 py-1 text-xs w-40 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                autoFocus
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') updateInvoiceNumber(invoice.id);
-                  if (e.key === 'Escape') cancelEditInvoiceNumber();
-                }}
+                placeholder="Search consultants by name, company, VAT, email..."
+                value={searchQueries.consultants}
+                onChange={(e) => handleSearch('consultants', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
-              <button
-                onClick={() => updateInvoiceNumber(invoice.id)}
-                className="text-green-600 hover:text-green-800 p-1"
-                title="Save"
-              >
-                <CheckCircle className="h-4 w-4" />
-              </button>
-              <button
-                onClick={cancelEditInvoiceNumber}
-                className="text-gray-400 hover:text-gray-600 p-1"
-                title="Cancel"
-              >
-                ×
-              </button>
             </div>
-          ) : (
-            <div 
-              onClick={() => startEditInvoiceNumber(invoice)}
-              className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition inline-block"
-              title="Click to edit"
-            >
-              {invoice.invoice_number}
+            
+            <div className="bg-white rounded-lg border shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('consultants', 'first_name')}>
+                        Name {sortConfig.consultants.key === 'first_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('consultants', 'company_name')}>
+                        Company {sortConfig.consultants.key === 'company_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="text-left p-4 font-medium text-gray-600">Address</th>
+                      <th className="text-left p-4 font-medium text-gray-600">VAT</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Phone</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Email</th>
+                      <th className="text-left p-4 font-medium text-gray-600">IBAN</th>
+                      <th className="text-left p-4 font-medium text-gray-600">SWIFT</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Created</th>
+                      {user.role === 'admin' && <th className="text-left p-4 font-medium text-gray-600">Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filterAndSort(consultants, 'consultants').map((consultant) => (
+                      <tr key={consultant.id} className="border-b hover:bg-gray-50">
+                        <td className="p-4 font-medium">{consultant.first_name} {consultant.last_name}</td>
+                        <td className="p-4">{consultant.company_name}</td>
+                        <td className="p-4 text-sm">{consultant.company_address || '-'}</td>
+                        <td className="p-4 font-mono text-sm">{consultant.company_vat}</td>
+                        <td className="p-4 font-mono text-sm">{consultant.consultant_contract_id || '-'}</td>
+                        <td className="p-4">{consultant.phone || '-'}</td>
+                        <td className="p-4">{consultant.email || '-'}</td>
+                        <td className="p-4 font-mono text-xs">{consultant.iban || '-'}</td>
+                        <td className="p-4 font-mono text-xs">{consultant.swift || '-'}</td>
+                        <td className="p-4 text-sm text-gray-600">{formatDate(consultant.created_at)}</td>
+                        {user.role === 'admin' && (
+                          <td className="p-4">
+                            <div className="flex gap-2">
+                              <button onClick={() => editItem('consultant', consultant)} className="text-blue-600 hover:text-blue-800 p-1 transition" title="Edit">
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button onClick={() => deleteConsultant(consultant.id)} className="text-red-600 hover:text-red-800 p-1 transition" title="Delete">
+                                <AlertCircle className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          )}
-        </td>
-
-
-        {/* Name */}
-        <td className="p-4 text-sm">
-          <div>
-            {invoice.invoice_type === 'consultant' ? (
-              <>
-                <div className="font-medium">
-                  {invoice.consultant_first_name} {invoice.consultant_last_name}
-                </div>
-                <div className="text-gray-600">
-                  {invoice.consultant_company_name}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="font-medium">
-                  {invoice.client_first_name} {invoice.client_last_name}
-                </div>
-                <div className="text-gray-600">
-                  {invoice.client_company_name}
-                </div>
-              </>
-            )}
           </div>
-        </td>
+        )}
 
-        {/* Date */}
-        <td className="p-4 text-sm">
-          {new Date(invoice.period_to).toLocaleDateString('en-GB')}
-        </td>
+        {/* Clients Tab */}
+        {activeTab === 'clients' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800">Clients</h2>
+              {user.role === 'admin' && (
+                <button
+                  onClick={() => openAddModal('client')}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Client
+                </button>
+              )}
+            </div>
 
-        {/* Period */}
-        <td className="p-4 text-xs">
-          {new Date(invoice.period_to).toLocaleDateString('en-US', { month: 'long' })}
-        </td>
+            <div className="bg-white rounded-lg border p-4">
+              <input
+                type="text"
+                placeholder="Search clients by name, company, VAT, email..."
+                value={searchQueries.clients}
+                onChange={(e) => handleSearch('clients', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              />
+            </div>
+            
+            <div className="bg-white rounded-lg border shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('clients', 'first_name')}>
+                        Name {sortConfig.clients.key === 'first_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('clients', 'company_name')}>
+                        Company {sortConfig.clients.key === 'company_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="text-left p-4 font-medium text-gray-600">Address</th>
+                      <th className="text-left p-4 font-medium text-gray-600">VAT</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Phone</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Email</th>
+                      <th className="text-left p-4 font-medium text-gray-600">IBAN</th>
+                      <th className="text-left p-4 font-medium text-gray-600">SWIFT</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Created</th>
+                      {user.role === 'admin' && <th className="text-left p-4 font-medium text-gray-600">Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filterAndSort(clients, 'clients').map((client) => (
+                      <tr key={client.id} className="border-b hover:bg-gray-50">
+                        <td className="p-4 font-medium">{client.first_name} {client.last_name}</td>
+                        <td className="p-4">{client.company_name}</td>
+                        <td className="p-4 text-sm">{client.company_address || '-'}</td>
+                        <td className="p-4 font-mono text-sm">{client.company_vat}</td>
+                        <td className="p-4 font-mono text-sm">{client.client_contract_id || '-'}</td>
+                        <td className="p-4">{client.phone || '-'}</td>
+                        <td className="p-4">{client.email || '-'}</td>
+                        <td className="p-4 font-mono text-xs">{client.iban || '-'}</td>
+                        <td className="p-4 font-mono text-xs">{client.swift || '-'}</td>
+                        <td className="p-4 text-sm text-gray-600">{formatDate(client.created_at)}</td>
+                        {user.role === 'admin' && (
+                          <td className="p-4">
+                            <div className="flex gap-2">
+                              <button onClick={() => editItem('client', client)} className="text-blue-600 hover:text-blue-800 p-1 transition" title="Edit">
+                                <Edit className="h-4 w-4" />
+                              </button>
+                              <button onClick={() => deleteClient(client.id)} className="text-red-600 hover:text-red-800 p-1 transition" title="Delete">
+                                <AlertCircle className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
-        {/* Days */}
-        <td className="p-4 font-medium">{invoice.days_worked}</td>
+        {/* Contracts Tab */}
+        {activeTab === 'contracts' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800">Contracts</h2>
+              {user.role === 'admin' && (
+                <button
+                  onClick={() => openAddModal('contract')}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Contract
+                </button>
+              )}
+            </div>
 
-        {/* Daily Rate */}
-        <td className="p-4">{formatCurrency(invoice.daily_rate)}</td>
+            <div className="bg-white rounded-lg border p-4">
+              <input
+                type="text"
+                placeholder="Search contracts by number, consultant, client..."
+                value={searchQueries.contracts}
+                onChange={(e) => handleSearch('contracts', e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              />
+            </div>
+            
+            <div className="bg-white rounded-lg border shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('contracts', 'contract_number')}>
+                        Contract Number {sortConfig.contracts.key === 'contract_number' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
+                      </th>
+                      <th className="text-left p-4 font-medium text-gray-600">Consultant</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Client</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Contract IDs</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Period</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Purchase Price</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Sell Price</th>
+                      <th className="text-left p-4 font-medium text-gray-600">VAT Rates</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Status</th>
+                      {user.role === 'admin' && <th className="text-left p-4 font-medium text-gray-600">Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filterAndSort(contracts, 'contracts').map((contract) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const startDate = new Date(contract.from_date);
+                      startDate.setHours(0, 0, 0, 0);
+                      const endDate = new Date(contract.to_date);
+                      endDate.setHours(23, 59, 59, 999);
+                      const isActive = today >= startDate && today <= endDate;
+                      
+                      return (
+                        <tr key={contract.id} className="border-b hover:bg-gray-50">
+                          <td className="p-4">
+                            <div className="font-mono text-sm font-medium text-blue-600">{contract.contract_number || ''}</div>
+                          </td>
+                          <td className="p-4">
+                            <div>
+                              <div className="font-medium">{contract.consultant_first_name} {contract.consultant_last_name}</div>
+                              <div className="text-gray-600">{contract.consultant_company_name}</div>
+                              <div className="text-xs text-gray-500 mt-1">VAT: {contract.consultant_company_vat || 'N/A'}</div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div>
+                              <div className="font-medium">{contract.client_first_name} {contract.client_last_name}</div>
+                              <div className="text-gray-600">{contract.client_company_name}</div>
+                              <div className="text-xs text-gray-500 mt-1">VAT: {contract.client_company_vat || 'N/A'}</div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-sm">
+                              <div className="font-mono text-xs text-gray-600">
+                                <span className="font-medium">Consultant:</span> {contract.consultant_contract_id || 'N/A'}
+                              </div>
+                              <div className="font-mono text-xs text-gray-600 mt-1">
+                                <span className="font-medium">Client:</span> {contract.client_contract_id || 'N/A'}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4 text-sm">{formatDate(contract.from_date)} - {formatDate(contract.to_date)}</td>
+                          <td className="p-4">{formatCurrency(contract.purchase_price)}</td>
+                          <td className="p-4">{formatCurrency(contract.sell_price)}</td>
+                          <td className="p-4">
+                            <div className="text-sm">
+                              <div className="mb-1">
+                                <span className="text-xs text-gray-500">Consultant: </span>
+                                {contract.consultant_vat_enabled ? (
+                                  <span className="text-green-600 font-medium">{parseFloat(contract.consultant_vat_rate || 0).toFixed(0)}%</span>
+                                ) : (
+                                  <span className="text-gray-400 italic">No VAT</span>
+                                )}
+                              </div>
+                              <div>
+                                <span className="text-xs text-gray-500">Client: </span>
+                                {contract.vat_enabled ? (
+                                  <span className="text-blue-600 font-medium">{parseFloat(contract.vat_rate || 0).toFixed(0)}%</span>
+                                ) : (
+                                  <span className="text-gray-400 italic">No VAT</span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className={\`px-2 py-1 rounded-full text-xs \${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}\`}>
+                              {isActive ? 'active' : 'inactive'}
+                            </span>
+                          </td>
+                          {user.role === 'admin' && (
+                            <td className="p-4">
+                              <div className="flex gap-2">
+                                <button onClick={() => editItem('contract', contract)} className="text-blue-600 hover:text-blue-800 p-1 transition" title="Edit">
+                                  <Edit className="h-4 w-4" />
+                                </button>
+                                <button onClick={() => deleteContract(contract.id)} className="text-red-600 hover:text-red-800 p-1 transition" title="Delete">
+                                  <AlertCircle className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
-        {/* Subtotal */}
-        <td className="p-4 font-medium">{formatCurrency(subtotal)}</td>
+        {/* Timesheets Tab - ✅ UPDATED WITH calculateTotalDays */}
+        {activeTab === 'timesheets' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">Timesheet Management</h2>
+                {timesheetStatus && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    Checking {timesheetStatus.checking_month} {timesheetStatus.checking_year} timesheets 
+                    (Deadline: {timesheetStatus.deadline_day}th of each month)
+                  </p>
+                )}
+              </div>
+            </div>
 
-{/* VAT - Read Only */}
-<td className="p-4">
-  {invoice.vat_enabled ? (
-    <div className="text-sm">
-      <div className="text-gray-600">{parseFloat(invoice.vat_rate).toFixed(0)}%</div>
-      <div className="font-medium text-gray-700">{formatCurrency(vatAmount)}</div>
-    </div>
-  ) : (
-    <span className="text-xs text-gray-400 italic">No VAT</span>
-  )}
-</td>
+            <div className="bg-white rounded-lg border shadow-sm">
+              {/* Subtab Navigation */}
+              <div className="flex gap-2 px-6 pt-4 border-b">
+                <button
+                  type="button"
+                  onClick={() => setActiveTimesheetTab('current')}
+                  className={\`px-4 py-2 rounded-t-lg font-medium transition \${
+                    activeTimesheetTab === 'current'
+                      ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  }\`}
+                >
+                  Current Month ({timesheetStatus?.checking_month})
+                  <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs">
+                    {timesheetStatus?.consultants?.filter(c => c.has_timesheet && c.timesheet_processed).length || 0}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTimesheetTab('needs-review')}
+                  className={\`px-4 py-2 rounded-t-lg font-medium transition \${
+                    activeTimesheetTab === 'needs-review'
+                      ? 'bg-yellow-100 text-yellow-600 border-b-2 border-yellow-600'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  }\`}
+                >
+                  Needs Review
+                  <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                    {timesheets.filter(ts => !ts.month).length}
+                  </span>
+                </button>
+              </div>
 
-        {/* Total */}
-        <td className="p-4 font-bold text-green-600">{formatCurrency(total)}</td>
+              {/* CURRENT MONTH TAB CONTENT */}
+              {activeTimesheetTab === 'current' && (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left p-4 font-medium text-gray-600">Date Received</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Name</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Email</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Month</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Days Worked</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Match Status</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {timesheetStatus?.consultants?.map((consultant) => {
+                        const timesheet = timesheets.find(ts => {
+                          if (ts.sender_email !== consultant.email) return false;
+                          if (ts.month) {
+                            return ts.month.toLowerCase() === consultant.checking_month?.toLowerCase();
+                          }
+                          const checkingDate = new Date(consultant.checking_year, 
+                            ['January', 'February', 'March', 'April', 'May', 'June', 
+                             'July', 'August', 'September', 'October', 'November', 'December']
+                            .indexOf(consultant.checking_month), 1);
+                          const timesheetDate = new Date(ts.created_at);
+                          return timesheetDate.getMonth() === checkingDate.getMonth() &&
+                                 timesheetDate.getFullYear() === checkingDate.getFullYear();
+                        });
+                        
+                        let rowBgColor = '';
+                        if (consultant.status === 'received') {
+                          rowBgColor = 'bg-green-50';
+                        } else if (consultant.status === 'waiting') {
+                          rowBgColor = 'bg-yellow-50';
+                        } else if (consultant.status === 'overdue') {
+                          rowBgColor = 'bg-red-50';
+                        }
+                        
+                        // ✅ Calculate total days using helper function
+                        const totalDays = calculateTotalDays(timesheet);
+                        
+                        let matchStatus = '-';
+                        if (timesheet) {
+                          const pdfDays = parseFloat(timesheet.pdf_days);
+                          const emailDays = parseFloat(timesheet.email_days);
+                          if (pdfDays && emailDays) {
+                            matchStatus = pdfDays === emailDays ? 
+                              'Days Match ✓' : 
+                              \`Days Don't Match (PDF: \${pdfDays}, Email: \${emailDays})\`;
+                          }
+                        }
+                        
+                        return (
+                          <tr key={consultant.id} className={\`border-b hover:opacity-80 transition \${rowBgColor}\`}>
+                            <td className="p-4 text-sm">
+                              {timesheet ? new Date(timesheet.created_at).toLocaleDateString('en-GB') : '-'}
+                            </td>
+                            <td className="p-4">
+                              <div className="font-medium">{consultant.first_name} {consultant.last_name}</div>
+                              <div className="text-xs text-gray-600">{consultant.company_name}</div>
+                            </td>
+                            <td className="p-4 text-sm font-mono">{consultant.email}</td>
+                            <td className="p-4 text-sm font-medium">
+                              {timesheet?.month ? (
+                                <span>{timesheet.month} {consultant.checking_year}</span>
+                              ) : (
+                                <span>{consultant.checking_month} {consultant.checking_year}</span>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              {timesheet ? (
+                                totalDays !== null ? (
+                                  editingDays === timesheet.id ? (
+                                    <div className="flex items-center gap-1">
+                                      <input
+                                        type="number"
+                                        step="0.5"
+                                        value={editDaysValue}
+                                        onChange={(e) => setEditDaysValue(e.target.value)}
+                                        className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                        autoFocus
+                                        onKeyPress={(e) => {
+                                          if (e.key === 'Enter') updateDays(timesheet.id, editDaysValue);
+                                          if (e.key === 'Escape') cancelEditDays();
+                                        }}
+                                      />
+                                      <button
+                                        onClick={() => updateDays(timesheet.id, editDaysValue)}
+                                        className="text-green-600 hover:text-green-800 p-1"
+                                        title="Save"
+                                      >
+                                        <CheckCircle className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={cancelEditDays}
+                                        className="text-gray-400 hover:text-gray-600 p-1"
+                                        title="Cancel"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div
+                                      onClick={() => startEditDays(timesheet)}
+                                      className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-block"
+                                      title="Click to edit"
+                                    >
+                                      <span className="font-bold text-blue-600">
+                                        {totalDays}
+                                      </span>
+                                    </div>
+                                  )
+                                ) : (
+                                  <span className="text-yellow-600 italic text-sm flex items-center gap-1">
+                                    <AlertCircle className="h-3 w-3" />
+                                    Processing...
+                                  </span>
+                                )
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              {timesheet ? (
+                                <span className={\`text-sm \${
+                                  matchStatus.includes('Match ✓') ? 'text-green-600 font-medium' : 'text-red-600'
+                                }\`}>
+                                  {matchStatus}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex gap-2">
+                                {timesheet?.timesheet_file_url && (
+                                  <button
+                                    onClick={() => {
+                                      const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
+                                      window.open(fixedUrl, '_blank');
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 p-1 transition"
+                                    title="View Timesheet PDF"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </button>
+                                )}
+                                {timesheet && !timesheet.invoice_generated && (
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        setGeneratingInvoice(timesheet.id);
+                                        await apiCall(\`/timesheets/\${timesheet.id}/generate-invoice\`, {
+                                          method: 'POST'
+                                        });
+                                        showNotification('Invoice generated successfully!');
+                                        loadData();
+                                      } catch (error) {
+                                        showNotification('Failed to generate invoice: ' + error.message, 'error');
+                                      } finally {
+                                        setGeneratingInvoice(null);
+                                      }
+                                    }}
+                                    disabled={generatingInvoice === timesheet.id}
+                                    className={\`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 \${
+                                      generatingInvoice === timesheet.id 
+                                        ? 'bg-green-400 cursor-not-allowed' 
+                                        : 'bg-green-600 text-white'
+                                    }\`}
+                                    title="Generate Invoice"
+                                  >
+                                    {generatingInvoice === timesheet.id ? (
+                                      <>
+                                        <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
+                                        Generating...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <FileText className="h-3 w-3" />
+                                        Invoice
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+                                {timesheet?.invoice_generated && (
+                                  <span className="text-xs text-green-600 flex items-center gap-1">
+                                    <CheckCircle className="h-3 w-3" />
+                                    Invoiced
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
-        {/* Status */}
-        <td className="p-4">
-          <span className={`px-2 py-1 rounded-full text-xs ${
-            invoice.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-            invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-            invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-            'bg-gray-100 text-gray-800'
-          }`}>
-            {invoice.status}
-          </span>
-        </td>
+              {/* NEEDS REVIEW TAB CONTENT - ✅ ALSO UPDATED */}
+              {activeTimesheetTab === 'needs-review' && (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left p-4 font-medium text-gray-600">Date Received</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Name</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Email</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Month (Set Manually)</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Days Worked</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {timesheets.filter(ts => !ts.month).length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="p-8 text-center text-gray-500">
+                            <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-2" />
+                            <p className="font-medium">All timesheets have been processed!</p>
+                            <p className="text-sm">No timesheets need manual review.</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        timesheets.filter(ts => !ts.month).map((timesheet) => {
+                          const consultant = consultants.find(c => 
+                            c.email?.toLowerCase() === timesheet.sender_email?.toLowerCase()
+                          );
+                          
+                          // ✅ Calculate total days using helper function
+                          const totalDays = calculateTotalDays(timesheet);
+                          
+                          return (
+                            <tr key={timesheet.id} className="border-b hover:bg-yellow-50 transition">
+                              <td className="p-4 text-sm">
+                                {new Date(timesheet.created_at).toLocaleDateString('en-GB')}
+                              </td>
+                              <td className="p-4">
+                                {consultant ? (
+                                  <>
+                                    <div className="font-medium">{consultant.first_name} {consultant.last_name}</div>
+                                    <div className="text-xs text-gray-600">{consultant.company_name}</div>
+                                  </>
+                                ) : (
+                                  <div className="text-yellow-600 italic">Unknown Consultant</div>
+                                )}
+                              </td>
+                              <td className="p-4 text-sm font-mono">{timesheet.sender_email}</td>
+                              
+                              {/* MONTH DROPDOWN */}
+                              <td className="p-4">
+                                {editingMonth === timesheet.id ? (
+                                  <div className="flex items-center gap-1">
+                                    <select
+                                      value={editMonthValue}
+                                      onChange={(e) => setEditMonthValue(e.target.value)}
+                                      className="border border-yellow-500 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-300 min-w-[150px]"
+                                      autoFocus
+                                    >
+                                      <option value="">Select Month</option>
+                                      <option value="January">January</option>
+                                      <option value="February">February</option>
+                                      <option value="March">March</option>
+                                      <option value="April">April</option>
+                                      <option value="May">May</option>
+                                      <option value="June">June</option>
+                                      <option value="July">July</option>
+                                      <option value="August">August</option>
+                                      <option value="September">September</option>
+                                      <option value="October">October</option>
+                                      <option value="November">November</option>
+                                      <option value="December">December</option>
+                                    </select>
+                                    <button
+                                      onClick={() => updateMonth(timesheet.id, editMonthValue)}
+                                      className="text-green-600 hover:text-green-800 p-1"
+                                      title="Save"
+                                      disabled={!editMonthValue}
+                                    >
+                                      <CheckCircle className="h-5 w-5" />
+                                    </button>
+                                    <button
+                                      onClick={cancelEditMonth}
+                                      className="text-gray-400 hover:text-gray-600 p-1"
+                                      title="Cancel"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => startEditMonth(timesheet)}
+                                    className="w-full text-left bg-yellow-100 hover:bg-yellow-200 px-3 py-2 rounded transition flex items-center gap-2 border border-yellow-300"
+                                  >
+                                    <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+                                    <span className="text-yellow-700 font-medium">Click to set month</span>
+                                    <Edit className="h-3 w-3 text-yellow-600 ml-auto" />
+                                  </button>
+                                )}
+                              </td>
 
-{/* Actions Column */}
-<td className="p-4">
-  <div className="flex gap-2">
-    {/* View Timesheet for this invoice */}
-    <button
-      onClick={() => viewTimesheet(invoice)}
-      className="text-blue-600 hover:text-blue-800 p-1 transition"
-      title="View Timesheet"
-    >
-      <Eye className="h-4 w-4" />
-    </button>
-    
-    {/* View/Download PDF */}
-    <button
-      onClick={() => downloadPDF(invoice)}
-      className="text-green-600 hover:text-green-800 p-1 transition"
-      title={invoice.pdf_url ? "Download PDF" : "Generate & Download PDF"}
-      disabled={dataLoading}
-    >
-      <Download className="h-4 w-4" />
-    </button>
-    
-    {/* Send Email */}
-    <button
-      onClick={() => sendInvoiceEmail(invoice)}
-      className={`p-1 transition ${
-        invoice.email_sent 
-          ? 'text-green-600 hover:text-green-800' 
-          : 'text-purple-600 hover:text-purple-800'
-      }`}
-      title={invoice.email_sent ? `Sent to ${invoice.email_sent_to}` : "Send Invoice Email"}
-      disabled={dataLoading}
-    >
-      {invoice.email_sent ? <CheckCircle className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-    </button>
-  </div>
-</td>
-      </tr>
-    );
-  })}
-</tbody>
+                              {/* DAYS WORKED - ✅ USING calculateTotalDays */}
+                              <td className="p-4">
+                                {totalDays !== null ? (
+                                  editingDays === timesheet.id ? (
+                                    <div className="flex items-center gap-1">
+                                      <input
+                                        type="number"
+                                        step="0.5"
+                                        value={editDaysValue}
+                                        onChange={(e) => setEditDaysValue(e.target.value)}
+                                        className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                        autoFocus
+                                        onKeyPress={(e) => {
+                                          if (e.key === 'Enter') updateDays(timesheet.id, editDaysValue);
+                                          if (e.key === 'Escape') cancelEditDays();
+                                        }}
+                                      />
+                                      <button
+                                        onClick={() => updateDays(timesheet.id, editDaysValue)}
+                                        className="text-green-600 hover:text-green-800 p-1"
+                                        title="Save"
+                                      >
+                                        <CheckCircle className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={cancelEditDays}
+                                        className="text-gray-400 hover:text-gray-600 p-1"
+                                        title="Cancel"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div
+                                      onClick={() => startEditDays(timesheet)}
+                                      className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-block"
+                                      title="Click to edit"
+                                    >
+                                      <span className="font-bold text-blue-600">
+                                        {totalDays}
+                                      </span>
+                                    </div>
+                                  )
+                                ) : (
+                                  <span className="text-yellow-600 italic text-sm flex items-center gap-1">
+                                    <AlertCircle className="h-3 w-3" />
+                                    Processing...
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* ACTIONS */}
+                              <td className="p-4">
+                                <div className="flex gap-2">
+                                  {timesheet.timesheet_file_url && (
+                                    <button
+                                      onClick={() => {
+                                        const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
+                                        window.open(fixedUrl, '_blank');
+                                      }}
+                                      className="text-blue-600 hover:text-blue-800 p-1 transition"
+                                      title="View Timesheet PDF"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+ 
+        {/* Invoices Tab */}
+        {activeTab === 'invoices' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800">Generated Invoices</h2>
+              <p className="text-sm text-gray-600">{invoices.length} invoices total</p>
+            </div>
+
+            {invoices.length > 0 && (
+              <div className="bg-white rounded-lg border p-4">
+                <input
+                  type="text"
+                  placeholder="Search invoices by number, name, company..."
+                  value={searchQueries.invoices}
+                  onChange={(e) => handleSearch('invoices', e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+            )}
+            
+            {invoices.length === 0 ? (
+              <div className="bg-white rounded-lg p-12 text-center border shadow-sm">
+                <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-800 mb-2">No invoices generated yet</h3>
+                <p className="text-gray-600">Go to the dashboard to generate invoices from your contracts</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg border shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('invoices', 'invoice_number')}>
+                          Invoice # {sortConfig.invoices.key === 'invoice_number' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
+                        </th>
+                        <th className="text-left p-4 font-medium text-gray-600">Name</th>
+                        <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('invoices', 'invoice_date')}>
+                          Date {sortConfig.invoices.key === 'invoice_date' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
+                        </th>
+                        <th className="text-left p-4 font-medium text-gray-600">Period</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Days</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Daily Rate</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Subtotal</th>
+                        <th className="text-left p-4 font-medium text-gray-600">VAT</th>
+                        <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('invoices', 'total_amount')}>
+                          Total {sortConfig.invoices.key === 'total_amount' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
+                        </th>
+                        <th className="text-left p-4 font-medium text-gray-600">Status</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filterAndSort(invoices, 'invoices').map((invoice) => {
+                        const subtotal = parseFloat(invoice.subtotal);
+                        const vatRate = parseFloat(invoice.vat_rate);
+                        const vatEnabled = invoice.vat_enabled !== false;
+                        const vatAmount = vatEnabled ? (subtotal * vatRate / 100) : 0;
+                        const total = subtotal + vatAmount;
+                        
+                        return (
+                          <tr key={invoice.id} className="border-b hover:bg-gray-50 group">
+                            <td className="p-4 font-mono text-xs">
+                              {editingInvoiceNumber === invoice.id ? (
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    type="text"
+                                    value={editInvoiceNumberValue}
+                                    onChange={(e) => setEditInvoiceNumberValue(e.target.value)}
+                                    className="border border-blue-500 rounded px-2 py-1 text-xs w-40 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                    autoFocus
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter') updateInvoiceNumber(invoice.id);
+                                      if (e.key === 'Escape') cancelEditInvoiceNumber();
+                                    }}
+                                  />
+                                  <button onClick={() => updateInvoiceNumber(invoice.id)} className="text-green-600 hover:text-green-800 p-1" title="Save">
+                                    <CheckCircle className="h-4 w-4" />
+                                  </button>
+                                  <button onClick={cancelEditInvoiceNumber} className="text-gray-400 hover:text-gray-600 p-1" title="Cancel">×</button>
+                                </div>
+                              ) : (
+                                <div onClick={() => startEditInvoiceNumber(invoice)} className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition inline-block" title="Click to edit">
+                                  {invoice.invoice_number}
+                                </div>
+                              )}
+                            </td>
+                            <td className="p-4 text-sm">
+                              <div>
+                                {invoice.invoice_type === 'consultant' ? (
+                                  <>
+                                    <div className="font-medium">{invoice.consultant_first_name} {invoice.consultant_last_name}</div>
+                                    <div className="text-gray-600">{invoice.consultant_company_name}</div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div className="font-medium">{invoice.client_first_name} {invoice.client_last_name}</div>
+                                    <div className="text-gray-600">{invoice.client_company_name}</div>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-4 text-sm">{new Date(invoice.period_to).toLocaleDateString('en-GB')}</td>
+                            <td className="p-4 text-xs">{new Date(invoice.period_to).toLocaleDateString('en-US', { month: 'long' })}</td>
+                            <td className="p-4 font-medium">{invoice.days_worked}</td>
+                            <td className="p-4">{formatCurrency(invoice.daily_rate)}</td>
+                            <td className="p-4 font-medium">{formatCurrency(subtotal)}</td>
+                            <td className="p-4">
+                              {invoice.vat_enabled ? (
+                                <div className="text-sm">
+                                  <div className="text-gray-600">{parseFloat(invoice.vat_rate).toFixed(0)}%</div>
+                                  <div className="font-medium text-gray-700">{formatCurrency(vatAmount)}</div>
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-400 italic">No VAT</span>
+                              )}
+                            </td>
+                            <td className="p-4 font-bold text-green-600">{formatCurrency(total)}</td>
+                            <td className="p-4">
+                              <span className={\`px-2 py-1 rounded-full text-xs \${
+                                invoice.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                                invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                                invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                              }\`}>
+                                {invoice.status}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex gap-2">
+                                <button onClick={() => viewTimesheet(invoice)} className="text-blue-600 hover:text-blue-800 p-1 transition" title="View Timesheet">
+                                  <Eye className="h-4 w-4" />
+                                </button>
+                                <button onClick={() => downloadPDF(invoice)} className="text-green-600 hover:text-green-800 p-1 transition" title={invoice.pdf_url ? "Download PDF" : "Generate & Download PDF"} disabled={dataLoading}>
+                                  <Download className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => sendInvoiceEmail(invoice)}
+                                  className={\`p-1 transition \${invoice.email_sent ? 'text-green-600 hover:text-green-800' : 'text-purple-600 hover:text-purple-800'}\`}
+                                  title={invoice.email_sent ? \`Sent to \${invoice.email_sent_to}\` : "Send Invoice Email"}
+                                  disabled={dataLoading}
+                                >
+                                  {invoice.email_sent ? <CheckCircle className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
                   </table>
                 </div>
               </div>
             )}
           </div>
         )}
-{/* Users Management Tab (Admin Only) */}  {/* ✅ MOVE IT HERE */}
+
+        {/* Users Management Tab (Admin Only) */}
         {activeTab === 'users' && user.role === 'admin' && (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -3216,57 +2932,33 @@ const openAddModal = (type) => {
                       <tr key={u.id} className="border-b hover:bg-gray-50">
                         <td className="p-4">
                           <div className="font-medium">{u.first_name} {u.last_name}</div>
-                          {u.id === user.id && (
-                            <span className="text-xs text-blue-600">(You)</span>
-                          )}
+                          {u.id === user.id && <span className="text-xs text-blue-600">(You)</span>}
                         </td>
                         <td className="p-4 text-sm">{u.email}</td>
                         <td className="p-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            u.role === 'admin' 
-                              ? 'bg-purple-100 text-purple-800' 
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span className={\`px-2 py-1 rounded-full text-xs font-medium \${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}\`}>
                             {u.role}
                           </span>
                         </td>
                         <td className="p-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            u.active 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
+                          <span className={\`px-2 py-1 rounded-full text-xs font-medium \${u.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}\`}>
                             {u.active ? 'Active' : 'Disabled'}
                           </span>
                         </td>
-                        <td className="p-4 text-sm">
-                          {u.created_by_first_name 
-                            ? `${u.created_by_first_name} ${u.created_by_last_name}` 
-                            : 'System'}
-                        </td>
-                        <td className="p-4 text-sm text-gray-600">
-                          {u.last_login ? new Date(u.last_login).toLocaleDateString('en-GB') : 'Never'}
-                        </td>
+                        <td className="p-4 text-sm">{u.created_by_first_name ? \`\${u.created_by_first_name} \${u.created_by_last_name}\` : 'System'}</td>
+                        <td className="p-4 text-sm text-gray-600">{u.last_login ? new Date(u.last_login).toLocaleDateString('en-GB') : 'Never'}</td>
                         <td className="p-4">
                           <div className="flex gap-2">
                             {u.id !== user.id && (
                               <>
                                 <button
                                   onClick={() => toggleUserActive(u.id)}
-                                  className={`px-3 py-1 text-xs rounded transition ${
-                                    u.active
-                                      ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                                      : 'bg-green-100 text-green-800 hover:bg-green-200'
-                                  }`}
+                                  className={\`px-3 py-1 text-xs rounded transition \${u.active ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200'}\`}
                                   title={u.active ? 'Disable User' : 'Enable User'}
                                 >
                                   {u.active ? 'Disable' : 'Enable'}
                                 </button>
-                                <button
-                                  onClick={() => deleteUser(u.id)}
-                                  className="px-3 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition"
-                                  title="Delete User"
-                                >
+                                <button onClick={() => deleteUser(u.id)} className="px-3 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition" title="Delete User">
                                   Delete
                                 </button>
                               </>
