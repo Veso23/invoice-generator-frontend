@@ -1007,6 +1007,7 @@ const InvoiceGeneratorApp = () => {
   return localStorage.getItem('activeTab') || 'dashboard';
 });
   const [dataLoading, setDataLoading] = useState(false);
+  setEditingItem(null);
   const [notification, setNotification] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({});
@@ -1020,7 +1021,6 @@ const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 const [timesheetStatus, setTimesheetStatus] = useState(null);
 const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
   const [users, setUsers] = useState([]);
   const [editingMonth, setEditingMonth] = useState(null);
 const [editMonthValue, setEditMonthValue] = useState('');
