@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Plus, Edit, Calculator, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import './App.css';
 
 
@@ -1002,7 +1002,6 @@ const InvoiceGeneratorApp = () => {
   const [clients, setClients] = useState([]);
   const [contracts, setContracts] = useState([]);
   const [invoices, setInvoices] = useState([]);
-  const [automationLogs, setAutomationLogs] = useState([]);
   const [generatingInvoice, setGeneratingInvoice] = useState(null);  // ✅ ADD THIS LINE HERE
   const [activeTab, setActiveTab] = useState(() => {
   // Load saved tab from localStorage, default to 'dashboard'
@@ -1057,7 +1056,7 @@ const loadData = async () => {
   
   setDataLoading(true);
   try {
-    const [consultantsData, clientsData, contractsData, invoicesData, automationData, timesheetsData] = await Promise.all([
+const [consultantsData, clientsData, contractsData, invoicesData, timesheetsData] = await Promise.all([
       apiCall('/consultants').catch(err => {
         console.error('Failed to load consultants:', err);
         return [];
@@ -1074,10 +1073,6 @@ const loadData = async () => {
         console.error('Failed to load invoices:', err);
         return [];
       }),
-      apiCall('/automation-logs').catch(err => {
-        console.error('Failed to load automation logs:', err);
-        return [];
-      }),
       apiCall('/timesheets').catch(err => {
         console.error('Failed to load timesheets:', err);
         return [];
@@ -1088,7 +1083,6 @@ const loadData = async () => {
     setClients(clientsData);
     setContracts(contractsData);
     setInvoices(invoicesData);
-    setAutomationLogs(automationData);
     setTimesheets(timesheetsData);
     
     // Load company settings and timesheet status
@@ -1113,21 +1107,6 @@ useEffect(() => {
   }
   // eslint-disable-next-line react-hooks/exhaustive-deps
 }, [user]);
-  // Generate invoices
-  const generateInvoices = async (contractId) => {
-    try {
-      setDataLoading(true);
-      await apiCall(`/invoices/generate/${contractId}`, {
-        method: 'POST'
-      });
-      
-      showNotification('Generated invoices successfully!');
-      loadData(); // Refresh data
-    } catch (error) {
-      showNotification('Failed to generate invoices: ' + error.message, 'error');
-    }
-    setDataLoading(false);
-  };
 
   // Start editing invoice number
   const startEditInvoiceNumber = (invoice) => {
@@ -1765,12 +1744,6 @@ const openAddModal = (type) => {
     return <LoginForm onLogin={login} onRegister={register} />;
   }
 
-  const calculateDays = (fromDate, toDate) => {
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
-    const timeDiff = end - start;
-    return Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1;
-  };
 
   const formatCurrency = (amount) => `€${parseFloat(amount).toFixed(2)}`;
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString();
