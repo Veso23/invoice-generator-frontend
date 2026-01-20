@@ -1007,7 +1007,6 @@ const InvoiceGeneratorApp = () => {
   return localStorage.getItem('activeTab') || 'dashboard';
 });
   const [dataLoading, setDataLoading] = useState(false);
-  setEditingItem(null);
   const [notification, setNotification] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({});
@@ -1284,7 +1283,6 @@ const updateConsultant = async (id, consultantData) => {
     });
     showNotification('Consultant updated successfully!');
     setEditModalOpen(false);
-    setEditingItem(null);
     loadData();
   } catch (error) {
     showNotification('Failed to update consultant: ' + error.message, 'error');
@@ -1299,7 +1297,6 @@ const updateClient = async (id, clientData) => {
     });
     showNotification('Client updated successfully!');
     setEditModalOpen(false);
-    setEditingItem(null);
     loadData();
   } catch (error) {
     showNotification('Failed to update client: ' + error.message, 'error');
@@ -1314,7 +1311,6 @@ const updateContract = async (id, contractData) => {
     });
     showNotification('Contract updated successfully!');
     setEditModalOpen(false);
-    setEditingItem(null);
     loadData();
   } catch (error) {
     showNotification('Failed to update contract: ' + error.message, 'error');
