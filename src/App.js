@@ -1028,6 +1028,7 @@ const [editMonthValue, setEditMonthValue] = useState('');
 const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 const [editModalOpen, setEditModalOpen] = useState(false);
+ const [activeTimesheetTab, setActiveTimesheetTab] = useState('current');
 const [searchQueries, setSearchQueries] = useState({
   consultants: '',
   clients: '',
@@ -2571,283 +2572,418 @@ const openAddModal = (type) => {
         )}
       </div>
     </div>
-    
+
+    {/* ✅ ADD SUBTABS HERE */}
     <div className="bg-white rounded-lg border shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left p-4 font-medium text-gray-600">Date Received</th>
-              <th className="text-left p-4 font-medium text-gray-600">Name</th>
-              <th className="text-left p-4 font-medium text-gray-600">Email</th>
-              <th className="text-left p-4 font-medium text-gray-600">Month</th>
-              <th className="text-left p-4 font-medium text-gray-600">Days Worked</th>
-              <th className="text-left p-4 font-medium text-gray-600">Match Status</th>
-              <th className="text-left p-4 font-medium text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {timesheetStatus?.consultants?.map((consultant) => {
-              // Find matching timesheet
-              const timesheet = timesheets.find(ts => {
-  if (ts.sender_email !== consultant.email) return false;
-  
-  // If month exists in timesheet, match it
-  if (ts.month) {
-    return ts.month.toLowerCase() === consultant.checking_month?.toLowerCase();
-  }
-  
-  // If month is NULL, check if it's from the current checking period
-  const checkingDate = new Date(consultant.checking_year, 
-    ['January', 'February', 'March', 'April', 'May', 'June', 
-     'July', 'August', 'September', 'October', 'November', 'December']
-    .indexOf(consultant.checking_month), 1);
-  
-  const timesheetDate = new Date(ts.created_at);
-  
-  // Match if within same month
-  return timesheetDate.getMonth() === checkingDate.getMonth() &&
-         timesheetDate.getFullYear() === checkingDate.getFullYear();
-});
-               if (consultant.email === 'tes421291@gmail.com') {
-    console.log('DEBUG - Consultant:', consultant.email);
-    console.log('DEBUG - Timesheet found:', timesheet);
-    console.log('DEBUG - Timesheet month:', timesheet?.month);
-  }
-              
-              // Determine row background color
-              let rowBgColor = '';
-              if (consultant.status === 'received') {
-                rowBgColor = 'bg-green-50'; // Green
-              } else if (consultant.status === 'waiting') {
-                rowBgColor = 'bg-yellow-50'; // Yellow
-              } else if (consultant.status === 'overdue') {
-                rowBgColor = 'bg-red-50'; // Red
-              }
-              
-              // Check if days match
-              let matchStatus = '-';
-              if (timesheet) {
-                const pdfDays = parseFloat(timesheet.pdf_days);
-                const emailDays = parseFloat(timesheet.email_days);
-                if (pdfDays && emailDays) {
-                  matchStatus = pdfDays === emailDays ? 
-                    'Days Match ✓' : 
-                    `Days Don't Match (PDF: ${pdfDays}, Email: ${emailDays})`;
-                }
-              }
-              
-              return (
-                <tr key={consultant.id} className={`border-b hover:opacity-80 transition ${rowBgColor}`}>
-                  <td className="p-4 text-sm">
-                    {timesheet ? new Date(timesheet.created_at).toLocaleDateString('en-GB') : '-'}
-                  </td>
-                  <td className="p-4">
-                    <div className="font-medium">{consultant.first_name} {consultant.last_name}</div>
-                    <div className="text-xs text-gray-600">{consultant.company_name}</div>
-                  </td>
-                  <td className="p-4 text-sm font-mono">{consultant.email}</td>
-
-                {/* Month Column - Editable when NULL */}
-<td className="p-4 text-sm font-medium">
-  {timesheet ? (
-    // Timesheet exists
-    timesheet.month ? (
-      // Month has value - just display it
-      <span>{timesheet.month} {consultant.checking_year}</span>
-    ) : (
-      // Month is NULL - show editable field
-      editingMonth === timesheet.id ? (
-        // Currently editing - show dropdown
-        <div className="flex items-center gap-1">
-          <select
-            value={editMonthValue}
-            onChange={(e) => setEditMonthValue(e.target.value)}
-            className="border border-blue-500 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-            autoFocus
-          >
-            <option value="">Select Month</option>
-            <option value="January">January</option>
-            <option value="February">February</option>
-            <option value="March">March</option>
-            <option value="April">April</option>
-            <option value="May">May</option>
-            <option value="June">June</option>
-            <option value="July">July</option>
-            <option value="August">August</option>
-            <option value="September">September</option>
-            <option value="October">October</option>
-            <option value="November">November</option>
-            <option value="December">December</option>
-          </select>
-          <button
-            onClick={() => updateMonth(timesheet.id, editMonthValue)}
-            className="text-green-600 hover:text-green-800 p-1"
-            title="Save"
-            disabled={!editMonthValue}
-          >
-            <CheckCircle className="h-4 w-4" />
-          </button>
-          <button
-            onClick={cancelEditMonth}
-            className="text-gray-400 hover:text-gray-600 p-1"
-            title="Cancel"
-          >
-            ×
-          </button>
-        </div>
-      ) : (
-        // Not editing - show clickable prompt
-        <div
-          onClick={() => startEditMonth(timesheet)}
-          className="cursor-pointer hover:bg-yellow-100 px-2 py-1 rounded transition inline-flex items-center gap-2"
-          title="Click to set month"
+      {/* Subtab Navigation */}
+      <div className="flex gap-2 px-6 pt-4 border-b">
+        <button
+          type="button"
+          onClick={() => setActiveTimesheetTab('current')}
+          className={`px-4 py-2 rounded-t-lg font-medium transition ${
+            activeTimesheetTab === 'current'
+              ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+          }`}
         >
-          <span className="text-yellow-600 italic">Click to set month</span>
-          <Edit className="h-3 w-3 text-yellow-600" />
-        </div>
-      )
-    )
-  ) : (
-    // No timesheet - show expected month
-    <span>{consultant.checking_month} {consultant.checking_year}</span>
-  )}
-</td>
-
-                  {/* Days Worked Column */}
-<td className="p-4">
-  {timesheet ? (
-    timesheet.pdf_days || timesheet.email_days ? (
-      editingDays === timesheet.id ? (
-        <div className="flex items-center gap-1">
-          <input
-            type="number"
-            step="0.5"
-            value={editDaysValue}
-            onChange={(e) => setEditDaysValue(e.target.value)}
-            className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-            autoFocus
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') updateDays(timesheet.id, editDaysValue);
-              if (e.key === 'Escape') cancelEditDays();
-            }}
-          />
-          <button
-            onClick={() => updateDays(timesheet.id, editDaysValue)}
-            className="text-green-600 hover:text-green-800 p-1"
-            title="Save"
-          >
-            <CheckCircle className="h-4 w-4" />
-          </button>
-          <button
-            onClick={cancelEditDays}
-            className="text-gray-400 hover:text-gray-600 p-1"
-            title="Cancel"
-          >
-            ×
-          </button>
-        </div>
-      ) : (
-        <div
-          onClick={() => startEditDays(timesheet)}
-          className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-block"
-          title="Click to edit"
-        >
-          <span className="font-bold text-blue-600">
-            {timesheet.pdf_days || timesheet.email_days || '-'}
+          Current Month ({timesheetStatus?.checking_month})
+          <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs">
+            {timesheetStatus?.consultants?.filter(c => c.has_timesheet && c.timesheet_processed).length || 0}
           </span>
-        </div>
-      )
-    ) : (
-      <span className="text-yellow-600 italic text-sm flex items-center gap-1">
-        <AlertCircle className="h-3 w-3" />
-        Processing...
-      </span>
-    )
-  ) : (
-    <span className="text-gray-400">-</span>
-  )}
-</td>
-                  <td className="p-4">
-                    {timesheet ? (
-                      <span className={`text-sm ${
-                        matchStatus.includes('Match ✓') ? 'text-green-600 font-medium' : 'text-red-600'
-                      }`}>
-                        {matchStatus}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="p-4">
-                    <div className="flex gap-2">
-                     {timesheet?.timesheet_file_url && (
-  <button
-    onClick={() => {
-      const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
-      window.open(fixedUrl, '_blank');
-    }}
-    className="text-blue-600 hover:text-blue-800 p-1 transition"
-    title="View Timesheet PDF"
-  >
-    <Eye className="h-4 w-4" />
-  </button>
-)}
-                     {timesheet && !timesheet.invoice_generated && (
-  <button
-    onClick={async () => {
-      try {
-        setGeneratingInvoice(timesheet.id); // ✅ Set loading state
-        await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
-          method: 'POST'
-        });
-        showNotification('Invoice generated successfully!');
-        loadData(); // Reload to hide button
-      } catch (error) {
-        showNotification('Failed to generate invoice: ' + error.message, 'error');
-      } finally {
-        setGeneratingInvoice(null); // ✅ Clear loading state
-      }
-    }}
-    disabled={generatingInvoice === timesheet.id} // ✅ Disable while loading
-    className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
-      generatingInvoice === timesheet.id 
-        ? 'bg-green-400 cursor-not-allowed' 
-        : 'bg-green-600 text-white'
-    }`}
-    title="Generate Invoice"
-  >
-    {generatingInvoice === timesheet.id ? (
-      <>
-        <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
-        Generating...
-      </>
-    ) : (
-      <>
-        <FileText className="h-3 w-3" />
-        Invoice
-      </>
-    )}
-  </button>
-)}
-                      {timesheet?.invoice_generated && (
-                        <span className="text-xs text-green-600 flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3" />
-                          Invoiced
-                        </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTimesheetTab('needs-review')}
+          className={`px-4 py-2 rounded-t-lg font-medium transition ${
+            activeTimesheetTab === 'needs-review'
+              ? 'bg-yellow-100 text-yellow-600 border-b-2 border-yellow-600'
+              : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+          }`}
+        >
+          Needs Review
+          <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+            {timesheets.filter(ts => !ts.month).length}
+          </span>
+        </button>
+      </div>
+
+      {/* ✅ CURRENT MONTH TAB CONTENT */}
+      {activeTimesheetTab === 'current' && (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left p-4 font-medium text-gray-600">Date Received</th>
+                <th className="text-left p-4 font-medium text-gray-600">Name</th>
+                <th className="text-left p-4 font-medium text-gray-600">Email</th>
+                <th className="text-left p-4 font-medium text-gray-600">Month</th>
+                <th className="text-left p-4 font-medium text-gray-600">Days Worked</th>
+                <th className="text-left p-4 font-medium text-gray-600">Match Status</th>
+                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {timesheetStatus?.consultants?.map((consultant) => {
+                const timesheet = timesheets.find(ts => {
+                  if (ts.sender_email !== consultant.email) return false;
+                  if (ts.month) {
+                    return ts.month.toLowerCase() === consultant.checking_month?.toLowerCase();
+                  }
+                  const checkingDate = new Date(consultant.checking_year, 
+                    ['January', 'February', 'March', 'April', 'May', 'June', 
+                     'July', 'August', 'September', 'October', 'November', 'December']
+                    .indexOf(consultant.checking_month), 1);
+                  const timesheetDate = new Date(ts.created_at);
+                  return timesheetDate.getMonth() === checkingDate.getMonth() &&
+                         timesheetDate.getFullYear() === checkingDate.getFullYear();
+                });
+                
+                let rowBgColor = '';
+                if (consultant.status === 'received') {
+                  rowBgColor = 'bg-green-50';
+                } else if (consultant.status === 'waiting') {
+                  rowBgColor = 'bg-yellow-50';
+                } else if (consultant.status === 'overdue') {
+                  rowBgColor = 'bg-red-50';
+                }
+                
+                let matchStatus = '-';
+                if (timesheet) {
+                  const pdfDays = parseFloat(timesheet.pdf_days);
+                  const emailDays = parseFloat(timesheet.email_days);
+                  if (pdfDays && emailDays) {
+                    matchStatus = pdfDays === emailDays ? 
+                      'Days Match ✓' : 
+                      `Days Don't Match (PDF: ${pdfDays}, Email: ${emailDays})`;
+                  }
+                }
+                
+                return (
+                  <tr key={consultant.id} className={`border-b hover:opacity-80 transition ${rowBgColor}`}>
+                    <td className="p-4 text-sm">
+                      {timesheet ? new Date(timesheet.created_at).toLocaleDateString('en-GB') : '-'}
+                    </td>
+                    <td className="p-4">
+                      <div className="font-medium">{consultant.first_name} {consultant.last_name}</div>
+                      <div className="text-xs text-gray-600">{consultant.company_name}</div>
+                    </td>
+                    <td className="p-4 text-sm font-mono">{consultant.email}</td>
+                    <td className="p-4 text-sm font-medium">
+                      {timesheet?.month ? (
+                        <span>{timesheet.month} {consultant.checking_year}</span>
+                      ) : (
+                        <span>{consultant.checking_month} {consultant.checking_year}</span>
                       )}
-                    </div>
+                    </td>
+                    <td className="p-4">
+                      {timesheet ? (
+                        timesheet.pdf_days || timesheet.email_days ? (
+                          editingDays === timesheet.id ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                step="0.5"
+                                value={editDaysValue}
+                                onChange={(e) => setEditDaysValue(e.target.value)}
+                                className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                autoFocus
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') updateDays(timesheet.id, editDaysValue);
+                                  if (e.key === 'Escape') cancelEditDays();
+                                }}
+                              />
+                              <button
+                                onClick={() => updateDays(timesheet.id, editDaysValue)}
+                                className="text-green-600 hover:text-green-800 p-1"
+                                title="Save"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={cancelEditDays}
+                                className="text-gray-400 hover:text-gray-600 p-1"
+                                title="Cancel"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : (
+                            <div
+                              onClick={() => startEditDays(timesheet)}
+                              className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-block"
+                              title="Click to edit"
+                            >
+                              <span className="font-bold text-blue-600">
+                                {timesheet.pdf_days || timesheet.email_days || '-'}
+                              </span>
+                            </div>
+                          )
+                        ) : (
+                          <span className="text-yellow-600 italic text-sm flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            Processing...
+                          </span>
+                        )
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      {timesheet ? (
+                        <span className={`text-sm ${
+                          matchStatus.includes('Match ✓') ? 'text-green-600 font-medium' : 'text-red-600'
+                        }`}>
+                          {matchStatus}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <div className="flex gap-2">
+                        {timesheet?.timesheet_file_url && (
+                          <button
+                            onClick={() => {
+                              const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
+                              window.open(fixedUrl, '_blank');
+                            }}
+                            className="text-blue-600 hover:text-blue-800 p-1 transition"
+                            title="View Timesheet PDF"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                        )}
+                        {timesheet && !timesheet.invoice_generated && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                setGeneratingInvoice(timesheet.id);
+                                await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
+                                  method: 'POST'
+                                });
+                                showNotification('Invoice generated successfully!');
+                                loadData();
+                              } catch (error) {
+                                showNotification('Failed to generate invoice: ' + error.message, 'error');
+                              } finally {
+                                setGeneratingInvoice(null);
+                              }
+                            }}
+                            disabled={generatingInvoice === timesheet.id}
+                            className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
+                              generatingInvoice === timesheet.id 
+                                ? 'bg-green-400 cursor-not-allowed' 
+                                : 'bg-green-600 text-white'
+                            }`}
+                            title="Generate Invoice"
+                          >
+                            {generatingInvoice === timesheet.id ? (
+                              <>
+                                <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
+                                Generating...
+                              </>
+                            ) : (
+                              <>
+                                <FileText className="h-3 w-3" />
+                                Invoice
+                              </>
+                            )}
+                          </button>
+                        )}
+                        {timesheet?.invoice_generated && (
+                          <span className="text-xs text-green-600 flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3" />
+                            Invoiced
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* ✅ NEEDS REVIEW TAB CONTENT */}
+      {activeTimesheetTab === 'needs-review' && (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left p-4 font-medium text-gray-600">Date Received</th>
+                <th className="text-left p-4 font-medium text-gray-600">Name</th>
+                <th className="text-left p-4 font-medium text-gray-600">Email</th>
+                <th className="text-left p-4 font-medium text-gray-600">Month (Set Manually)</th>
+                <th className="text-left p-4 font-medium text-gray-600">Days Worked</th>
+                <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {timesheets.filter(ts => !ts.month).length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="p-8 text-center text-gray-500">
+                    <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-2" />
+                    <p className="font-medium">All timesheets have been processed!</p>
+                    <p className="text-sm">No timesheets need manual review.</p>
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                timesheets.filter(ts => !ts.month).map((timesheet) => {
+                  // Find consultant by email
+                  const consultant = consultants.find(c => 
+                    c.email?.toLowerCase() === timesheet.sender_email?.toLowerCase()
+                  );
+                  
+                  return (
+                    <tr key={timesheet.id} className="border-b hover:bg-yellow-50 transition">
+                      <td className="p-4 text-sm">
+                        {new Date(timesheet.created_at).toLocaleDateString('en-GB')}
+                      </td>
+                      <td className="p-4">
+                        {consultant ? (
+                          <>
+                            <div className="font-medium">{consultant.first_name} {consultant.last_name}</div>
+                            <div className="text-xs text-gray-600">{consultant.company_name}</div>
+                          </>
+                        ) : (
+                          <div className="text-yellow-600 italic">Unknown Consultant</div>
+                        )}
+                      </td>
+                      <td className="p-4 text-sm font-mono">{timesheet.sender_email}</td>
+                      
+                      {/* MONTH DROPDOWN - ALWAYS VISIBLE */}
+                      <td className="p-4">
+                        {editingMonth === timesheet.id ? (
+                          <div className="flex items-center gap-1">
+                            <select
+                              value={editMonthValue}
+                              onChange={(e) => setEditMonthValue(e.target.value)}
+                              className="border border-yellow-500 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-300 min-w-[150px]"
+                              autoFocus
+                            >
+                              <option value="">Select Month</option>
+                              <option value="January">January</option>
+                              <option value="February">February</option>
+                              <option value="March">March</option>
+                              <option value="April">April</option>
+                              <option value="May">May</option>
+                              <option value="June">June</option>
+                              <option value="July">July</option>
+                              <option value="August">August</option>
+                              <option value="September">September</option>
+                              <option value="October">October</option>
+                              <option value="November">November</option>
+                              <option value="December">December</option>
+                            </select>
+                            <button
+                              onClick={() => updateMonth(timesheet.id, editMonthValue)}
+                              className="text-green-600 hover:text-green-800 p-1"
+                              title="Save"
+                              disabled={!editMonthValue}
+                            >
+                              <CheckCircle className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={cancelEditMonth}
+                              className="text-gray-400 hover:text-gray-600 p-1"
+                              title="Cancel"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => startEditMonth(timesheet)}
+                            className="w-full text-left bg-yellow-100 hover:bg-yellow-200 px-3 py-2 rounded transition flex items-center gap-2 border border-yellow-300"
+                          >
+                            <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+                            <span className="text-yellow-700 font-medium">Click to set month</span>
+                            <Edit className="h-3 w-3 text-yellow-600 ml-auto" />
+                          </button>
+                        )}
+                      </td>
+
+                      {/* DAYS WORKED */}
+                      <td className="p-4">
+                        {timesheet.pdf_days || timesheet.email_days ? (
+                          editingDays === timesheet.id ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                step="0.5"
+                                value={editDaysValue}
+                                onChange={(e) => setEditDaysValue(e.target.value)}
+                                className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                autoFocus
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter') updateDays(timesheet.id, editDaysValue);
+                                  if (e.key === 'Escape') cancelEditDays();
+                                }}
+                              />
+                              <button
+                                onClick={() => updateDays(timesheet.id, editDaysValue)}
+                                className="text-green-600 hover:text-green-800 p-1"
+                                title="Save"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={cancelEditDays}
+                                className="text-gray-400 hover:text-gray-600 p-1"
+                                title="Cancel"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : (
+                            <div
+                              onClick={() => startEditDays(timesheet)}
+                              className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-block"
+                              title="Click to edit"
+                            >
+                              <span className="font-bold text-blue-600">
+                                {timesheet.pdf_days || timesheet.email_days || '-'}
+                              </span>
+                            </div>
+                          )
+                        ) : (
+                          <span className="text-yellow-600 italic text-sm flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            Processing...
+                          </span>
+                        )}
+                      </td>
+
+                      {/* ACTIONS */}
+                      <td className="p-4">
+                        <div className="flex gap-2">
+                          {timesheet.timesheet_file_url && (
+                            <button
+                              onClick={() => {
+                                const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
+                                window.open(fixedUrl, '_blank');
+                              }}
+                              className="text-blue-600 hover:text-blue-800 p-1 transition"
+                              title="View Timesheet PDF"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   </div>
 )}
-
  
         {/* Invoices Tab */}
 {activeTab === 'invoices' && (
