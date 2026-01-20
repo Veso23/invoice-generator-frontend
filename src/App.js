@@ -11,14 +11,14 @@ const apiCall = async (endpoint, options = {}) => {
   const config = {
     headers: {
       'Content-Type': 'application/json',
-      ...(token && { Authorization: \`Bearer \${token}\` }),
+      ...(token && { Authorization: `Bearer ${token}` }),
       ...options.headers,
     },
     ...options,
   };
 
   try {
-    const response = await fetch(\`\${API_BASE_URL}\${endpoint}\`, config);
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
     const data = await response.json();
 
     if (!response.ok) {
@@ -29,7 +29,7 @@ const apiCall = async (endpoint, options = {}) => {
         throw new Error('Session expired. Please log in again.');
       }
       
-      throw new Error(data.error || \`HTTP \${response.status}: \${response.statusText}\`);
+      throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
     }
 
     return data;
@@ -263,11 +263,11 @@ const Notification = ({ notification, onClose }) => {
   if (!notification) return null;
 
   return (
-    <div className={\`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm \${
+    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
       notification.type === 'error' 
         ? 'bg-red-500 text-white' 
         : 'bg-green-500 text-white'
-    }\`}>
+    }`}>
       <div className="flex items-start">
         {notification.type === 'success' ? (
           <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
@@ -590,33 +590,33 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
           <button
             type="button"
             onClick={() => setActiveSettingsTab('company')}
-            className={\`px-4 py-2 rounded-t-lg font-medium transition \${
+            className={`px-4 py-2 rounded-t-lg font-medium transition ${
               activeSettingsTab === 'company'
                 ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-            }\`}
+            }`}
           >
             Company & Bank
           </button>
           <button
             type="button"
             onClick={() => setActiveSettingsTab('email')}
-            className={\`px-4 py-2 rounded-t-lg font-medium transition \${
+            className={`px-4 py-2 rounded-t-lg font-medium transition ${
               activeSettingsTab === 'email'
                 ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-            }\`}
+            }`}
           >
             Email (SMTP)
           </button>
           <button
             type="button"
             onClick={() => setActiveSettingsTab('invoice')}
-            className={\`px-4 py-2 rounded-t-lg font-medium transition \${
+            className={`px-4 py-2 rounded-t-lg font-medium transition ${
               activeSettingsTab === 'invoice'
                 ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-            }\`}
+            }`}
           >
             Invoice Settings
           </button>
@@ -1133,7 +1133,7 @@ const InvoiceGeneratorApp = () => {
 
   const updateInvoiceNumber = async (invoiceId) => {
     try {
-      await apiCall(\`/invoices/\${invoiceId}/number\`, {
+      await apiCall(`/invoices/${invoiceId}/number`, {
         method: 'PUT',
         body: JSON.stringify({ invoiceNumber: editInvoiceNumberValue })
       });
@@ -1153,7 +1153,7 @@ const InvoiceGeneratorApp = () => {
   const generatePDF = async (invoiceId) => {
     try {
       setDataLoading(true);
-      const response = await apiCall(\`/invoices/\${invoiceId}/generate-pdf\`, {
+      const response = await apiCall(`/invoices/${invoiceId}/generate-pdf`, {
         method: 'POST'
       });
       showNotification('PDF generated successfully!');
@@ -1199,7 +1199,7 @@ const InvoiceGeneratorApp = () => {
       } else if (matchingTimesheet) {
         showNotification('No PDF file available for this timesheet', 'error');
       } else {
-        showNotification(\`No timesheet found for \${consultant.email} in \${month}\`, 'error');
+        showNotification(`No timesheet found for ${consultant.email} in ${month}`, 'error');
       }
     } catch (error) {
       showNotification('Failed to load timesheet: ' + error.message, 'error');
@@ -1253,7 +1253,7 @@ const InvoiceGeneratorApp = () => {
             value: item.consultant_id,
             options: consultants.map(c => ({ 
               value: c.id, 
-              label: \`\${c.first_name} \${c.last_name} - \${c.company_name}\` 
+              label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
             })) 
           },
           { 
@@ -1263,7 +1263,7 @@ const InvoiceGeneratorApp = () => {
             value: item.client_id,
             options: clients.map(c => ({ 
               value: c.id, 
-              label: \`\${c.first_name} \${c.last_name} - \${c.company_name}\` 
+              label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
             })) 
           },
           { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date', value: item.from_date },
@@ -1285,7 +1285,7 @@ const InvoiceGeneratorApp = () => {
 
   const updateConsultant = async (id, consultantData) => {
     try {
-      await apiCall(\`/consultants/\${id}\`, {
+      await apiCall(`/consultants/${id}`, {
         method: 'PUT',
         body: JSON.stringify(consultantData)
       });
@@ -1299,7 +1299,7 @@ const InvoiceGeneratorApp = () => {
 
   const updateClient = async (id, clientData) => {
     try {
-      await apiCall(\`/clients/\${id}\`, {
+      await apiCall(`/clients/${id}`, {
         method: 'PUT',
         body: JSON.stringify(clientData)
       });
@@ -1313,7 +1313,7 @@ const InvoiceGeneratorApp = () => {
 
   const updateContract = async (id, contractData) => {
     try {
-      await apiCall(\`/contracts/\${id}\`, {
+      await apiCall(`/contracts/${id}`, {
         method: 'PUT',
         body: JSON.stringify(contractData)
       });
@@ -1329,7 +1329,7 @@ const InvoiceGeneratorApp = () => {
     if (!window.confirm('Are you sure you want to delete this consultant? This action cannot be undone.')) return;
     
     try {
-      await apiCall(\`/consultants/\${id}\`, {
+      await apiCall(`/consultants/${id}`, {
         method: 'DELETE'
       });
       showNotification('Consultant deleted successfully!');
@@ -1343,7 +1343,7 @@ const InvoiceGeneratorApp = () => {
     if (!window.confirm('Are you sure you want to delete this client? This action cannot be undone.')) return;
     
     try {
-      await apiCall(\`/clients/\${id}\`, {
+      await apiCall(`/clients/${id}`, {
         method: 'DELETE'
       });
       showNotification('Client deleted successfully!');
@@ -1357,7 +1357,7 @@ const InvoiceGeneratorApp = () => {
     if (!window.confirm('Are you sure you want to delete this contract? This action cannot be undone.')) return;
     
     try {
-      await apiCall(\`/contracts/\${id}\`, {
+      await apiCall(`/contracts/${id}`, {
         method: 'DELETE'
       });
       showNotification('Contract deleted successfully!');
@@ -1426,7 +1426,7 @@ const InvoiceGeneratorApp = () => {
         }
       }
       
-      await apiCall(\`/invoices/\${invoice.id}/send-email\`, {
+      await apiCall(`/invoices/${invoice.id}/send-email`, {
         method: 'POST'
       });
       
@@ -1463,7 +1463,7 @@ const InvoiceGeneratorApp = () => {
 
   const toggleUserActive = async (userId) => {
     try {
-      await apiCall(\`/users/\${userId}/toggle-active\`, {
+      await apiCall(`/users/${userId}/toggle-active`, {
         method: 'PUT'
       });
       showNotification('User status updated successfully!');
@@ -1477,7 +1477,7 @@ const InvoiceGeneratorApp = () => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
     
     try {
-      await apiCall(\`/users/\${userId}\`, {
+      await apiCall(`/users/${userId}`, {
         method: 'DELETE'
       });
       showNotification('User deleted successfully!');
@@ -1575,7 +1575,7 @@ const InvoiceGeneratorApp = () => {
 
   const updateDays = async (timesheetId, newDays) => {
     try {
-      await apiCall(\`/timesheets/\${timesheetId}/days\`, {
+      await apiCall(`/timesheets/${timesheetId}/days`, {
         method: 'PUT',
         body: JSON.stringify({ days: parseFloat(newDays) })
       });
@@ -1607,7 +1607,7 @@ const InvoiceGeneratorApp = () => {
 
   const updateMonth = async (timesheetId, newMonth) => {
     try {
-      await apiCall(\`/timesheets/\${timesheetId}/month\`, {
+      await apiCall(`/timesheets/${timesheetId}/month`, {
         method: 'PUT',
         body: JSON.stringify({ month: newMonth })
       });
@@ -1669,7 +1669,7 @@ const InvoiceGeneratorApp = () => {
             type: 'select', 
             options: consultants.map(c => ({ 
               value: c.id, 
-              label: \`\${c.first_name} \${c.last_name} - \${c.company_name}\` 
+              label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
             })) 
           },
           { 
@@ -1678,7 +1678,7 @@ const InvoiceGeneratorApp = () => {
             type: 'select', 
             options: clients.map(c => ({ 
               value: c.id, 
-              label: \`\${c.first_name} \${c.last_name} - \${c.company_name}\` 
+              label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
             })) 
           },
           { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date' },
@@ -1720,7 +1720,7 @@ const InvoiceGeneratorApp = () => {
     return <LoginForm onLogin={login} onRegister={register} />;
   }
 
-  const formatCurrency = (amount) => \`€\${parseFloat(amount).toFixed(2)}\`;
+  const formatCurrency = (amount) => `€${parseFloat(amount).toFixed(2)}`;
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString();
 
   return (
@@ -1854,11 +1854,11 @@ const InvoiceGeneratorApp = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={\`px-4 py-2 rounded-md capitalize text-sm font-medium transition \${
+                className={`px-4 py-2 rounded-md capitalize text-sm font-medium transition ${
                   activeTab === tab 
                     ? 'bg-white text-blue-600 shadow-sm' 
                     : 'text-gray-600 hover:text-gray-800'
-                }\`}
+                }`}
               >
                 {tab}
               </button>
@@ -1887,8 +1887,8 @@ const InvoiceGeneratorApp = () => {
               ].map((stat, index) => (
                 <div key={index} className="bg-white rounded-lg p-6 border shadow-sm">
                   <div className="flex items-center">
-                    <div className={\`p-3 rounded-lg bg-\${stat.color}-100 mr-4\`}>
-                      <stat.icon className={\`h-6 w-6 text-\${stat.color}-600\`} />
+                    <div className={`p-3 rounded-lg bg-${stat.color}-100 mr-4`}>
+                      <stat.icon className={`h-6 w-6 text-${stat.color}-600`} />
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-gray-600">{stat.label}</h3>
@@ -1999,7 +1999,7 @@ const InvoiceGeneratorApp = () => {
                       
                       <div className="text-center">
                         <p className="text-sm text-gray-600 mb-2">Net Profit</p>
-                        <p className={\`text-3xl font-bold \${profit >= 0 ? 'text-green-600' : 'text-red-600'}\`}>
+                        <p className={`text-3xl font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {formatCurrency(profit)}
                         </p>
                         <p className="text-xs text-gray-500 mt-1">
@@ -2286,7 +2286,7 @@ const InvoiceGeneratorApp = () => {
                             </div>
                           </td>
                           <td className="p-4">
-                            <span className={\`px-2 py-1 rounded-full text-xs \${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}\`}>
+                            <span className={`px-2 py-1 rounded-full text-xs ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                               {isActive ? 'active' : 'inactive'}
                             </span>
                           </td>
@@ -2333,11 +2333,11 @@ const InvoiceGeneratorApp = () => {
                 <button
                   type="button"
                   onClick={() => setActiveTimesheetTab('current')}
-                  className={\`px-4 py-2 rounded-t-lg font-medium transition \${
+                  className={`px-4 py-2 rounded-t-lg font-medium transition ${
                     activeTimesheetTab === 'current'
                       ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
                       : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                  }\`}
+                  }`}
                 >
                   Current Month ({timesheetStatus?.checking_month})
                   <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs">
@@ -2347,11 +2347,11 @@ const InvoiceGeneratorApp = () => {
                 <button
                   type="button"
                   onClick={() => setActiveTimesheetTab('needs-review')}
-                  className={\`px-4 py-2 rounded-t-lg font-medium transition \${
+                  className={`px-4 py-2 rounded-t-lg font-medium transition ${
                     activeTimesheetTab === 'needs-review'
                       ? 'bg-yellow-100 text-yellow-600 border-b-2 border-yellow-600'
                       : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                  }\`}
+                  }`}
                 >
                   Needs Review
                   <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">
@@ -2410,12 +2410,12 @@ const InvoiceGeneratorApp = () => {
                           if (pdfDays && emailDays) {
                             matchStatus = pdfDays === emailDays ? 
                               'Days Match ✓' : 
-                              \`Days Don't Match (PDF: \${pdfDays}, Email: \${emailDays})\`;
+                              `Days Don't Match (PDF: ${pdfDays}, Email: ${emailDays})`;
                           }
                         }
                         
                         return (
-                          <tr key={consultant.id} className={\`border-b hover:opacity-80 transition \${rowBgColor}\`}>
+                          <tr key={consultant.id} className={`border-b hover:opacity-80 transition ${rowBgColor}`}>
                             <td className="p-4 text-sm">
                               {timesheet ? new Date(timesheet.created_at).toLocaleDateString('en-GB') : '-'}
                             </td>
@@ -2486,9 +2486,9 @@ const InvoiceGeneratorApp = () => {
                             </td>
                             <td className="p-4">
                               {timesheet ? (
-                                <span className={\`text-sm \${
+                                <span className={`text-sm ${
                                   matchStatus.includes('Match ✓') ? 'text-green-600 font-medium' : 'text-red-600'
-                                }\`}>
+                                }`}>
                                   {matchStatus}
                                 </span>
                               ) : (
@@ -2514,7 +2514,7 @@ const InvoiceGeneratorApp = () => {
                                     onClick={async () => {
                                       try {
                                         setGeneratingInvoice(timesheet.id);
-                                        await apiCall(\`/timesheets/\${timesheet.id}/generate-invoice\`, {
+                                        await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
                                           method: 'POST'
                                         });
                                         showNotification('Invoice generated successfully!');
@@ -2526,11 +2526,11 @@ const InvoiceGeneratorApp = () => {
                                       }
                                     }}
                                     disabled={generatingInvoice === timesheet.id}
-                                    className={\`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 \${
+                                    className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
                                       generatingInvoice === timesheet.id 
                                         ? 'bg-green-400 cursor-not-allowed' 
                                         : 'bg-green-600 text-white'
-                                    }\`}
+                                    }`}
                                     title="Generate Invoice"
                                   >
                                     {generatingInvoice === timesheet.id ? (
@@ -2861,12 +2861,12 @@ const InvoiceGeneratorApp = () => {
                             </td>
                             <td className="p-4 font-bold text-green-600">{formatCurrency(total)}</td>
                             <td className="p-4">
-                              <span className={\`px-2 py-1 rounded-full text-xs \${
+                              <span className={`px-2 py-1 rounded-full text-xs ${
                                 invoice.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
                                 invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' :
                                 invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
                                 'bg-gray-100 text-gray-800'
-                              }\`}>
+                              }`}>
                                 {invoice.status}
                               </span>
                             </td>
@@ -2880,8 +2880,8 @@ const InvoiceGeneratorApp = () => {
                                 </button>
                                 <button
                                   onClick={() => sendInvoiceEmail(invoice)}
-                                  className={\`p-1 transition \${invoice.email_sent ? 'text-green-600 hover:text-green-800' : 'text-purple-600 hover:text-purple-800'}\`}
-                                  title={invoice.email_sent ? \`Sent to \${invoice.email_sent_to}\` : "Send Invoice Email"}
+                                  className={`p-1 transition ${invoice.email_sent ? 'text-green-600 hover:text-green-800' : 'text-purple-600 hover:text-purple-800'}`}
+                                  title={invoice.email_sent ? `Sent to ${invoice.email_sent_to}` : "Send Invoice Email"}
                                   disabled={dataLoading}
                                 >
                                   {invoice.email_sent ? <CheckCircle className="h-4 w-4" /> : <Send className="h-4 w-4" />}
@@ -2936,16 +2936,16 @@ const InvoiceGeneratorApp = () => {
                         </td>
                         <td className="p-4 text-sm">{u.email}</td>
                         <td className="p-4">
-                          <span className={\`px-2 py-1 rounded-full text-xs font-medium \${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}\`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
                             {u.role}
                           </span>
                         </td>
                         <td className="p-4">
-                          <span className={\`px-2 py-1 rounded-full text-xs font-medium \${u.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}\`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                             {u.active ? 'Active' : 'Disabled'}
                           </span>
                         </td>
-                        <td className="p-4 text-sm">{u.created_by_first_name ? \`\${u.created_by_first_name} \${u.created_by_last_name}\` : 'System'}</td>
+                        <td className="p-4 text-sm">{u.created_by_first_name ? `${u.created_by_first_name} ${u.created_by_last_name}` : 'System'}</td>
                         <td className="p-4 text-sm text-gray-600">{u.last_login ? new Date(u.last_login).toLocaleDateString('en-GB') : 'Never'}</td>
                         <td className="p-4">
                           <div className="flex gap-2">
@@ -2953,7 +2953,7 @@ const InvoiceGeneratorApp = () => {
                               <>
                                 <button
                                   onClick={() => toggleUserActive(u.id)}
-                                  className={\`px-3 py-1 text-xs rounded transition \${u.active ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200'}\`}
+                                  className={`px-3 py-1 text-xs rounded transition ${u.active ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200'}`}
                                   title={u.active ? 'Disable User' : 'Enable User'}
                                 >
                                   {u.active ? 'Disable' : 'Enable'}
