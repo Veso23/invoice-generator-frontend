@@ -1025,7 +1025,6 @@ const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [editingMonth, setEditingMonth] = useState(null);
 const [editMonthValue, setEditMonthValue] = useState('');
 const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
 const [editModalOpen, setEditModalOpen] = useState(false);
  const [activeTimesheetTab, setActiveTimesheetTab] = useState('current');
 const [searchQueries, setSearchQueries] = useState({
@@ -1201,7 +1200,6 @@ const viewTimesheet = async (invoice) => {
   
   // Edit consultant/client/contract
 const editItem = (type, item) => {
-  setEditingItem({ type, item });
   
   const configs = {
     consultant: {
@@ -1779,7 +1777,6 @@ const openAddModal = (type) => {
   isOpen={editModalOpen}
   onClose={() => {
     setEditModalOpen(false);
-    setEditingItem(null);
   }}
   title={modalConfig.title}
   fields={modalConfig.fields || []}
