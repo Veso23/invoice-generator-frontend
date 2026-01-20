@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import './App.css';
+import React, { useState, useEffect } from 'react';
 
 
 // API Configuration
@@ -1021,6 +1022,7 @@ const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 const [timesheetStatus, setTimesheetStatus] = useState(null);
 const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
   const [users, setUsers] = useState([]);
   const [editingMonth, setEditingMonth] = useState(null);
 const [editMonthValue, setEditMonthValue] = useState('');
