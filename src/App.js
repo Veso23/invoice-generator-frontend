@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle } from 'lucide-react';
 import './App.css';
-import React, { useState, useEffect } from 'react';
-
 
 // API Configuration
 const API_BASE_URL = 'https://invoice-generator-api-dak7.onrender.com/api';
