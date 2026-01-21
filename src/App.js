@@ -1052,7 +1052,15 @@ const InvoiceGeneratorApp = () => {
     consultants: '',
     clients: '',
     contracts: '',
-    invoices: ''
+    invoices: '',
+    history: ''
+  });
+  const [timesheetHistory, setTimesheetHistory] = useState([]);
+  const [historyFilters, setHistoryFilters] = useState({
+    year: 'all',
+    month: 'all',
+    consultant: 'all',
+    status: 'all'
   });
   const [sortConfig, setSortConfig] = useState({
     consultants: { key: null, direction: 'asc' },
@@ -1076,7 +1084,7 @@ const InvoiceGeneratorApp = () => {
     
     setDataLoading(true);
     try {
-      const [consultantsData, clientsData, contractsData, invoicesData, timesheetsData] = await Promise.all([
+      const [consultantsData, clientsData, contractsData, invoicesData, timesheetsData, historyData] = await Promise.all([
         apiCall('/consultants').catch(err => {
           console.error('Failed to load consultants:', err);
           return [];
@@ -1096,6 +1104,10 @@ const InvoiceGeneratorApp = () => {
         apiCall('/timesheets').catch(err => {
           console.error('Failed to load timesheets:', err);
           return [];
+        }),
+        apiCall('/timesheets/history').catch(err => {
+          console.error('Failed to load timesheet history:', err);
+          return [];
         })
       ]);
 
@@ -1104,6 +1116,7 @@ const InvoiceGeneratorApp = () => {
       setContracts(contractsData);
       setInvoices(invoicesData);
       setTimesheets(timesheetsData);
+      setTimesheetHistory(historyData);
       
       await loadCompanySettings().catch(err => console.error('Settings load failed:', err));
       await loadTimesheetStatus().catch(err => console.error('Timesheet status load failed:', err));
@@ -1848,7 +1861,7 @@ const InvoiceGeneratorApp = () => {
           
           {/* Navigation Tabs */}
           <div className="flex gap-1 mt-6 bg-gray-100 p-1 rounded-lg w-fit">
-            {['dashboard', 'consultants', 'clients', 'contracts', 'timesheets', 'invoices', 
+            {['dashboard', 'consultants', 'clients', 'contracts', 'timesheets', 'invoices', 'history',
               ...(user.role === 'admin' ? ['users'] : [])
             ].map((tab) => (
               <button
@@ -3083,6 +3096,338 @@ const InvoiceGeneratorApp = () => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* History Tab */}
+        {activeTab === 'history' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800">Timesheet & Invoice History</h2>
+              <p className="text-sm text-gray-600">{timesheetHistory.length} total records</p>
+            </div>
+
+            {/* Filters and Search */}
+            <div className="bg-white rounded-lg border shadow-sm p-4">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                {/* Search Box */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                  <input
+                    type="text"
+                    placeholder="Search by name, email, invoice..."
+                    value={searchQueries.history}
+                    onChange={(e) => handleSearch('history', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                
+                {/* Year Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                  <select
+                    value={historyFilters.year}
+                    onChange={(e) => setHistoryFilters(prev => ({ ...prev, year: e.target.value }))}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  >
+                    <option value="all">All Years</option>
+                    {[...new Set(timesheetHistory.map(ts => new Date(ts.created_at).getFullYear()))]
+                      .sort((a, b) => b - a)
+                      .map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))
+                    }
+                  </select>
+                </div>
+
+                {/* Month Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                  <select
+                    value={historyFilters.month}
+                    onChange={(e) => setHistoryFilters(prev => ({ ...prev, month: e.target.value }))}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  >
+                    <option value="all">All Months</option>
+                    {['January', 'February', 'March', 'April', 'May', 'June', 
+                      'July', 'August', 'September', 'October', 'November', 'December'].map(month => (
+                      <option key={month} value={month}>{month}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Consultant Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Consultant</label>
+                  <select
+                    value={historyFilters.consultant}
+                    onChange={(e) => setHistoryFilters(prev => ({ ...prev, consultant: e.target.value }))}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  >
+                    <option value="all">All Consultants</option>
+                    {consultants.map(c => (
+                      <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Status Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={historyFilters.status}
+                    onChange={(e) => setHistoryFilters(prev => ({ ...prev, status: e.target.value }))}
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="invoiced">Invoiced</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Clear Filters Button */}
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => {
+                    setHistoryFilters({ year: 'all', month: 'all', consultant: 'all', status: 'all' });
+                    handleSearch('history', '');
+                  }}
+                  className="text-sm text-blue-600 hover:text-blue-800 transition"
+                >
+                  Clear all filters
+                </button>
+              </div>
+            </div>
+
+            {/* History Table */}
+            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left p-4 font-medium text-gray-600">Date</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Consultant</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Month</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Days</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Status</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Consultant Invoice</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Client Invoice</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Timesheet</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {timesheetHistory
+                      .filter(ts => {
+                        // Apply search filter
+                        if (searchQueries.history) {
+                          const query = searchQueries.history.toLowerCase();
+                          const matchesSearch = 
+                            (ts.consultant_first_name?.toLowerCase() || '').includes(query) ||
+                            (ts.consultant_last_name?.toLowerCase() || '').includes(query) ||
+                            (ts.sender_email?.toLowerCase() || '').includes(query) ||
+                            (ts.consultant_invoice_number?.toLowerCase() || '').includes(query) ||
+                            (ts.client_invoice_number?.toLowerCase() || '').includes(query) ||
+                            (ts.consultant_company_name?.toLowerCase() || '').includes(query);
+                          if (!matchesSearch) return false;
+                        }
+                        
+                        // Apply year filter
+                        if (historyFilters.year !== 'all') {
+                          const tsYear = new Date(ts.created_at).getFullYear();
+                          if (tsYear !== parseInt(historyFilters.year)) return false;
+                        }
+                        
+                        // Apply month filter
+                        if (historyFilters.month !== 'all') {
+                          if (ts.month?.toLowerCase() !== historyFilters.month.toLowerCase()) return false;
+                        }
+                        
+                        // Apply consultant filter
+                        if (historyFilters.consultant !== 'all') {
+                          if (ts.consultant_id !== parseInt(historyFilters.consultant)) return false;
+                        }
+                        
+                        // Apply status filter
+                        if (historyFilters.status !== 'all') {
+                          const isInvoiced = ts.invoice_generated;
+                          if (historyFilters.status === 'invoiced' && !isInvoiced) return false;
+                          if (historyFilters.status === 'pending' && isInvoiced) return false;
+                        }
+                        
+                        return true;
+                      })
+                      .map((ts) => {
+                        const totalDays = calculateTotalDays(ts);
+                        
+                        return (
+                          <tr key={ts.id} className="border-b hover:bg-gray-50 transition">
+                            <td className="p-4 text-sm">
+                              {new Date(ts.created_at).toLocaleDateString('en-GB')}
+                            </td>
+                            <td className="p-4">
+                              {ts.consultant_first_name ? (
+                                <>
+                                  <div className="font-medium">{ts.consultant_first_name} {ts.consultant_last_name}</div>
+                                  <div className="text-xs text-gray-500">{ts.consultant_company_name}</div>
+                                </>
+                              ) : (
+                                <span className="text-gray-400 italic">{ts.sender_email || 'Unknown'}</span>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              {ts.month ? (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                                  {ts.month}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 italic">Not set</span>
+                              )}
+                            </td>
+                            <td className="p-4 font-medium">
+                              {totalDays !== null ? totalDays : '-'}
+                            </td>
+                            <td className="p-4">
+                              {ts.invoice_generated ? (
+                                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm flex items-center gap-1 w-fit">
+                                  <CheckCircle className="h-3 w-3" />
+                                  Invoiced
+                                </span>
+                              ) : (
+                                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm flex items-center gap-1 w-fit">
+                                  <AlertCircle className="h-3 w-3" />
+                                  Pending
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              {ts.consultant_invoice_number ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-mono">{ts.consultant_invoice_number}</span>
+                                  {ts.consultant_invoice_pdf_url && (
+                                    <a
+                                      href={ts.consultant_invoice_pdf_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-800"
+                                      title="View PDF"
+                                    >
+                                      <FileText className="h-4 w-4" />
+                                    </a>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              {ts.client_invoice_number ? (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-mono">{ts.client_invoice_number}</span>
+                                  {ts.client_invoice_pdf_url && (
+                                    <a
+                                      href={ts.client_invoice_pdf_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-800"
+                                      title="View PDF"
+                                    >
+                                      <FileText className="h-4 w-4" />
+                                    </a>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </td>
+                            <td className="p-4">
+                              {ts.timesheet_file_url && (
+                                <button
+                                  onClick={() => {
+                                    const fixedUrl = fixTimesheetUrl(ts.timesheet_file_url);
+                                    window.open(fixedUrl, '_blank');
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800 transition"
+                                  title="View Timesheet PDF"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    }
+                    {timesheetHistory.filter(ts => {
+                      if (searchQueries.history) {
+                        const query = searchQueries.history.toLowerCase();
+                        const matchesSearch = 
+                          (ts.consultant_first_name?.toLowerCase() || '').includes(query) ||
+                          (ts.consultant_last_name?.toLowerCase() || '').includes(query) ||
+                          (ts.sender_email?.toLowerCase() || '').includes(query) ||
+                          (ts.consultant_invoice_number?.toLowerCase() || '').includes(query) ||
+                          (ts.client_invoice_number?.toLowerCase() || '').includes(query) ||
+                          (ts.consultant_company_name?.toLowerCase() || '').includes(query);
+                        if (!matchesSearch) return false;
+                      }
+                      if (historyFilters.year !== 'all') {
+                        const tsYear = new Date(ts.created_at).getFullYear();
+                        if (tsYear !== parseInt(historyFilters.year)) return false;
+                      }
+                      if (historyFilters.month !== 'all') {
+                        if (ts.month?.toLowerCase() !== historyFilters.month.toLowerCase()) return false;
+                      }
+                      if (historyFilters.consultant !== 'all') {
+                        if (ts.consultant_id !== parseInt(historyFilters.consultant)) return false;
+                      }
+                      if (historyFilters.status !== 'all') {
+                        const isInvoiced = ts.invoice_generated;
+                        if (historyFilters.status === 'invoiced' && !isInvoiced) return false;
+                        if (historyFilters.status === 'pending' && isInvoiced) return false;
+                      }
+                      return true;
+                    }).length === 0 && (
+                      <tr>
+                        <td colSpan="8" className="p-8 text-center text-gray-500">
+                          <FileText className="h-12 w-12 text-gray-300 mx-auto mb-2" />
+                          <p className="font-medium">No records found</p>
+                          <p className="text-sm">Try adjusting your filters or search query</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Summary Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg border p-4">
+                <p className="text-sm text-gray-600">Total Timesheets</p>
+                <p className="text-2xl font-bold text-gray-800">{timesheetHistory.length}</p>
+              </div>
+              <div className="bg-white rounded-lg border p-4">
+                <p className="text-sm text-gray-600">Invoiced</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {timesheetHistory.filter(ts => ts.invoice_generated).length}
+                </p>
+              </div>
+              <div className="bg-white rounded-lg border p-4">
+                <p className="text-sm text-gray-600">Pending</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  {timesheetHistory.filter(ts => !ts.invoice_generated).length}
+                </p>
+              </div>
+              <div className="bg-white rounded-lg border p-4">
+                <p className="text-sm text-gray-600">Total Days Worked</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {timesheetHistory.reduce((sum, ts) => {
+                    const days = calculateTotalDays(ts);
+                    return sum + (days || 0);
+                  }, 0).toFixed(1)}
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
