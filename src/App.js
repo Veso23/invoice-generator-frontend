@@ -985,22 +985,25 @@ const InvoiceGeneratorApp = () => {
   const calculateTotalDays = (timesheet) => {
     if (!timesheet) return null;
     
-    // Get days (prefer PDF, fallback to email)
+    // Priority: Use days if available, otherwise convert hours to days
+    // Days and hours represent the SAME work, not additional work
+    
+    // Check for days first (prefer PDF, fallback to email)
     const days = parseFloat(timesheet.pdf_days) || parseFloat(timesheet.email_days) || 0;
     
-    // Get hours (prefer PDF, fallback to email)
-    const hours = parseFloat(timesheet.pdf_hours) || parseFloat(timesheet.email_hours) || 0;
-    
-    // Calculate total: days + (hours / 8)
-    const totalDays = days + (hours / 8);
-    
-    // Return null if no data at all
-    if (totalDays === 0 && !timesheet.pdf_days && !timesheet.email_days && !timesheet.pdf_hours && !timesheet.email_hours) {
-      return null;
+    if (days > 0) {
+      return parseFloat(days.toFixed(2));
     }
     
-    // Return with up to 2 decimal places, removing trailing zeros
-    return parseFloat(totalDays.toFixed(2));
+    // If no days, check hours and convert to days
+    const hours = parseFloat(timesheet.pdf_hours) || parseFloat(timesheet.email_hours) || 0;
+    
+    if (hours > 0) {
+      return parseFloat((hours / 8).toFixed(2));
+    }
+    
+    // No data at all
+    return null;
   };
 
   const fixTimesheetUrl = (url) => {
