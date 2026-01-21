@@ -2409,7 +2409,7 @@ const InvoiceGeneratorApp = () => {
                     <tbody>
                       {timesheetStatus?.consultants?.map((consultant) => {
                         const timesheet = timesheets.find(ts => {
-                          if (ts.sender_email !== consultant.email) return false;
+                          if (ts.sender_email?.toLowerCase() !== consultant.email?.toLowerCase()) return false;
                           if (ts.month) {
                             return ts.month.toLowerCase() === consultant.checking_month?.toLowerCase();
                           }
@@ -2423,7 +2423,11 @@ const InvoiceGeneratorApp = () => {
                         });
                         
                         let rowBgColor = '';
-                        if (consultant.status === 'received') {
+                        // ✅ FIXED: If timesheet found with invoice generated, always green
+                        if (timesheet?.invoice_generated || consultant.status === 'received') {
+                          rowBgColor = 'bg-green-50';
+                        } else if (timesheet) {
+                          // Timesheet exists but not invoiced yet - still good (green-ish)
                           rowBgColor = 'bg-green-50';
                         } else if (consultant.status === 'waiting') {
                           rowBgColor = 'bg-yellow-50';
