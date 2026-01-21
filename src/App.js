@@ -2358,6 +2358,24 @@ const InvoiceGeneratorApp = () => {
                     {timesheets.filter(ts => !ts.month).length}
                   </span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTimesheetTab('older')}
+                  className={`px-4 py-2 rounded-t-lg font-medium transition ${
+                    activeTimesheetTab === 'older'
+                      ? 'bg-orange-100 text-orange-600 border-b-2 border-orange-600'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  }`}
+                >
+                  Older Timesheets
+                  <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 rounded-full text-xs">
+                    {timesheets.filter(ts => 
+                      ts.month && 
+                      ts.month.toLowerCase() !== timesheetStatus?.checking_month?.toLowerCase() &&
+                      !ts.invoice_generated
+                    ).length}
+                  </span>
+                </button>
               </div>
 
               {/* CURRENT MONTH TAB CONTENT */}
@@ -2729,6 +2747,175 @@ const InvoiceGeneratorApp = () => {
                                       <Eye className="h-4 w-4" />
                                     </button>
                                   )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* OLDER TIMESHEETS TAB CONTENT */}
+              {activeTimesheetTab === 'older' && (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="text-left p-4 font-medium text-gray-600">Date Received</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Name</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Email</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Month</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Days Worked</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {timesheets.filter(ts => 
+                        ts.month && 
+                        ts.month.toLowerCase() !== timesheetStatus?.checking_month?.toLowerCase() &&
+                        !ts.invoice_generated
+                      ).length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="p-8 text-center text-gray-500">
+                            <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-2" />
+                            <p className="font-medium">No older timesheets pending!</p>
+                            <p className="text-sm">All previous months have been invoiced.</p>
+                          </td>
+                        </tr>
+                      ) : (
+                        timesheets.filter(ts => 
+                          ts.month && 
+                          ts.month.toLowerCase() !== timesheetStatus?.checking_month?.toLowerCase() &&
+                          !ts.invoice_generated
+                        ).map((timesheet) => {
+                          const consultant = consultants.find(c => 
+                            c.email?.toLowerCase() === timesheet.sender_email?.toLowerCase()
+                          );
+                          
+                          const totalDays = calculateTotalDays(timesheet);
+                          
+                          return (
+                            <tr key={timesheet.id} className="border-b hover:bg-orange-50 transition">
+                              <td className="p-4 text-sm">
+                                {new Date(timesheet.created_at).toLocaleDateString('en-GB')}
+                              </td>
+                              <td className="p-4">
+                                {consultant ? (
+                                  <>
+                                    <div className="font-medium">{consultant.first_name} {consultant.last_name}</div>
+                                    <div className="text-xs text-gray-600">{consultant.company_name}</div>
+                                  </>
+                                ) : (
+                                  <div className="text-orange-600 italic">Unknown Consultant</div>
+                                )}
+                              </td>
+                              <td className="p-4 text-sm font-mono">{timesheet.sender_email}</td>
+                              <td className="p-4">
+                                <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">
+                                  {timesheet.month}
+                                </span>
+                              </td>
+                              <td className="p-4">
+                                {totalDays !== null ? (
+                                  editingDays === timesheet.id ? (
+                                    <div className="flex items-center gap-1">
+                                      <input
+                                        type="number"
+                                        step="0.5"
+                                        value={editDaysValue}
+                                        onChange={(e) => setEditDaysValue(e.target.value)}
+                                        className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                        autoFocus
+                                        onKeyPress={(e) => {
+                                          if (e.key === 'Enter') updateDays(timesheet.id, editDaysValue);
+                                          if (e.key === 'Escape') cancelEditDays();
+                                        }}
+                                      />
+                                      <button
+                                        onClick={() => updateDays(timesheet.id, editDaysValue)}
+                                        className="text-green-600 hover:text-green-800 p-1"
+                                        title="Save"
+                                      >
+                                        <CheckCircle className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={cancelEditDays}
+                                        className="text-gray-400 hover:text-gray-600 p-1"
+                                        title="Cancel"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div
+                                      onClick={() => startEditDays(timesheet)}
+                                      className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-block"
+                                      title="Click to edit"
+                                    >
+                                      <span className="font-bold text-blue-600">
+                                        {totalDays}
+                                      </span>
+                                    </div>
+                                  )
+                                ) : (
+                                  <span className="text-yellow-600 italic text-sm flex items-center gap-1">
+                                    <AlertCircle className="h-3 w-3" />
+                                    Processing...
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-4">
+                                <div className="flex gap-2">
+                                  {timesheet.timesheet_file_url && (
+                                    <button
+                                      onClick={() => {
+                                        const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
+                                        window.open(fixedUrl, '_blank');
+                                      }}
+                                      className="text-blue-600 hover:text-blue-800 p-1 transition"
+                                      title="View Timesheet PDF"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        setGeneratingInvoice(timesheet.id);
+                                        await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
+                                          method: 'POST'
+                                        });
+                                        showNotification('Invoice generated successfully!');
+                                        loadData();
+                                      } catch (error) {
+                                        showNotification('Failed to generate invoice: ' + error.message, 'error');
+                                      } finally {
+                                        setGeneratingInvoice(null);
+                                      }
+                                    }}
+                                    disabled={generatingInvoice === timesheet.id}
+                                    className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
+                                      generatingInvoice === timesheet.id 
+                                        ? 'bg-green-400 cursor-not-allowed' 
+                                        : 'bg-green-600 text-white'
+                                    }`}
+                                    title="Generate Invoice"
+                                  >
+                                    {generatingInvoice === timesheet.id ? (
+                                      <>
+                                        <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
+                                        Generating...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <FileText className="h-3 w-3" />
+                                        Invoice
+                                      </>
+                                    )}
+                                  </button>
                                 </div>
                               </td>
                             </tr>
