@@ -2664,13 +2664,16 @@ const InvoiceGeneratorApp = () => {
                                     onClick={async () => {
                                       if (window.confirm('Delete this record? The sender will need to resend their email correctly.')) {
                                         try {
-                                          const response = await fetch(`${API_BASE}/api/timesheets/${timesheet.id}`, {
+                                          const authToken = localStorage.getItem('authToken');
+                                          const response = await fetch(`${API_BASE_URL}/timesheets/${timesheet.id}`, {
                                             method: 'DELETE',
-                                            headers: { 'Authorization': `Bearer ${token}` }
+                                            headers: { 'Authorization': `Bearer ${authToken}` }
                                           });
                                           if (response.ok) {
-                                            fetchTimesheets();
+                                            loadData();
                                             showNotification('Record deleted', 'success');
+                                          } else {
+                                            showNotification('Failed to delete', 'error');
                                           }
                                         } catch (error) {
                                           showNotification('Failed to delete', 'error');
