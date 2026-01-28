@@ -429,7 +429,7 @@ const DEFAULT_USER_PERMISSIONS = {
 // User Modal Component with Permissions
 const UserModal = ({ isOpen, onClose, onSubmit, mode, userData }) => {
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', role: 'operator',
+    firstName: '', lastName: '', email: '', password: '', role: 'operator',
     permissions: { ...DEFAULT_USER_PERMISSIONS.operator }
   });
 
@@ -437,7 +437,8 @@ const UserModal = ({ isOpen, onClose, onSubmit, mode, userData }) => {
     if (isOpen) {
       if (mode === 'edit' && userData) {
         setFormData({
-          name: userData.name || `${userData.first_name || ''} ${userData.last_name || ''}`.trim(),
+          firstName: userData.first_name || '',
+          lastName: userData.last_name || '',
           email: userData.email || '',
           password: '',
           role: userData.role || 'operator',
@@ -445,7 +446,7 @@ const UserModal = ({ isOpen, onClose, onSubmit, mode, userData }) => {
         });
       } else {
         setFormData({
-          name: '', email: '', password: '', role: 'operator',
+          firstName: '', lastName: '', email: '', password: '', role: 'operator',
           permissions: { ...DEFAULT_USER_PERMISSIONS.operator }
         });
       }
@@ -490,10 +491,17 @@ const UserModal = ({ isOpen, onClose, onSubmit, mode, userData }) => {
       <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h3 className="text-lg font-semibold mb-4">{mode === 'edit' ? 'Edit User' : 'Create New User'}</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-            <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Full Name" required />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <input type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="First Name" required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Last Name" required />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
