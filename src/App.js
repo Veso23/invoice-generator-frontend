@@ -414,6 +414,141 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
   );
 };
 
+// User Modal Component with Permissions
+const UserModal = ({ isOpen, onClose, onSubmit, mode, userData }) => {
+  const DEFAULT_PERMISSIONS = {
+    admin: {
+      can_view_dashboard: true, can_view_contracts: true, can_view_consultants: true,
+      can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: true
+    },
+    operator: {
+      can_view_dashboard: false, can_view_contracts: false, can_view_consultants: true,
+      can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: false
+    }
+  };
+
+  const [formData, setFormData] = useState({
+    name: '', email: '', password: '', role: 'operator',
+    permissions: { ...DEFAULT_PERMISSIONS.operator }
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      if (mode === 'edit' && userData) {
+        setFormData({
+          name: userData.name || `${userData.first_name || ''} ${userData.last_name || ''}`.trim(),
+          email: userData.email || '',
+          password: '',
+          role: userData.role || 'operator',
+          permissions: userData.permissions || DEFAULT_PERMISSIONS[userData.role || 'operator']
+        });
+      } else {
+        setFormData({
+          name: '', email: '', password: '', role: 'operator',
+          permissions: { ...DEFAULT_PERMISSIONS.operator }
+        });
+      }
+    }
+  }, [isOpen, mode, userData]);
+
+  const handleRoleChange = (newRole) => {
+    setFormData({
+      ...formData, role: newRole,
+      permissions: newRole === 'admin' ? { ...DEFAULT_PERMISSIONS.admin } : formData.permissions
+    });
+  };
+
+  const handlePermissionChange = (permission) => {
+    if (formData.role === 'admin') return;
+    setFormData({
+      ...formData,
+      permissions: { ...formData.permissions, [permission]: !formData.permissions[permission] }
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  const permissionLabels = {
+    can_view_dashboard: 'View Dashboard',
+    can_view_contracts: 'View Contracts',
+    can_view_consultants: 'View Consultants',
+    can_view_clients: 'View Clients',
+    can_view_timesheets: 'View Timesheets',
+    can_view_invoices: 'View Invoices',
+    can_manage_users: 'Manage Users'
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <h3 className="text-lg font-semibold mb-4">{mode === 'edit' ? 'Edit User' : 'Create New User'}</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Full Name" required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="email@example.com" required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {mode === 'edit' ? 'New Password (leave blank to keep current)' : 'Password'}
+            </label>
+            <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="••••••••" required={mode === 'create'} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="role" value="operator" checked={formData.role === 'operator'}
+                  onChange={() => handleRoleChange('operator')} className="w-4 h-4 text-blue-600" />
+                <span className="text-sm">Operator</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="role" value="admin" checked={formData.role === 'admin'}
+                  onChange={() => handleRoleChange('admin')} className="w-4 h-4 text-blue-600" />
+                <span className="text-sm">Admin</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Permissions {formData.role === 'admin' && <span className="ml-2 text-xs text-gray-500">(Admins have all permissions)</span>}
+            </label>
+            <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
+              {Object.entries(permissionLabels).map(([key, label]) => (
+                <label key={key} className={`flex items-center gap-2 ${formData.role === 'admin' ? 'opacity-60' : 'cursor-pointer'}`}>
+                  <input type="checkbox" checked={formData.permissions[key] || false} onChange={() => handlePermissionChange(key)}
+                    disabled={formData.role === 'admin'} className="w-4 h-4 text-blue-600 rounded" />
+                  <span className="text-sm">{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-2 pt-4">
+            <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              {mode === 'edit' ? 'Save Changes' : 'Create User'}
+            </button>
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // Change Password Modal Component
 const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -1048,6 +1183,9 @@ const InvoiceGeneratorApp = () => {
   const [users, setUsers] = useState([]);
   const [editingMonth, setEditingMonth] = useState(null);
   const [editMonthValue, setEditMonthValue] = useState('');
+  const [editingUser, setEditingUser] = useState(null);
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [userModalMode, setUserModalMode] = useState('create');
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [activeTimesheetTab, setActiveTimesheetTab] = useState('current');
@@ -1464,17 +1602,43 @@ const InvoiceGeneratorApp = () => {
     }
   };
 
-  const createOperator = async (operatorData) => {
+  const createUser = async (userData) => {
     try {
       await apiCall('/users', {
         method: 'POST',
-        body: JSON.stringify(operatorData)
+        body: JSON.stringify(userData)
       });
-      showNotification('Operator created successfully!');
+      showNotification(`${userData.role === 'admin' ? 'Admin' : 'Operator'} created successfully!`);
       loadUsers();
     } catch (error) {
-      showNotification('Failed to create operator: ' + error.message, 'error');
+      showNotification('Failed to create user: ' + error.message, 'error');
     }
+  };
+
+  const updateUser = async (userData) => {
+    try {
+      await apiCall(`/users/${editingUser.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(userData)
+      });
+      showNotification('User updated successfully!');
+      loadUsers();
+      setEditingUser(null);
+    } catch (error) {
+      showNotification('Failed to update user: ' + error.message, 'error');
+    }
+  };
+
+  const openCreateUserModal = () => {
+    setUserModalMode('create');
+    setEditingUser(null);
+    setUserModalOpen(true);
+  };
+
+  const openEditUserModal = (userToEdit) => {
+    setUserModalMode('edit');
+    setEditingUser(userToEdit);
+    setUserModalOpen(true);
   };
 
   const toggleUserActive = async (userId) => {
@@ -1792,6 +1956,18 @@ const InvoiceGeneratorApp = () => {
         onSubmit={changePassword}
       />
 
+      {/* User Modal */}
+      <UserModal
+        isOpen={userModalOpen}
+        onClose={() => {
+          setUserModalOpen(false);
+          setEditingUser(null);
+        }}
+        onSubmit={userModalMode === 'edit' ? updateUser : createUser}
+        mode={userModalMode}
+        userData={editingUser}
+      />
+
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -1863,22 +2039,40 @@ const InvoiceGeneratorApp = () => {
           </div>
           
           {/* Navigation Tabs */}
-          <div className="flex gap-1 mt-6 bg-gray-100 p-1 rounded-lg w-fit">
-            {['dashboard', 'consultants', 'clients', 'contracts', 'timesheets', 'invoices', 'history',
-              ...(user.role === 'admin' ? ['users'] : [])
-            ].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-md capitalize text-sm font-medium transition ${
-                  activeTab === tab 
-                    ? 'bg-white text-blue-600 shadow-sm' 
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+          <div className="flex gap-1 mt-6 bg-gray-100 p-1 rounded-lg w-fit flex-wrap">
+            {[
+              { id: 'dashboard', label: 'Dashboard', permission: 'can_view_dashboard' },
+              { id: 'consultants', label: 'Consultants', permission: 'can_view_consultants' },
+              { id: 'clients', label: 'Clients', permission: 'can_view_clients' },
+              { id: 'contracts', label: 'Contracts', permission: 'can_view_contracts' },
+              { id: 'timesheets', label: 'Timesheets', permission: 'can_view_timesheets' },
+              { id: 'invoices', label: 'Invoices', permission: 'can_view_invoices' },
+              { id: 'history', label: 'History', permission: 'can_view_invoices' },
+              { id: 'users', label: 'Users', permission: 'can_manage_users' }
+            ]
+              .filter(tab => {
+                const perms = user?.permissions || (user?.role === 'admin' ? {
+                  can_view_dashboard: true, can_view_contracts: true, can_view_consultants: true,
+                  can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: true
+                } : {
+                  can_view_dashboard: false, can_view_contracts: false, can_view_consultants: true,
+                  can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: false
+                });
+                return perms[tab.permission];
+              })
+              .map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition ${
+                    activeTab === tab.id 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
           </div>
         </div>
       </div>
@@ -3529,11 +3723,11 @@ const InvoiceGeneratorApp = () => {
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-800">User Management</h2>
               <button
-                onClick={() => openAddModal('operator')}
+                onClick={openCreateUserModal}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
               >
                 <Plus className="h-4 w-4" />
-                Create Operator
+                Create User
               </button>
             </div>
             
@@ -3545,9 +3739,8 @@ const InvoiceGeneratorApp = () => {
                       <th className="text-left p-4 font-medium text-gray-600">Name</th>
                       <th className="text-left p-4 font-medium text-gray-600">Email</th>
                       <th className="text-left p-4 font-medium text-gray-600">Role</th>
+                      <th className="text-left p-4 font-medium text-gray-600">Permissions</th>
                       <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Created By</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Last Login</th>
                       <th className="text-left p-4 font-medium text-gray-600">Actions</th>
                     </tr>
                   </thead>
@@ -3555,7 +3748,7 @@ const InvoiceGeneratorApp = () => {
                     {users.map((u) => (
                       <tr key={u.id} className="border-b hover:bg-gray-50">
                         <td className="p-4">
-                          <div className="font-medium">{u.first_name} {u.last_name}</div>
+                          <div className="font-medium">{u.name || `${u.first_name || ''} ${u.last_name || ''}`}</div>
                           {u.id === user.id && <span className="text-xs text-blue-600">(You)</span>}
                         </td>
                         <td className="p-4 text-sm">{u.email}</td>
@@ -3565,22 +3758,53 @@ const InvoiceGeneratorApp = () => {
                           </span>
                         </td>
                         <td className="p-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {u.active ? 'Active' : 'Disabled'}
+                          {u.role === 'admin' ? (
+                            <span className="text-xs text-gray-500 italic">All permissions</span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1 max-w-xs">
+                              {u.permissions?.can_view_dashboard && (
+                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">Dashboard</span>
+                              )}
+                              {u.permissions?.can_view_contracts && (
+                                <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">Contracts</span>
+                              )}
+                              {u.permissions?.can_view_consultants && (
+                                <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">Consultants</span>
+                              )}
+                              {u.permissions?.can_view_clients && (
+                                <span className="px-1.5 py-0.5 bg-teal-100 text-teal-700 rounded text-xs">Clients</span>
+                              )}
+                              {u.permissions?.can_view_timesheets && (
+                                <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded text-xs">Timesheets</span>
+                              )}
+                              {u.permissions?.can_view_invoices && (
+                                <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">Invoices</span>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.active !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {u.active !== false ? 'Active' : 'Disabled'}
                           </span>
                         </td>
-                        <td className="p-4 text-sm">{u.created_by_first_name ? `${u.created_by_first_name} ${u.created_by_last_name}` : 'System'}</td>
-                        <td className="p-4 text-sm text-gray-600">{u.last_login ? new Date(u.last_login).toLocaleDateString('en-GB') : 'Never'}</td>
                         <td className="p-4">
                           <div className="flex gap-2">
+                            <button
+                              onClick={() => openEditUserModal(u)}
+                              className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition"
+                              title="Edit User"
+                            >
+                              Edit
+                            </button>
                             {u.id !== user.id && (
                               <>
                                 <button
                                   onClick={() => toggleUserActive(u.id)}
-                                  className={`px-3 py-1 text-xs rounded transition ${u.active ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200'}`}
-                                  title={u.active ? 'Disable User' : 'Enable User'}
+                                  className={`px-3 py-1 text-xs rounded transition ${u.active !== false ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200'}`}
+                                  title={u.active !== false ? 'Disable User' : 'Enable User'}
                                 >
-                                  {u.active ? 'Disable' : 'Enable'}
+                                  {u.active !== false ? 'Disable' : 'Enable'}
                                 </button>
                                 <button onClick={() => deleteUser(u.id)} className="px-3 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition" title="Delete User">
                                   Delete
