@@ -1872,16 +1872,6 @@ const InvoiceGeneratorApp = () => {
         ],
         onSubmit: addContract
       },
-      operator: {
-        title: 'Create Operator Account',
-        fields: [
-          { name: 'firstName', placeholder: 'First Name' },
-          { name: 'lastName', placeholder: 'Last Name' },
-          { name: 'email', placeholder: 'Email', type: 'email' },
-          { name: 'password', placeholder: 'Password', type: 'password' }
-        ],
-        onSubmit: createOperator
-      }
     };
 
     setModalConfig(configs[type]);
