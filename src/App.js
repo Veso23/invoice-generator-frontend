@@ -414,22 +414,23 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
   );
 };
 
+// Default permissions for user roles
+const DEFAULT_USER_PERMISSIONS = {
+  admin: {
+    can_view_dashboard: true, can_view_contracts: true, can_view_consultants: true,
+    can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: true
+  },
+  operator: {
+    can_view_dashboard: false, can_view_contracts: false, can_view_consultants: true,
+    can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: false
+  }
+};
+
 // User Modal Component with Permissions
 const UserModal = ({ isOpen, onClose, onSubmit, mode, userData }) => {
-  const DEFAULT_PERMISSIONS = {
-    admin: {
-      can_view_dashboard: true, can_view_contracts: true, can_view_consultants: true,
-      can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: true
-    },
-    operator: {
-      can_view_dashboard: false, can_view_contracts: false, can_view_consultants: true,
-      can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: false
-    }
-  };
-
   const [formData, setFormData] = useState({
     name: '', email: '', password: '', role: 'operator',
-    permissions: { ...DEFAULT_PERMISSIONS.operator }
+    permissions: { ...DEFAULT_USER_PERMISSIONS.operator }
   });
 
   useEffect(() => {
@@ -440,12 +441,12 @@ const UserModal = ({ isOpen, onClose, onSubmit, mode, userData }) => {
           email: userData.email || '',
           password: '',
           role: userData.role || 'operator',
-          permissions: userData.permissions || DEFAULT_PERMISSIONS[userData.role || 'operator']
+          permissions: userData.permissions || DEFAULT_USER_PERMISSIONS[userData.role || 'operator']
         });
       } else {
         setFormData({
           name: '', email: '', password: '', role: 'operator',
-          permissions: { ...DEFAULT_PERMISSIONS.operator }
+          permissions: { ...DEFAULT_USER_PERMISSIONS.operator }
         });
       }
     }
@@ -454,7 +455,7 @@ const UserModal = ({ isOpen, onClose, onSubmit, mode, userData }) => {
   const handleRoleChange = (newRole) => {
     setFormData({
       ...formData, role: newRole,
-      permissions: newRole === 'admin' ? { ...DEFAULT_PERMISSIONS.admin } : formData.permissions
+      permissions: newRole === 'admin' ? { ...DEFAULT_USER_PERMISSIONS.admin } : formData.permissions
     });
   };
 
