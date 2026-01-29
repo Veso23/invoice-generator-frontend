@@ -688,20 +688,15 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div 
-        className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-lg shadow-xl w-full max-w-xl max-h-[80vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-white bg-opacity-20 p-2 rounded-lg">
-              <Upload className="h-5 w-5 text-white" />
-            </div>
-            <h3 className="text-lg font-semibold text-white">Bulk Upload Consultants</h3>
-          </div>
+        <div className="px-5 py-4 border-b flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-800">Bulk Upload Consultants</h3>
           <button 
             onClick={onClose}
-            className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-1 transition"
+            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -710,14 +705,15 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
         </div>
         
         {/* Content */}
-        <div className="p-6 flex-1 overflow-auto">
-          {/* File Upload Section */}
-          <div className="mb-6">
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-green-400 transition bg-gray-50">
-              <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-              <label className="cursor-pointer">
-                <span className="text-green-600 font-medium hover:text-green-700">Click to upload</span>
-                <span className="text-gray-500"> or drag and drop</span>
+        <div className="p-5 flex-1 overflow-auto">
+          {/* Upload and Info Row */}
+          <div className="flex gap-4 mb-4">
+            {/* File Upload */}
+            <div className="flex-1">
+              <label className="block border border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-green-400 hover:bg-green-50 transition cursor-pointer">
+                <Upload className="h-6 w-6 text-gray-400 mx-auto mb-1" />
+                <span className="text-sm text-green-600 font-medium">Click to upload</span>
+                <p className="text-xs text-gray-400 mt-0.5">CSV files only</p>
                 <input
                   type="file"
                   accept=".csv"
@@ -725,85 +721,73 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
                   className="hidden"
                 />
               </label>
-              <p className="text-sm text-gray-500 mt-2">CSV files only</p>
             </div>
-          </div>
-
-          {/* Info Box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-blue-800 mb-1">CSV Format Requirements</p>
-                <p className="text-blue-700">
-                  <strong>Required:</strong> first_name, last_name, company_name, vat
-                </p>
-                <p className="text-blue-700">
-                  <strong>Optional:</strong> company_address, iban, swift, phone, email, consultant_contract_id
-                </p>
-                <button
-                  onClick={downloadTemplate}
-                  className="mt-2 text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1"
-                >
-                  <Download className="h-4 w-4" />
-                  Download Template
-                </button>
-              </div>
+            
+            {/* Format Info */}
+            <div className="flex-1 text-xs text-gray-500">
+              <p className="font-medium text-gray-700 mb-1">CSV Format</p>
+              <p><span className="text-gray-600">Required:</span> first_name, last_name, company_name, vat</p>
+              <p className="mt-1"><span className="text-gray-600">Optional:</span> company_address, iban, swift, phone, email</p>
+              <button
+                onClick={downloadTemplate}
+                className="mt-2 text-green-600 hover:text-green-700 font-medium inline-flex items-center gap-1"
+              >
+                <Download className="h-3 w-3" />
+                Download Template
+              </button>
             </div>
           </div>
           
           {/* Preview Table */}
           {csvData.length > 0 && (
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-medium text-gray-800">Preview ({csvData.length} rows)</h4>
-                <div className="flex items-center gap-4">
-                  <span className="inline-flex items-center gap-1 text-sm text-green-600">
-                    <CheckCircle className="h-4 w-4" />
-                    {validCount} valid
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Preview ({csvData.length} rows)</span>
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="text-green-600 flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3" /> {validCount} valid
                   </span>
                   {invalidCount > 0 && (
-                    <span className="inline-flex items-center gap-1 text-sm text-red-600">
-                      <AlertCircle className="h-4 w-4" />
-                      {invalidCount} invalid
+                    <span className="text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" /> {invalidCount} invalid
                     </span>
                   )}
                 </div>
               </div>
               
-              <div className="border rounded-lg overflow-hidden max-h-64 overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100 sticky top-0">
+              <div className="border rounded-lg overflow-hidden max-h-48 overflow-y-auto">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50 sticky top-0">
                     <tr>
-                      <th className="text-left px-3 py-2 font-medium text-gray-600 w-12"></th>
-                      <th className="text-left px-3 py-2 font-medium text-gray-600">Name</th>
-                      <th className="text-left px-3 py-2 font-medium text-gray-600">Company</th>
-                      <th className="text-left px-3 py-2 font-medium text-gray-600">VAT</th>
-                      <th className="text-left px-3 py-2 font-medium text-gray-600">Email</th>
+                      <th className="text-left px-2 py-1.5 font-medium text-gray-500 w-8"></th>
+                      <th className="text-left px-2 py-1.5 font-medium text-gray-500">Name</th>
+                      <th className="text-left px-2 py-1.5 font-medium text-gray-500">Company</th>
+                      <th className="text-left px-2 py-1.5 font-medium text-gray-500">VAT</th>
+                      <th className="text-left px-2 py-1.5 font-medium text-gray-500">Email</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {csvData.slice(0, 50).map((row, idx) => (
-                      <tr key={idx} className={row.isValid ? 'bg-white hover:bg-gray-50' : 'bg-red-50'}>
-                        <td className="px-3 py-2 text-center">
+                    {csvData.slice(0, 30).map((row, idx) => (
+                      <tr key={idx} className={row.isValid ? 'bg-white' : 'bg-red-50'}>
+                        <td className="px-2 py-1.5 text-center">
                           {row.isValid ? (
-                            <CheckCircle className="h-4 w-4 text-green-500 inline" />
+                            <CheckCircle className="h-3 w-3 text-green-500 inline" />
                           ) : (
-                            <AlertCircle className="h-4 w-4 text-red-500 inline" title={row.error} />
+                            <AlertCircle className="h-3 w-3 text-red-500 inline" title={row.error} />
                           )}
                         </td>
-                        <td className="px-3 py-2 font-medium">{row.firstName} {row.lastName}</td>
-                        <td className="px-3 py-2 text-gray-600">{row.companyName || '-'}</td>
-                        <td className="px-3 py-2 text-gray-600 font-mono text-xs">{row.companyVAT || '-'}</td>
-                        <td className="px-3 py-2 text-gray-600">{row.email || '-'}</td>
+                        <td className="px-2 py-1.5">{row.firstName} {row.lastName}</td>
+                        <td className="px-2 py-1.5 text-gray-600">{row.companyName || '-'}</td>
+                        <td className="px-2 py-1.5 text-gray-600 font-mono">{row.companyVAT || '-'}</td>
+                        <td className="px-2 py-1.5 text-gray-600">{row.email || '-'}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              {csvData.length > 50 && (
-                <p className="text-center text-gray-500 text-sm mt-2">
-                  Showing first 50 of {csvData.length} rows
+              {csvData.length > 30 && (
+                <p className="text-center text-gray-400 text-xs mt-1">
+                  + {csvData.length - 30} more rows
                 </p>
               )}
             </div>
@@ -811,11 +795,11 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
         </div>
         
         {/* Footer */}
-        <div className="border-t bg-gray-50 px-6 py-4 flex justify-end gap-3">
+        <div className="border-t px-5 py-3 flex justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-100 transition font-medium text-gray-700"
+            className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition text-gray-600"
           >
             Cancel
           </button>
@@ -823,20 +807,20 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
             type="button"
             onClick={onUpload}
             disabled={validCount === 0 || uploading}
-            className={`px-5 py-2.5 rounded-lg transition font-medium flex items-center gap-2 ${
+            className={`px-4 py-2 text-sm rounded-lg transition flex items-center gap-2 ${
               validCount === 0 || uploading
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-green-600 text-white hover:bg-green-700 shadow-sm'
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-700'
             }`}
           >
             {uploading ? (
               <>
-                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
                 Uploading...
               </>
             ) : (
               <>
-                <Upload className="h-4 w-4" />
+                <Upload className="h-3 w-3" />
                 Upload {validCount} Consultant{validCount !== 1 ? 's' : ''}
               </>
             )}
