@@ -418,11 +418,13 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
 const DEFAULT_USER_PERMISSIONS = {
   admin: {
     can_view_dashboard: true, can_view_contracts: true, can_view_consultants: true,
-    can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: true
+    can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, 
+    can_manage_users: true, can_delete_timesheets: true
   },
   operator: {
     can_view_dashboard: false, can_view_contracts: false, can_view_consultants: true,
-    can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: false
+    can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, 
+    can_manage_users: false, can_delete_timesheets: false
   }
 };
 
@@ -483,7 +485,8 @@ const UserModal = ({ isOpen, onClose, onSubmit, mode, userData }) => {
     can_view_clients: 'View Clients',
     can_view_timesheets: 'View Timesheets',
     can_view_invoices: 'View Invoices',
-    can_manage_users: 'Manage Users'
+    can_manage_users: 'Manage Users',
+    can_delete_timesheets: 'Delete Problematic Emails'
   };
 
   return (
@@ -1813,6 +1816,34 @@ const InvoiceGeneratorApp = () => {
     setEditingMonth(null);
     setEditMonthValue('');
   };
+
+  // Flag timesheet for review
+  const flagForReview = async (timesheetId) => {
+    try {
+      await apiCall(`/timesheets/${timesheetId}/flag-review`, {
+        method: 'PUT',
+        body: JSON.stringify({ flagged: true })
+      });
+      showNotification('Timesheet flagged for review');
+      loadData();
+    } catch (error) {
+      showNotification('Failed to flag timesheet: ' + error.message, 'error');
+    }
+  };
+
+  // Remove flag from timesheet
+  const unflagForReview = async (timesheetId) => {
+    try {
+      await apiCall(`/timesheets/${timesheetId}/flag-review`, {
+        method: 'PUT',
+        body: JSON.stringify({ flagged: false })
+      });
+      showNotification('Flag removed from timesheet');
+      loadData();
+    } catch (error) {
+      showNotification('Failed to unflag timesheet: ' + error.message, 'error');
+    }
+  };
   
   const openAddModal = (type) => {
     const configs = {
@@ -2555,24 +2586,6 @@ const InvoiceGeneratorApp = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setActiveTimesheetTab('needs-review')}
-                  className={`px-4 py-2 rounded-t-lg font-medium transition ${
-                    activeTimesheetTab === 'needs-review'
-                      ? 'bg-yellow-100 text-yellow-600 border-b-2 border-yellow-600'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                  }`}
-                >
-                  Needs Review
-                  <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-                    {timesheets.filter(ts => 
-                      !ts.month && 
-                      ts.status !== 'no_pdf' && 
-                      ts.status !== 'multiple_pdfs'
-                    ).length}
-                  </span>
-                </button>
-                <button
-                  type="button"
                   onClick={() => setActiveTimesheetTab('older')}
                   className={`px-4 py-2 rounded-t-lg font-medium transition ${
                     activeTimesheetTab === 'older'
@@ -2585,6 +2598,24 @@ const InvoiceGeneratorApp = () => {
                     {timesheets.filter(ts => 
                       ts.month && 
                       ts.month.toLowerCase() !== timesheetStatus?.checking_month?.toLowerCase() &&
+                      !ts.invoice_generated &&
+                      !ts.flagged_for_review
+                    ).length}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTimesheetTab('needs-review')}
+                  className={`px-4 py-2 rounded-t-lg font-medium transition ${
+                    activeTimesheetTab === 'needs-review'
+                      ? 'bg-yellow-100 text-yellow-600 border-b-2 border-yellow-600'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                  }`}
+                >
+                  Needs Review
+                  <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                    {timesheets.filter(ts => 
+                      (ts.flagged_for_review || (!ts.month && ts.status !== 'no_pdf' && ts.status !== 'multiple_pdfs')) &&
                       !ts.invoice_generated
                     ).length}
                   </span>
@@ -2625,7 +2656,9 @@ const InvoiceGeneratorApp = () => {
                     </thead>
                     <tbody>
                       {timesheetStatus?.consultants?.map((consultant) => {
+                        // Find matching timesheet - exclude flagged items (they're in Needs Review)
                         const timesheet = timesheets.find(ts => {
+                          if (ts.flagged_for_review) return false; // Exclude flagged items
                           if (ts.sender_email?.toLowerCase() !== consultant.email?.toLowerCase()) return false;
                           if (ts.month) {
                             return ts.month.toLowerCase() === consultant.checking_month?.toLowerCase();
@@ -2804,6 +2837,16 @@ const InvoiceGeneratorApp = () => {
                                     Invoiced
                                   </span>
                                 )}
+                                {timesheet && !timesheet.invoice_generated && !timesheet.flagged_for_review && (
+                                  <button
+                                    onClick={() => flagForReview(timesheet.id)}
+                                    className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition flex items-center gap-1"
+                                    title="Flag for admin review"
+                                  >
+                                    <AlertCircle className="h-3 w-3" />
+                                    Flag
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -2814,31 +2857,38 @@ const InvoiceGeneratorApp = () => {
                 </div>
               )}
 
-              {/* NEEDS REVIEW TAB CONTENT - ✅ ALSO UPDATED */}
+              {/* NEEDS REVIEW TAB CONTENT - Includes flagged items and items without month */}
               {activeTimesheetTab === 'needs-review' && (
                 <div className="overflow-x-auto">
                   <table className="w-full">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-yellow-50">
                       <tr>
                         <th className="text-left p-4 font-medium text-gray-600">Date Received</th>
                         <th className="text-left p-4 font-medium text-gray-600">Name</th>
                         <th className="text-left p-4 font-medium text-gray-600">Email</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Month (Set Manually)</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Month</th>
                         <th className="text-left p-4 font-medium text-gray-600">Days Worked</th>
+                        <th className="text-left p-4 font-medium text-gray-600">Reason</th>
                         <th className="text-left p-4 font-medium text-gray-600">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {timesheets.filter(ts => !ts.month && ts.status !== 'no_pdf' && ts.status !== 'multiple_pdfs').length === 0 ? (
+                      {timesheets.filter(ts => 
+                        (ts.flagged_for_review || (!ts.month && ts.status !== 'no_pdf' && ts.status !== 'multiple_pdfs')) &&
+                        !ts.invoice_generated
+                      ).length === 0 ? (
                         <tr>
-                          <td colSpan="6" className="p-8 text-center text-gray-500">
+                          <td colSpan="7" className="p-8 text-center text-gray-500">
                             <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-2" />
-                            <p className="font-medium">All timesheets have month set!</p>
-                            <p className="text-sm">No timesheets need manual month assignment.</p>
+                            <p className="font-medium">No timesheets need review!</p>
+                            <p className="text-sm">All timesheets are ready for processing.</p>
                           </td>
                         </tr>
                       ) : (
-                        timesheets.filter(ts => !ts.month && ts.status !== 'no_pdf' && ts.status !== 'multiple_pdfs').map((timesheet) => {
+                        timesheets.filter(ts => 
+                          (ts.flagged_for_review || (!ts.month && ts.status !== 'no_pdf' && ts.status !== 'multiple_pdfs')) &&
+                          !ts.invoice_generated
+                        ).map((timesheet) => {
                           const consultant = consultants.find(c => 
                             c.email?.toLowerCase() === timesheet.sender_email?.toLowerCase()
                           );
@@ -2862,28 +2912,21 @@ const InvoiceGeneratorApp = () => {
                               </td>
                               <td className="p-4 text-sm font-mono">{timesheet.sender_email}</td>
                               
+                              {/* Month - Editable */}
                               <td className="p-4">
                                 {editingMonth === timesheet.id ? (
                                   <div className="flex items-center gap-1">
                                     <select
                                       value={editMonthValue}
                                       onChange={(e) => setEditMonthValue(e.target.value)}
-                                      className="border border-yellow-500 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-300 min-w-[150px]"
+                                      className="border border-yellow-500 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-300"
                                       autoFocus
                                     >
                                       <option value="">Select Month</option>
-                                      <option value="January">January</option>
-                                      <option value="February">February</option>
-                                      <option value="March">March</option>
-                                      <option value="April">April</option>
-                                      <option value="May">May</option>
-                                      <option value="June">June</option>
-                                      <option value="July">July</option>
-                                      <option value="August">August</option>
-                                      <option value="September">September</option>
-                                      <option value="October">October</option>
-                                      <option value="November">November</option>
-                                      <option value="December">December</option>
+                                      {['January', 'February', 'March', 'April', 'May', 'June', 
+                                        'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                      ))}
                                     </select>
                                     <button
                                       onClick={() => updateMonth(timesheet.id, editMonthValue)}
@@ -2891,7 +2934,7 @@ const InvoiceGeneratorApp = () => {
                                       title="Save"
                                       disabled={!editMonthValue}
                                     >
-                                      <CheckCircle className="h-5 w-5" />
+                                      <CheckCircle className="h-4 w-4" />
                                     </button>
                                     <button
                                       onClick={cancelEditMonth}
@@ -2901,21 +2944,66 @@ const InvoiceGeneratorApp = () => {
                                       ×
                                     </button>
                                   </div>
+                                ) : timesheet.month ? (
+                                  <div
+                                    onClick={() => startEditMonth(timesheet)}
+                                    className="cursor-pointer hover:bg-yellow-100 px-2 py-1 rounded transition inline-flex items-center gap-1"
+                                    title="Click to edit month"
+                                  >
+                                    <span className="font-medium">{timesheet.month}</span>
+                                    <Edit className="h-3 w-3 text-gray-400" />
+                                  </div>
                                 ) : (
                                   <button
                                     onClick={() => startEditMonth(timesheet)}
-                                    className="w-full text-left bg-yellow-100 hover:bg-yellow-200 px-3 py-2 rounded transition flex items-center gap-2 border border-yellow-300"
+                                    className="bg-yellow-100 hover:bg-yellow-200 px-2 py-1 rounded transition flex items-center gap-1 border border-yellow-300 text-sm"
                                   >
-                                    <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0" />
-                                    <span className="text-yellow-700 font-medium">Click to set month</span>
-                                    <Edit className="h-3 w-3 text-yellow-600 ml-auto" />
+                                    <AlertCircle className="h-3 w-3 text-yellow-600" />
+                                    <span className="text-yellow-700">Set month</span>
                                   </button>
                                 )}
                               </td>
 
+                              {/* Days - Editable */}
                               <td className="p-4">
-                                {totalDays !== null ? (
-                                  <span className="font-bold text-blue-600">{totalDays}</span>
+                                {editingDays === timesheet.id ? (
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="number"
+                                      step="0.5"
+                                      value={editDaysValue}
+                                      onChange={(e) => setEditDaysValue(e.target.value)}
+                                      className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                      autoFocus
+                                      onKeyPress={(e) => {
+                                        if (e.key === 'Enter') updateDays(timesheet.id, editDaysValue);
+                                        if (e.key === 'Escape') cancelEditDays();
+                                      }}
+                                    />
+                                    <button
+                                      onClick={() => updateDays(timesheet.id, editDaysValue)}
+                                      className="text-green-600 hover:text-green-800 p-1"
+                                      title="Save"
+                                    >
+                                      <CheckCircle className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={cancelEditDays}
+                                      className="text-gray-400 hover:text-gray-600 p-1"
+                                      title="Cancel"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ) : totalDays !== null ? (
+                                  <div
+                                    onClick={() => startEditDays(timesheet)}
+                                    className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-flex items-center gap-1"
+                                    title="Click to edit days"
+                                  >
+                                    <span className="font-bold text-blue-600">{totalDays}</span>
+                                    <Edit className="h-3 w-3 text-gray-400" />
+                                  </div>
                                 ) : (
                                   <span className="text-yellow-600 italic text-sm flex items-center gap-1">
                                     <AlertCircle className="h-3 w-3" />
@@ -2924,6 +3012,21 @@ const InvoiceGeneratorApp = () => {
                                 )}
                               </td>
 
+                              {/* Reason */}
+                              <td className="p-4">
+                                {timesheet.flagged_for_review ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                                    <AlertCircle className="h-3 w-3" />
+                                    Flagged by operator
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                                    Month not detected
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Actions */}
                               <td className="p-4">
                                 <div className="flex gap-2">
                                   {timesheet.timesheet_file_url && (
@@ -2936,6 +3039,53 @@ const InvoiceGeneratorApp = () => {
                                       title="View Timesheet PDF"
                                     >
                                       <Eye className="h-4 w-4" />
+                                    </button>
+                                  )}
+                                  {timesheet.flagged_for_review && (
+                                    <button
+                                      onClick={() => unflagForReview(timesheet.id)}
+                                      className="px-2 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 transition flex items-center gap-1"
+                                      title="Remove flag and return to normal queue"
+                                    >
+                                      <CheckCircle className="h-3 w-3" />
+                                      Unflag
+                                    </button>
+                                  )}
+                                  {timesheet.month && !timesheet.invoice_generated && (
+                                    <button
+                                      onClick={async () => {
+                                        try {
+                                          setGeneratingInvoice(timesheet.id);
+                                          await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
+                                            method: 'POST'
+                                          });
+                                          showNotification('Invoice generated successfully!');
+                                          loadData();
+                                        } catch (error) {
+                                          showNotification('Failed to generate invoice: ' + error.message, 'error');
+                                        } finally {
+                                          setGeneratingInvoice(null);
+                                        }
+                                      }}
+                                      disabled={generatingInvoice === timesheet.id}
+                                      className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
+                                        generatingInvoice === timesheet.id 
+                                          ? 'bg-green-400 cursor-not-allowed' 
+                                          : 'bg-green-600 text-white'
+                                      }`}
+                                      title="Generate Invoice"
+                                    >
+                                      {generatingInvoice === timesheet.id ? (
+                                        <>
+                                          <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
+                                          Generating...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <FileText className="h-3 w-3" />
+                                          Invoice
+                                        </>
+                                      )}
                                     </button>
                                   )}
                                 </div>
@@ -2967,7 +3117,8 @@ const InvoiceGeneratorApp = () => {
                       {timesheets.filter(ts => 
                         ts.month && 
                         ts.month.toLowerCase() !== timesheetStatus?.checking_month?.toLowerCase() &&
-                        !ts.invoice_generated
+                        !ts.invoice_generated &&
+                        !ts.flagged_for_review
                       ).length === 0 ? (
                         <tr>
                           <td colSpan="6" className="p-8 text-center text-gray-500">
@@ -2980,7 +3131,8 @@ const InvoiceGeneratorApp = () => {
                         timesheets.filter(ts => 
                           ts.month && 
                           ts.month.toLowerCase() !== timesheetStatus?.checking_month?.toLowerCase() &&
-                          !ts.invoice_generated
+                          !ts.invoice_generated &&
+                          !ts.flagged_for_review
                         ).map((timesheet) => {
                           const consultant = consultants.find(c => 
                             c.email?.toLowerCase() === timesheet.sender_email?.toLowerCase()
@@ -3107,6 +3259,16 @@ const InvoiceGeneratorApp = () => {
                                       </>
                                     )}
                                   </button>
+                                  {!timesheet.flagged_for_review && (
+                                    <button
+                                      onClick={() => flagForReview(timesheet.id)}
+                                      className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition flex items-center gap-1"
+                                      title="Flag for admin review"
+                                    >
+                                      <AlertCircle className="h-3 w-3" />
+                                      Flag
+                                    </button>
+                                  )}
                                 </div>
                               </td>
                             </tr>
@@ -3190,31 +3352,35 @@ const InvoiceGeneratorApp = () => {
                                 {timesheet.notes || '-'}
                               </td>
                               <td className="p-4">
-                                <button
-                                  onClick={async () => {
-                                    if (window.confirm('Delete this record? The sender will need to resend their email correctly.')) {
-                                      try {
-                                        const authToken = localStorage.getItem('authToken');
-                                        const response = await fetch(`${API_BASE_URL}/timesheets/${timesheet.id}`, {
-                                          method: 'DELETE',
-                                          headers: { 'Authorization': `Bearer ${authToken}` }
-                                        });
-                                        if (response.ok) {
-                                          loadData();
-                                          showNotification('Record deleted', 'success');
-                                        } else {
+                                {(user?.role === 'admin' || user?.permissions?.can_delete_timesheets) ? (
+                                  <button
+                                    onClick={async () => {
+                                      if (window.confirm('Delete this record? The sender will need to resend their email correctly.')) {
+                                        try {
+                                          const authToken = localStorage.getItem('authToken');
+                                          const response = await fetch(`${API_BASE_URL}/timesheets/${timesheet.id}`, {
+                                            method: 'DELETE',
+                                            headers: { 'Authorization': `Bearer ${authToken}` }
+                                          });
+                                          if (response.ok) {
+                                            loadData();
+                                            showNotification('Record deleted', 'success');
+                                          } else {
+                                            showNotification('Failed to delete', 'error');
+                                          }
+                                        } catch (error) {
                                           showNotification('Failed to delete', 'error');
                                         }
-                                      } catch (error) {
-                                        showNotification('Failed to delete', 'error');
                                       }
-                                    }
-                                  }}
-                                  className="text-red-600 hover:text-red-800 p-1 transition"
-                                  title="Delete this record"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
+                                    }}
+                                    className="text-red-600 hover:text-red-800 p-1 transition"
+                                    title="Delete this record"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                ) : (
+                                  <span className="text-xs text-gray-400 italic">Admin only</span>
+                                )}
                               </td>
                             </tr>
                           );
