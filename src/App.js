@@ -675,107 +675,147 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
   const validCount = csvData.filter(row => row.isValid).length;
   const invalidCount = csvData.filter(row => !row.isValid).length;
 
+  const downloadTemplate = () => {
+    const template = 'first_name,last_name,company_name,company_address,vat,iban,swift,phone,email,consultant_contract_id\nJohn,Doe,Acme Ltd,"123 Main St, City",BG123456789,BG12IBAN1234567890,SWIFT123,+1234567890,john@acme.com,CONS-001';
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'consultants_template.csv';
+    a.click();
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <h3 className="text-lg font-semibold mb-4">Bulk Upload Consultants from CSV</h3>
-        
-        {/* File Upload */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Upload CSV File
-          </label>
-          <input
-            type="file"
-            accept=".csv"
-            onChange={onFileUpload}
-            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            Required columns: first_name, last_name, company_name, company_vat (or vat)
-          </p>
-          <p className="text-xs text-gray-500">
-            Optional columns: company_address, iban, swift, phone, email, consultant_contract_id
-          </p>
-        </div>
-        
-        {/* Download Template */}
-        <div className="mb-4">
-          <button
-            onClick={() => {
-              const template = 'first_name,last_name,company_name,company_address,vat,iban,swift,phone,email,consultant_contract_id\nJohn,Doe,Acme Ltd,"123 Main St, City",BG123456789,BG12IBAN1234567890,SWIFT123,+1234567890,john@acme.com,CONS-001';
-              const blob = new Blob([template], { type: 'text/csv' });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = 'consultants_template.csv';
-              a.click();
-            }}
-            className="text-blue-600 hover:text-blue-800 text-sm underline"
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div 
+        className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="bg-white bg-opacity-20 p-2 rounded-lg">
+              <Upload className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-white">Bulk Upload Consultants</h3>
+          </div>
+          <button 
+            onClick={onClose}
+            className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-1 transition"
           >
-            Download CSV Template
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
         
-        {/* Preview */}
-        {csvData.length > 0 && (
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="mb-2 flex items-center gap-4">
-              <span className="text-sm font-medium">Preview ({csvData.length} rows)</span>
-              <span className="text-sm text-green-600">✓ Valid: {validCount}</span>
-              {invalidCount > 0 && (
-                <span className="text-sm text-red-600">✗ Invalid: {invalidCount}</span>
-              )}
+        {/* Content */}
+        <div className="p-6 flex-1 overflow-auto">
+          {/* File Upload Section */}
+          <div className="mb-6">
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-green-400 transition bg-gray-50">
+              <Upload className="h-10 w-10 text-gray-400 mx-auto mb-3" />
+              <label className="cursor-pointer">
+                <span className="text-green-600 font-medium hover:text-green-700">Click to upload</span>
+                <span className="text-gray-500"> or drag and drop</span>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={onFileUpload}
+                  className="hidden"
+                />
+              </label>
+              <p className="text-sm text-gray-500 mt-2">CSV files only</p>
             </div>
-            
-            <div className="flex-1 overflow-auto border rounded-lg">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
-                  <tr>
-                    <th className="text-left p-2 font-medium text-gray-600">Status</th>
-                    <th className="text-left p-2 font-medium text-gray-600">First Name</th>
-                    <th className="text-left p-2 font-medium text-gray-600">Last Name</th>
-                    <th className="text-left p-2 font-medium text-gray-600">Company</th>
-                    <th className="text-left p-2 font-medium text-gray-600">VAT</th>
-                    <th className="text-left p-2 font-medium text-gray-600">Email</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {csvData.slice(0, 50).map((row, idx) => (
-                    <tr key={idx} className={`border-t ${row.isValid ? 'bg-green-50' : 'bg-red-50'}`}>
-                      <td className="p-2">
-                        {row.isValid ? (
-                          <span className="text-green-600">✓</span>
-                        ) : (
-                          <span className="text-red-600" title={row.error}>✗</span>
-                        )}
-                      </td>
-                      <td className="p-2">{row.firstName || '-'}</td>
-                      <td className="p-2">{row.lastName || '-'}</td>
-                      <td className="p-2">{row.companyName || '-'}</td>
-                      <td className="p-2">{row.companyVAT || '-'}</td>
-                      <td className="p-2">{row.email || '-'}</td>
+          </div>
+
+          {/* Info Box */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-blue-800 mb-1">CSV Format Requirements</p>
+                <p className="text-blue-700">
+                  <strong>Required:</strong> first_name, last_name, company_name, vat
+                </p>
+                <p className="text-blue-700">
+                  <strong>Optional:</strong> company_address, iban, swift, phone, email, consultant_contract_id
+                </p>
+                <button
+                  onClick={downloadTemplate}
+                  className="mt-2 text-blue-600 hover:text-blue-800 font-medium inline-flex items-center gap-1"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Template
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Preview Table */}
+          {csvData.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-medium text-gray-800">Preview ({csvData.length} rows)</h4>
+                <div className="flex items-center gap-4">
+                  <span className="inline-flex items-center gap-1 text-sm text-green-600">
+                    <CheckCircle className="h-4 w-4" />
+                    {validCount} valid
+                  </span>
+                  {invalidCount > 0 && (
+                    <span className="inline-flex items-center gap-1 text-sm text-red-600">
+                      <AlertCircle className="h-4 w-4" />
+                      {invalidCount} invalid
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="border rounded-lg overflow-hidden max-h-64 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100 sticky top-0">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-medium text-gray-600 w-12"></th>
+                      <th className="text-left px-3 py-2 font-medium text-gray-600">Name</th>
+                      <th className="text-left px-3 py-2 font-medium text-gray-600">Company</th>
+                      <th className="text-left px-3 py-2 font-medium text-gray-600">VAT</th>
+                      <th className="text-left px-3 py-2 font-medium text-gray-600">Email</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {csvData.slice(0, 50).map((row, idx) => (
+                      <tr key={idx} className={row.isValid ? 'bg-white hover:bg-gray-50' : 'bg-red-50'}>
+                        <td className="px-3 py-2 text-center">
+                          {row.isValid ? (
+                            <CheckCircle className="h-4 w-4 text-green-500 inline" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4 text-red-500 inline" title={row.error} />
+                          )}
+                        </td>
+                        <td className="px-3 py-2 font-medium">{row.firstName} {row.lastName}</td>
+                        <td className="px-3 py-2 text-gray-600">{row.companyName || '-'}</td>
+                        <td className="px-3 py-2 text-gray-600 font-mono text-xs">{row.companyVAT || '-'}</td>
+                        <td className="px-3 py-2 text-gray-600">{row.email || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               {csvData.length > 50 && (
-                <p className="p-2 text-center text-gray-500 text-sm">
+                <p className="text-center text-gray-500 text-sm mt-2">
                   Showing first 50 of {csvData.length} rows
                 </p>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
         
-        {/* Actions */}
-        <div className="flex gap-3 mt-4">
+        {/* Footer */}
+        <div className="border-t bg-gray-50 px-6 py-4 flex justify-end gap-3">
           <button
             type="button"
-            onClick={() => {
-              onClose();
-            }}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+            onClick={onClose}
+            className="px-5 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-100 transition font-medium text-gray-700"
           >
             Cancel
           </button>
@@ -783,10 +823,10 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
             type="button"
             onClick={onUpload}
             disabled={validCount === 0 || uploading}
-            className={`flex-1 px-4 py-2 rounded-lg transition flex items-center justify-center gap-2 ${
+            className={`px-5 py-2.5 rounded-lg transition font-medium flex items-center gap-2 ${
               validCount === 0 || uploading
-                ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-green-600 text-white hover:bg-green-700'
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-700 shadow-sm'
             }`}
           >
             {uploading ? (
@@ -797,7 +837,7 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
             ) : (
               <>
                 <Upload className="h-4 w-4" />
-                Upload {validCount} Consultants
+                Upload {validCount} Consultant{validCount !== 1 ? 's' : ''}
               </>
             )}
           </button>
