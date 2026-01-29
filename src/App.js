@@ -2615,9 +2615,8 @@ const InvoiceGeneratorApp = () => {
                   Needs Review
                   <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">
                     {timesheets.filter(ts => 
-                      ts.status !== 'no_pdf' && 
-                      ts.status !== 'multiple_pdfs' &&
-                      (ts.flagged_for_review || !ts.month) &&
+                      (ts.flagged_for_review || 
+                       (!ts.month && ts.status !== 'no_pdf' && ts.status !== 'multiple_pdfs')) &&
                       !ts.invoice_generated
                     ).length}
                   </span>
@@ -2634,8 +2633,8 @@ const InvoiceGeneratorApp = () => {
                   Problematic Emails
                   <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-xs">
                     {timesheets.filter(ts => 
-                      ts.status === 'no_pdf' || 
-                      ts.status === 'multiple_pdfs'
+                      (ts.status === 'no_pdf' || ts.status === 'multiple_pdfs') &&
+                      !ts.flagged_for_review
                     ).length}
                   </span>
                 </button>
@@ -2876,11 +2875,10 @@ const InvoiceGeneratorApp = () => {
                     </thead>
                     <tbody>
                       {timesheets.filter(ts => 
-                        // Exclude problematic emails (they stay in Problematic Emails tab)
-                        ts.status !== 'no_pdf' && 
-                        ts.status !== 'multiple_pdfs' &&
-                        // Include: flagged OR missing month
-                        (ts.flagged_for_review || !ts.month) &&
+                        // Flagged items ALWAYS show in Needs Review (regardless of status)
+                        // OR items without month that aren't problematic
+                        (ts.flagged_for_review || 
+                         (!ts.month && ts.status !== 'no_pdf' && ts.status !== 'multiple_pdfs')) &&
                         !ts.invoice_generated
                       ).length === 0 ? (
                         <tr>
@@ -2892,9 +2890,8 @@ const InvoiceGeneratorApp = () => {
                         </tr>
                       ) : (
                         timesheets.filter(ts => 
-                          ts.status !== 'no_pdf' && 
-                          ts.status !== 'multiple_pdfs' &&
-                          (ts.flagged_for_review || !ts.month) &&
+                          (ts.flagged_for_review || 
+                           (!ts.month && ts.status !== 'no_pdf' && ts.status !== 'multiple_pdfs')) &&
                           !ts.invoice_generated
                         ).map((timesheet) => {
                           const consultant = consultants.find(c => 
@@ -3311,7 +3308,7 @@ const InvoiceGeneratorApp = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {timesheets.filter(ts => ts.status === 'no_pdf' || ts.status === 'multiple_pdfs').length === 0 ? (
+                      {timesheets.filter(ts => (ts.status === 'no_pdf' || ts.status === 'multiple_pdfs') && !ts.flagged_for_review).length === 0 ? (
                         <tr>
                           <td colSpan="7" className="p-8 text-center text-gray-500">
                             <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-2" />
@@ -3320,7 +3317,7 @@ const InvoiceGeneratorApp = () => {
                           </td>
                         </tr>
                       ) : (
-                        timesheets.filter(ts => ts.status === 'no_pdf' || ts.status === 'multiple_pdfs').map((timesheet) => {
+                        timesheets.filter(ts => (ts.status === 'no_pdf' || ts.status === 'multiple_pdfs') && !ts.flagged_for_review).map((timesheet) => {
                           const consultant = consultants.find(c => 
                             c.email?.toLowerCase() === timesheet.sender_email?.toLowerCase()
                           );
