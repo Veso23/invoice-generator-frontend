@@ -688,122 +688,225 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
     URL.revokeObjectURL(url);
   };
 
+  // Using inline styles to ensure proper overlay behavior
+  const overlayStyle = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backdropFilter: 'blur(4px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    padding: '24px'
+  };
+
+  const modalStyle = {
+    backgroundColor: 'white',
+    borderRadius: '24px',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    width: '100%',
+    maxWidth: '640px',
+    maxHeight: '85vh',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column'
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 overflow-y-auto">
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" 
-        onClick={onClose} 
-      />
-      
-      {/* Modal */}
-      <div 
-        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div style={overlayStyle} onClick={onClose}>
+      <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="px-8 pt-8 pb-6 flex items-start justify-between border-b border-slate-100 bg-slate-50/50">
-          <div>
-            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Bulk Synchronizer</h3>
-            <p className="text-sm text-slate-400 font-medium mt-1 flex items-center gap-2">
-              Import consultant pool via CSV. 
-              <button 
-                onClick={downloadTemplate} 
-                className="text-indigo-600 font-bold hover:text-indigo-800 flex items-center gap-1 transition-colors"
-              >
-                <Download className="h-4 w-4" /> Get Template
-              </button>
-            </p>
+        <div style={{ padding: '24px 32px 20px', borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Bulk Synchronizer</h3>
+              <p style={{ fontSize: '14px', color: '#94a3b8', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                Import consultant pool via CSV.
+                <button 
+                  onClick={downloadTemplate} 
+                  style={{ 
+                    color: '#4f46e5', 
+                    fontWeight: 700, 
+                    background: 'none', 
+                    border: 'none', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: 0
+                  }}
+                >
+                  <Download className="h-4 w-4" /> Get Template
+                </button>
+              </p>
+            </div>
+            <button 
+              onClick={onClose}
+              style={{ 
+                padding: '8px', 
+                color: '#94a3b8', 
+                background: 'none', 
+                border: 'none', 
+                cursor: 'pointer',
+                borderRadius: '8px'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+              <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-900 hover:bg-white rounded-xl transition-all"
-          >
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
         
         {/* Content */}
-        <div className="p-8 overflow-y-auto max-h-[60vh]">
+        <div style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
           {!csvData.length ? (
             /* Upload Zone */
-            <label className="group relative block border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center transition-all duration-300 hover:border-indigo-400 hover:bg-indigo-50/30 cursor-pointer bg-slate-50/50">
-              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                <Upload className="h-8 w-8" />
+            <label style={{ 
+              display: 'block',
+              border: '2px dashed #e2e8f0',
+              borderRadius: '16px',
+              padding: '48px 32px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              backgroundColor: '#f8fafc',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.borderColor = '#818cf8';
+              e.currentTarget.style.backgroundColor = '#eef2ff';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.borderColor = '#e2e8f0';
+              e.currentTarget.style.backgroundColor = '#f8fafc';
+            }}
+            >
+              <div style={{ 
+                width: '64px', 
+                height: '64px', 
+                backgroundColor: '#e0e7ff', 
+                color: '#4f46e5',
+                borderRadius: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px'
+              }}>
+                <Upload style={{ width: '32px', height: '32px' }} />
               </div>
-              <p className="text-slate-800 font-bold text-lg mb-1">
+              <p style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', margin: '0 0 4px' }}>
                 Drop CSV File Here
               </p>
-              <p className="text-sm text-slate-400">
-                or <span className="text-indigo-600 font-semibold">browse</span> to upload
+              <p style={{ fontSize: '14px', color: '#94a3b8', margin: 0 }}>
+                or <span style={{ color: '#4f46e5', fontWeight: 600 }}>browse</span> to upload
               </p>
               <input 
                 type="file" 
                 accept=".csv" 
                 onChange={onFileUpload} 
-                className="absolute inset-0 opacity-0 cursor-pointer" 
+                style={{ display: 'none' }}
               />
             </label>
           ) : (
             /* Preview Table */
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h4 className="font-bold text-slate-900 text-lg flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-indigo-500" />
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h4 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileText style={{ width: '18px', height: '18px', color: '#6366f1' }} />
                   Preview 
-                  <span className="text-sm font-medium text-slate-400">({csvData.length} records)</span>
+                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#94a3b8' }}>({csvData.length} records)</span>
                 </h4>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold uppercase tracking-wide text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <span style={{ 
+                    fontSize: '11px', 
+                    fontWeight: 700, 
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    color: '#059669',
+                    backgroundColor: '#ecfdf5',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #d1fae5'
+                  }}>
                     {validCount} Ready
                   </span>
                   {invalidCount > 0 && (
-                    <span className="text-xs font-bold uppercase tracking-wide text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-100">
+                    <span style={{ 
+                      fontSize: '11px', 
+                      fontWeight: 700, 
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      color: '#e11d48',
+                      backgroundColor: '#fff1f2',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #fecdd3'
+                    }}>
                       {invalidCount} Invalid
                     </span>
                   )}
                 </div>
               </div>
               
-              <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white">
-                <div className="overflow-x-auto max-h-64">
-                  <table className="w-full text-left">
-                    <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden' }}>
+                <div style={{ maxHeight: '256px', overflowY: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                       <tr>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-center w-12">Status</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Consultant</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Company</th>
-                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Tax ID</th>
+                        <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center', width: '48px' }}>Status</th>
+                        <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Consultant</th>
+                        <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Company</th>
+                        <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Tax ID</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody>
                       {csvData.slice(0, 30).map((row, idx) => (
-                        <tr key={idx} className={`transition-colors ${row.isValid ? 'hover:bg-slate-50' : 'bg-rose-50/50'}`}>
-                          <td className="px-4 py-3 text-center">
+                        <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: row.isValid ? 'white' : '#fff5f5' }}>
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                             {row.isValid ? (
-                              <CheckCircle className="w-5 h-5 text-emerald-500 mx-auto" />
+                              <CheckCircle style={{ width: '20px', height: '20px', color: '#10b981' }} />
                             ) : (
-                              <AlertCircle className="w-5 h-5 text-rose-500 mx-auto" />
+                              <AlertCircle style={{ width: '20px', height: '20px', color: '#f43f5e' }} />
                             )}
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black">
+                          <td style={{ padding: '12px 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <div style={{ 
+                                width: '36px', 
+                                height: '36px', 
+                                borderRadius: '10px',
+                                backgroundColor: '#e0e7ff',
+                                color: '#4f46e5',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '12px',
+                                fontWeight: 800
+                              }}>
                                 {(row.firstName?.[0] || '')}{(row.lastName?.[0] || '')}
                               </div>
                               <div>
-                                <div className="font-bold text-slate-800 text-sm">{row.firstName} {row.lastName}</div>
-                                <div className="text-xs text-slate-400">{row.email || 'No email'}</div>
+                                <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '14px' }}>{row.firstName} {row.lastName}</div>
+                                <div style={{ fontSize: '12px', color: '#94a3b8' }}>{row.email || 'No email'}</div>
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="font-medium text-slate-700 text-sm">{row.companyName || '-'}</div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <code className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded-lg">
+                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#475569' }}>{row.companyName || '-'}</td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <code style={{ 
+                              fontSize: '12px', 
+                              fontFamily: 'monospace',
+                              color: '#64748b',
+                              backgroundColor: '#f1f5f9',
+                              padding: '4px 8px',
+                              borderRadius: '6px'
+                            }}>
                               {row.companyVAT || 'MISSING'}
                             </code>
                           </td>
@@ -814,42 +917,76 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
                 </div>
               </div>
               {csvData.length > 30 && (
-                <p className="text-center text-slate-400 text-sm">+ {csvData.length - 30} more records</p>
+                <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '14px', marginTop: '12px' }}>+ {csvData.length - 30} more records</p>
               )}
             </div>
           )}
         </div>
         
         {/* Footer */}
-        <div className="border-t border-slate-100 bg-slate-50/50 px-8 py-6 flex items-center justify-between">
-          <div className="text-xs font-medium text-slate-400">
+        <div style={{ 
+          borderTop: '1px solid #f1f5f9', 
+          backgroundColor: '#f8fafc', 
+          padding: '20px 32px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{ fontSize: '13px', color: '#94a3b8' }}>
             {csvData.length > 0 ? `${validCount} records ready for import` : 'Select a CSV file to begin'}
           </div>
-          <div className="flex gap-3">
+          <div style={{ display: 'flex', gap: '12px' }}>
             <button
               onClick={onClose}
               disabled={uploading}
-              className="px-5 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
+              style={{ 
+                padding: '10px 20px',
+                fontSize: '14px',
+                fontWeight: 700,
+                color: '#64748b',
+                backgroundColor: 'transparent',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: 'pointer'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               Cancel
             </button>
             <button
               onClick={onUpload}
               disabled={validCount === 0 || uploading}
-              className={`px-6 py-2.5 text-sm font-bold rounded-xl transition-all flex items-center gap-2 ${
-                validCount === 0 || uploading
-                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200'
-              }`}
+              style={{ 
+                padding: '10px 24px',
+                fontSize: '14px',
+                fontWeight: 700,
+                color: validCount === 0 || uploading ? '#94a3b8' : 'white',
+                backgroundColor: validCount === 0 || uploading ? '#e2e8f0' : '#4f46e5',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: validCount === 0 || uploading ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: validCount === 0 || uploading ? 'none' : '0 4px 14px rgba(79, 70, 229, 0.4)'
+              }}
             >
               {uploading ? (
                 <>
-                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <div style={{ 
+                    width: '16px', 
+                    height: '16px', 
+                    border: '2px solid white',
+                    borderTopColor: 'transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
                   Processing...
                 </>
               ) : (
                 <>
-                  <Upload className="h-4 w-4" />
+                  <Upload style={{ width: '16px', height: '16px' }} />
                   Import {validCount} Records
                 </>
               )}
