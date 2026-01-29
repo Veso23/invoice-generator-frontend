@@ -2615,7 +2615,9 @@ const InvoiceGeneratorApp = () => {
                   Needs Review
                   <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">
                     {timesheets.filter(ts => 
-                      (ts.flagged_for_review || (!ts.month && ts.status !== 'no_pdf' && ts.status !== 'multiple_pdfs')) &&
+                      ts.status !== 'no_pdf' && 
+                      ts.status !== 'multiple_pdfs' &&
+                      (ts.flagged_for_review || !ts.month) &&
                       !ts.invoice_generated
                     ).length}
                   </span>
@@ -2874,7 +2876,11 @@ const InvoiceGeneratorApp = () => {
                     </thead>
                     <tbody>
                       {timesheets.filter(ts => 
-                        (ts.flagged_for_review || (!ts.month && ts.status !== 'no_pdf' && ts.status !== 'multiple_pdfs')) &&
+                        // Exclude problematic emails (they stay in Problematic Emails tab)
+                        ts.status !== 'no_pdf' && 
+                        ts.status !== 'multiple_pdfs' &&
+                        // Include: flagged OR missing month
+                        (ts.flagged_for_review || !ts.month) &&
                         !ts.invoice_generated
                       ).length === 0 ? (
                         <tr>
@@ -2886,7 +2892,9 @@ const InvoiceGeneratorApp = () => {
                         </tr>
                       ) : (
                         timesheets.filter(ts => 
-                          (ts.flagged_for_review || (!ts.month && ts.status !== 'no_pdf' && ts.status !== 'multiple_pdfs')) &&
+                          ts.status !== 'no_pdf' && 
+                          ts.status !== 'multiple_pdfs' &&
+                          (ts.flagged_for_review || !ts.month) &&
                           !ts.invoice_generated
                         ).map((timesheet) => {
                           const consultant = consultants.find(c => 
@@ -3005,10 +3013,17 @@ const InvoiceGeneratorApp = () => {
                                     <Edit className="h-3 w-3 text-gray-400" />
                                   </div>
                                 ) : (
-                                  <span className="text-yellow-600 italic text-sm flex items-center gap-1">
-                                    <AlertCircle className="h-3 w-3" />
-                                    Processing...
-                                  </span>
+                                  <button
+                                    onClick={() => {
+                                      setEditingDays(timesheet.id);
+                                      setEditDaysValue('');
+                                    }}
+                                    className="bg-yellow-100 hover:bg-yellow-200 px-2 py-1 rounded transition flex items-center gap-1 border border-yellow-300 text-sm cursor-pointer"
+                                    title="Click to set days"
+                                  >
+                                    <AlertCircle className="h-3 w-3 text-yellow-600" />
+                                    <span className="text-yellow-700">Set days</span>
+                                  </button>
                                 )}
                               </td>
 
