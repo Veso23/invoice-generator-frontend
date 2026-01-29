@@ -671,37 +671,53 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
 // CSV Upload Modal Component
 const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uploading }) => {
   if (!isOpen) return null;
-  
+
   const validCount = csvData.filter(row => row.isValid).length;
   const invalidCount = csvData.filter(row => !row.isValid).length;
 
   const downloadTemplate = () => {
-    const template = 'first_name,last_name,company_name,company_address,vat,iban,swift,phone,email,consultant_contract_id\nJohn,Doe,Acme Ltd,"123 Main St, City",BG123456789,BG12IBAN1234567890,SWIFT123,+1234567890,john@acme.com,CONS-001';
+    const headers = 'first_name,last_name,company_name,company_address,vat,iban,swift,phone,email,consultant_contract_id';
+    const example = 'John,Doe,Acme Ltd,"123 Main St, City",BG123456789,BG12IBAN1234567890,SWIFT123,+1234567890,john@acme.com,CONS-001';
+    const template = `${headers}\n${example}`;
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'consultants_template.csv';
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 overflow-y-auto">
+      {/* Backdrop */}
       <div 
-        className="bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden"
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" 
+        onClick={onClose} 
+      />
+      
+      {/* Modal */}
+      <div 
+        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 pt-5 pb-3 flex items-start justify-between">
+        <div className="px-8 pt-8 pb-6 flex items-start justify-between border-b border-slate-100 bg-slate-50/50">
           <div>
-            <h3 className="text-xl font-semibold text-gray-800">Upload Consultants</h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Need help? <button onClick={downloadTemplate} className="text-blue-500 hover:text-blue-600 hover:underline">Download CSV template</button>
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight">Bulk Synchronizer</h3>
+            <p className="text-sm text-slate-400 font-medium mt-1 flex items-center gap-2">
+              Import consultant pool via CSV. 
+              <button 
+                onClick={downloadTemplate} 
+                className="text-indigo-600 font-bold hover:text-indigo-800 flex items-center gap-1 transition-colors"
+              >
+                <Download className="h-4 w-4" /> Get Template
+              </button>
             </p>
           </div>
           <button 
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition mt-1"
+            className="p-2 text-slate-400 hover:text-slate-900 hover:bg-white rounded-xl transition-all"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -710,122 +726,136 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
         </div>
         
         {/* Content */}
-        <div className="px-6 pb-5">
-          {/* Drop Zone */}
-          <label className="block border-2 border-dashed border-gray-200 rounded-lg p-8 text-center hover:border-blue-300 hover:bg-blue-50 transition cursor-pointer bg-gray-50">
-            <div className="text-blue-400 mb-3">
-              <svg className="h-12 w-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-            </div>
-            <p className="text-gray-600">
-              Drop files here or <span className="text-blue-500 font-medium">browse</span>
-            </p>
-            <p className="text-xs text-gray-400 mt-1">CSV files only</p>
-            <input
-              type="file"
-              accept=".csv"
-              onChange={onFileUpload}
-              className="hidden"
-            />
-          </label>
-          
-          {/* Format hint */}
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
-            <p className="text-xs text-gray-500">
-              <span className="font-medium text-gray-600">Required:</span> first_name, last_name, company_name, vat
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              <span className="font-medium text-gray-600">Optional:</span> company_address, iban, swift, phone, email
-            </p>
-          </div>
-          
-          {/* Preview Table */}
-          {csvData.length > 0 && (
-            <div className="mt-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">{csvData.length} rows found</span>
-                <div className="flex items-center gap-3 text-xs">
-                  <span className="text-green-600 flex items-center gap-1">
-                    <CheckCircle className="h-3 w-3" /> {validCount} valid
+        <div className="p-8 overflow-y-auto max-h-[60vh]">
+          {!csvData.length ? (
+            /* Upload Zone */
+            <label className="group relative block border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center transition-all duration-300 hover:border-indigo-400 hover:bg-indigo-50/30 cursor-pointer bg-slate-50/50">
+              <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <Upload className="h-8 w-8" />
+              </div>
+              <p className="text-slate-800 font-bold text-lg mb-1">
+                Drop CSV File Here
+              </p>
+              <p className="text-sm text-slate-400">
+                or <span className="text-indigo-600 font-semibold">browse</span> to upload
+              </p>
+              <input 
+                type="file" 
+                accept=".csv" 
+                onChange={onFileUpload} 
+                className="absolute inset-0 opacity-0 cursor-pointer" 
+              />
+            </label>
+          ) : (
+            /* Preview Table */
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-slate-900 text-lg flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-indigo-500" />
+                  Preview 
+                  <span className="text-sm font-medium text-slate-400">({csvData.length} records)</span>
+                </h4>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold uppercase tracking-wide text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
+                    {validCount} Ready
                   </span>
                   {invalidCount > 0 && (
-                    <span className="text-red-500 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" /> {invalidCount} invalid
+                    <span className="text-xs font-bold uppercase tracking-wide text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-100">
+                      {invalidCount} Invalid
                     </span>
                   )}
                 </div>
               </div>
               
-              <div className="border border-gray-200 rounded-lg overflow-hidden max-h-40 overflow-y-auto bg-white">
-                <table className="w-full text-xs">
-                  <thead className="bg-gray-50 sticky top-0">
-                    <tr>
-                      <th className="text-left px-2 py-1.5 font-medium text-gray-500 w-6"></th>
-                      <th className="text-left px-2 py-1.5 font-medium text-gray-500">Name</th>
-                      <th className="text-left px-2 py-1.5 font-medium text-gray-500">Company</th>
-                      <th className="text-left px-2 py-1.5 font-medium text-gray-500">VAT</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {csvData.slice(0, 20).map((row, idx) => (
-                      <tr key={idx} className={row.isValid ? '' : 'bg-red-50'}>
-                        <td className="px-2 py-1.5 text-center">
-                          {row.isValid ? (
-                            <CheckCircle className="h-3 w-3 text-green-500 inline" />
-                          ) : (
-                            <AlertCircle className="h-3 w-3 text-red-500 inline" title={row.error} />
-                          )}
-                        </td>
-                        <td className="px-2 py-1.5 truncate max-w-[100px]">{row.firstName} {row.lastName}</td>
-                        <td className="px-2 py-1.5 text-gray-600 truncate max-w-[80px]">{row.companyName || '-'}</td>
-                        <td className="px-2 py-1.5 text-gray-600 font-mono">{row.companyVAT || '-'}</td>
+              <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white">
+                <div className="overflow-x-auto max-h-64">
+                  <table className="w-full text-left">
+                    <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-center w-12">Status</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Consultant</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Company</th>
+                        <th className="px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Tax ID</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {csvData.slice(0, 30).map((row, idx) => (
+                        <tr key={idx} className={`transition-colors ${row.isValid ? 'hover:bg-slate-50' : 'bg-rose-50/50'}`}>
+                          <td className="px-4 py-3 text-center">
+                            {row.isValid ? (
+                              <CheckCircle className="w-5 h-5 text-emerald-500 mx-auto" />
+                            ) : (
+                              <AlertCircle className="w-5 h-5 text-rose-500 mx-auto" />
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black">
+                                {(row.firstName?.[0] || '')}{(row.lastName?.[0] || '')}
+                              </div>
+                              <div>
+                                <div className="font-bold text-slate-800 text-sm">{row.firstName} {row.lastName}</div>
+                                <div className="text-xs text-slate-400">{row.email || 'No email'}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-medium text-slate-700 text-sm">{row.companyName || '-'}</div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <code className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded-lg">
+                              {row.companyVAT || 'MISSING'}
+                            </code>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              {csvData.length > 20 && (
-                <p className="text-center text-gray-400 text-xs mt-1">+ {csvData.length - 20} more</p>
+              {csvData.length > 30 && (
+                <p className="text-center text-slate-400 text-sm">+ {csvData.length - 30} more records</p>
               )}
             </div>
           )}
         </div>
         
         {/* Footer */}
-        {csvData.length > 0 && (
-          <div className="border-t border-gray-100 bg-gray-50 px-6 py-4 flex justify-end gap-3">
+        <div className="border-t border-slate-100 bg-slate-50/50 px-8 py-6 flex items-center justify-between">
+          <div className="text-xs font-medium text-slate-400">
+            {csvData.length > 0 ? `${validCount} records ready for import` : 'Select a CSV file to begin'}
+          </div>
+          <div className="flex gap-3">
             <button
-              type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm rounded-lg hover:bg-gray-200 transition text-gray-600"
+              disabled={uploading}
+              className="px-5 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
             >
               Cancel
             </button>
             <button
-              type="button"
               onClick={onUpload}
               disabled={validCount === 0 || uploading}
-              className={`px-4 py-2 text-sm rounded-lg transition flex items-center gap-2 ${
+              className={`px-6 py-2.5 text-sm font-bold rounded-xl transition-all flex items-center gap-2 ${
                 validCount === 0 || uploading
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-500 text-white hover:bg-blue-600'
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200'
               }`}
             >
               {uploading ? (
                 <>
-                  <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
-                  Uploading...
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Processing...
                 </>
               ) : (
                 <>
-                  <Upload className="h-3 w-3" />
-                  Upload {validCount}
+                  <Upload className="h-4 w-4" />
+                  Import {validCount} Records
                 </>
               )}
             </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
