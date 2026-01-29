@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
+import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle, Trash2, Upload } from 'lucide-react';
 import './App.css';
 
 // API Configuration
@@ -668,6 +668,145 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
+// CSV Upload Modal Component
+const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uploading }) => {
+  if (!isOpen) return null;
+  
+  const validCount = csvData.filter(row => row.isValid).length;
+  const invalidCount = csvData.filter(row => !row.isValid).length;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <h3 className="text-lg font-semibold mb-4">Bulk Upload Consultants from CSV</h3>
+        
+        {/* File Upload */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Upload CSV File
+          </label>
+          <input
+            type="file"
+            accept=".csv"
+            onChange={onFileUpload}
+            className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Required columns: first_name, last_name, company_name, company_vat (or vat)
+          </p>
+          <p className="text-xs text-gray-500">
+            Optional columns: company_address, iban, swift, phone, email, consultant_contract_id
+          </p>
+        </div>
+        
+        {/* Download Template */}
+        <div className="mb-4">
+          <button
+            onClick={() => {
+              const template = 'first_name,last_name,company_name,company_address,vat,iban,swift,phone,email,consultant_contract_id\nJohn,Doe,Acme Ltd,"123 Main St, City",BG123456789,BG12IBAN1234567890,SWIFT123,+1234567890,john@acme.com,CONS-001';
+              const blob = new Blob([template], { type: 'text/csv' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = 'consultants_template.csv';
+              a.click();
+            }}
+            className="text-blue-600 hover:text-blue-800 text-sm underline"
+          >
+            Download CSV Template
+          </button>
+        </div>
+        
+        {/* Preview */}
+        {csvData.length > 0 && (
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="mb-2 flex items-center gap-4">
+              <span className="text-sm font-medium">Preview ({csvData.length} rows)</span>
+              <span className="text-sm text-green-600">✓ Valid: {validCount}</span>
+              {invalidCount > 0 && (
+                <span className="text-sm text-red-600">✗ Invalid: {invalidCount}</span>
+              )}
+            </div>
+            
+            <div className="flex-1 overflow-auto border rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="text-left p-2 font-medium text-gray-600">Status</th>
+                    <th className="text-left p-2 font-medium text-gray-600">First Name</th>
+                    <th className="text-left p-2 font-medium text-gray-600">Last Name</th>
+                    <th className="text-left p-2 font-medium text-gray-600">Company</th>
+                    <th className="text-left p-2 font-medium text-gray-600">VAT</th>
+                    <th className="text-left p-2 font-medium text-gray-600">Email</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {csvData.slice(0, 50).map((row, idx) => (
+                    <tr key={idx} className={`border-t ${row.isValid ? 'bg-green-50' : 'bg-red-50'}`}>
+                      <td className="p-2">
+                        {row.isValid ? (
+                          <span className="text-green-600">✓</span>
+                        ) : (
+                          <span className="text-red-600" title={row.error}>✗</span>
+                        )}
+                      </td>
+                      <td className="p-2">{row.firstName || '-'}</td>
+                      <td className="p-2">{row.lastName || '-'}</td>
+                      <td className="p-2">{row.companyName || '-'}</td>
+                      <td className="p-2">{row.companyVAT || '-'}</td>
+                      <td className="p-2">{row.email || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {csvData.length > 50 && (
+                <p className="p-2 text-center text-gray-500 text-sm">
+                  Showing first 50 of {csvData.length} rows
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Actions */}
+        <div className="flex gap-3 mt-4">
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+            }}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onUpload}
+            disabled={validCount === 0 || uploading}
+            className={`flex-1 px-4 py-2 rounded-lg transition flex items-center justify-center gap-2 ${
+              validCount === 0 || uploading
+                ? 'bg-gray-300 cursor-not-allowed'
+                : 'bg-green-600 text-white hover:bg-green-700'
+            }`}
+          >
+            {uploading ? (
+              <>
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" />
+                Upload {validCount} Consultants
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Settings Modal Component
 const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
   const [activeSettingsTab, setActiveSettingsTab] = useState('company');
@@ -1201,6 +1340,9 @@ const InvoiceGeneratorApp = () => {
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [activeTimesheetTab, setActiveTimesheetTab] = useState('current');
+  const [csvUploadModalOpen, setCsvUploadModalOpen] = useState(false);
+  const [csvData, setCsvData] = useState([]);
+  const [csvUploading, setCsvUploading] = useState(false);
   const [searchQueries, setSearchQueries] = useState({
     consultants: '',
     clients: '',
@@ -1705,6 +1847,129 @@ const InvoiceGeneratorApp = () => {
     }
   };
 
+  // CSV Upload Functions
+  const parseCSV = (text) => {
+    const lines = text.split('\n').filter(line => line.trim());
+    if (lines.length < 2) return [];
+    
+    // Parse header row
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+    
+    // Map common header variations to our field names
+    const headerMap = {
+      'first_name': 'firstName', 'firstname': 'firstName', 'first name': 'firstName',
+      'last_name': 'lastName', 'lastname': 'lastName', 'last name': 'lastName',
+      'company_name': 'companyName', 'companyname': 'companyName', 'company name': 'companyName', 'company': 'companyName',
+      'company_address': 'companyAddress', 'companyaddress': 'companyAddress', 'company address': 'companyAddress', 'address': 'companyAddress',
+      'company_vat': 'companyVAT', 'companyvat': 'companyVAT', 'vat': 'companyVAT', 'vat_number': 'companyVAT', 'vat number': 'companyVAT',
+      'iban': 'iban',
+      'swift': 'swift', 'bic': 'swift',
+      'phone': 'phone', 'telephone': 'phone', 'tel': 'phone',
+      'email': 'email', 'e-mail': 'email',
+      'consultant_contract_id': 'consultantContractId', 'contract_id': 'consultantContractId', 'contract id': 'consultantContractId'
+    };
+    
+    // Parse data rows
+    const data = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+      
+      // Handle quoted values with commas
+      for (const char of lines[i]) {
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          values.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      values.push(current.trim());
+      
+      const row = {};
+      headers.forEach((header, index) => {
+        const fieldName = headerMap[header] || header;
+        row[fieldName] = values[index]?.replace(/^["']|["']$/g, '') || '';
+      });
+      
+      // Only add if has required fields
+      if (row.firstName && row.lastName && row.companyName && row.companyVAT) {
+        row.isValid = true;
+      } else {
+        row.isValid = false;
+        row.error = 'Missing required fields (firstName, lastName, companyName, companyVAT)';
+      }
+      
+      data.push(row);
+    }
+    
+    return data;
+  };
+
+  const handleCsvFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const parsed = parseCSV(text);
+      setCsvData(parsed);
+    };
+    reader.readAsText(file);
+  };
+
+  const uploadConsultantsCsv = async () => {
+    const validRows = csvData.filter(row => row.isValid);
+    if (validRows.length === 0) {
+      showNotification('No valid rows to upload', 'error');
+      return;
+    }
+    
+    setCsvUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+    
+    for (const row of validRows) {
+      try {
+        await apiCall('/consultants', {
+          method: 'POST',
+          body: JSON.stringify({
+            firstName: row.firstName,
+            lastName: row.lastName,
+            companyName: row.companyName,
+            companyAddress: row.companyAddress || '',
+            companyVAT: row.companyVAT,
+            iban: row.iban || '',
+            swift: row.swift || '',
+            phone: row.phone || '',
+            email: row.email || '',
+            consultantContractId: row.consultantContractId || ''
+          })
+        });
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        errors.push(`${row.firstName} ${row.lastName}: ${error.message}`);
+      }
+    }
+    
+    setCsvUploading(false);
+    setCsvUploadModalOpen(false);
+    setCsvData([]);
+    loadData();
+    
+    if (errorCount === 0) {
+      showNotification(`Successfully imported ${successCount} consultants!`);
+    } else {
+      showNotification(`Imported ${successCount}, failed ${errorCount}. Errors: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? '...' : ''}`, 'error');
+    }
+  };
+
   const loadCompanySettings = async () => {
     try {
       const settings = await apiCall('/company/settings');
@@ -1998,6 +2263,19 @@ const InvoiceGeneratorApp = () => {
         userData={editingUser}
       />
 
+      {/* CSV Upload Modal */}
+      <CsvUploadModal
+        isOpen={csvUploadModalOpen}
+        onClose={() => {
+          setCsvUploadModalOpen(false);
+          setCsvData([]);
+        }}
+        csvData={csvData}
+        onFileUpload={handleCsvFileUpload}
+        onUpload={uploadConsultantsCsv}
+        uploading={csvUploading}
+      />
+
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -2260,13 +2538,22 @@ const InvoiceGeneratorApp = () => {
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-800">Consultants</h2>
               {user.role === 'admin' && (
-                <button
-                  onClick={() => openAddModal('consultant')}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Consultant
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCsvUploadModalOpen(true)}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition"
+                  >
+                    <Upload className="h-4 w-4" />
+                    Bulk Upload
+                  </button>
+                  <button
+                    onClick={() => openAddModal('consultant')}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Consultant
+                  </button>
+                </div>
               )}
             </div>
 
