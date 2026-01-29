@@ -668,9 +668,30 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
-// CSV Upload Modal Component
 // CSV Upload Modal Component (Improved UI, same logic)
 const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uploading }) => {
+
+  // ✅ THIS MUST BE FIRST
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // lock scroll
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    // ESC closes modal
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [isOpen, onClose]);
+
+  // ✅ NOW this is allowed
   if (!isOpen) return null;
 
   const validCount = csvData.filter(r => r.isValid).length;
@@ -688,15 +709,6 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
     a.click();
     URL.revokeObjectURL(url);
   };
-
-  // Optional: ESC to close
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
 
   return (
     <div
