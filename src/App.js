@@ -483,11 +483,9 @@ const Notification = ({ notification, onClose }) => {
         ×
       </button>
     </div>
-    </div>
   );
 };
 
-// Simple Form Modal Component
 // Simple Form Modal Component
 const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonText = 'Add' }) => {
   const [formData, setFormData] = useState({});
