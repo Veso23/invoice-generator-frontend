@@ -3315,6 +3315,7 @@ const InvoiceGeneratorApp = () => {
                         Legal Entity {sortConfig.consultants.key === 'company_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
                       </th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tax ID</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contract ID</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Banking</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Created</th>
@@ -3354,6 +3355,15 @@ const InvoiceGeneratorApp = () => {
                           <code style={{ fontSize: '12px', fontFamily: 'monospace', color: '#475569', backgroundColor: '#f1f5f9', padding: '4px 10px', borderRadius: '8px' }}>
                             {consultant.company_vat}
                           </code>
+                        </td>
+                        <td style={{ padding: '16px 20px' }}>
+                          {consultant.consultant_contract_id ? (
+                            <code style={{ fontSize: '12px', fontFamily: 'monospace', color: '#4f46e5', backgroundColor: '#eef2ff', padding: '4px 10px', borderRadius: '8px' }}>
+                              {consultant.consultant_contract_id}
+                            </code>
+                          ) : (
+                            <span style={{ fontSize: '12px', color: '#94a3b8' }}>-</span>
+                          )}
                         </td>
                         <td style={{ padding: '16px 20px' }}>
                           <div style={{ fontSize: '13px', color: '#475569' }}>{consultant.phone || '-'}</div>
@@ -3480,6 +3490,7 @@ const InvoiceGeneratorApp = () => {
                         Legal Entity {sortConfig.clients.key === 'company_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
                       </th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tax ID</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contract ID</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Created</th>
                       {user.role === 'admin' && <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operations</th>}
@@ -3518,6 +3529,15 @@ const InvoiceGeneratorApp = () => {
                           <code style={{ fontSize: '12px', fontFamily: 'monospace', color: '#475569', backgroundColor: '#f1f5f9', padding: '4px 10px', borderRadius: '8px' }}>
                             {client.company_vat}
                           </code>
+                        </td>
+                        <td style={{ padding: '16px 20px' }}>
+                          {client.client_contract_id ? (
+                            <code style={{ fontSize: '12px', fontFamily: 'monospace', color: '#059669', backgroundColor: '#ecfdf5', padding: '4px 10px', borderRadius: '8px' }}>
+                              {client.client_contract_id}
+                            </code>
+                          ) : (
+                            <span style={{ fontSize: '12px', color: '#94a3b8' }}>-</span>
+                          )}
                         </td>
                         <td style={{ padding: '16px 20px' }}>
                           <div style={{ fontSize: '13px', color: '#475569' }}>{client.phone || '-'}</div>
