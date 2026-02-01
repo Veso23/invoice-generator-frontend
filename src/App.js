@@ -135,60 +135,151 @@ const LoginForm = ({ onLogin, onRegister }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-            <FileText className="h-8 w-8 text-blue-600" />
+    <div style={{
+      minHeight: '100vh',
+      backgroundColor: '#f8fafc',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
+      backgroundImage: 'radial-gradient(#e2e8f0 1px, transparent 1px)',
+      backgroundSize: '20px 20px'
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        padding: '48px',
+        borderRadius: '32px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
+        width: '100%',
+        maxWidth: '420px',
+        border: '1px solid #f1f5f9'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '80px',
+            height: '80px',
+            backgroundColor: '#4f46e5',
+            borderRadius: '24px',
+            marginBottom: '24px',
+            boxShadow: '0 20px 40px rgba(79, 70, 229, 0.3)'
+          }}>
+            <FileText style={{ width: '40px', height: '40px', color: 'white', strokeWidth: 2.5 }} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Invoice Generator</h1>
-          <p className="text-gray-600 mt-2">
-            {isLogin ? 'Sign in to your account' : 'Create a new account'}
+          <h1 style={{ 
+            fontSize: '28px', 
+            fontWeight: 900, 
+            color: '#0f172a',
+            letterSpacing: '-0.025em',
+            margin: 0
+          }}>
+            Invoice<span style={{ color: '#4f46e5' }}>Pro</span>
+          </h1>
+          <p style={{ 
+            color: '#94a3b8', 
+            fontSize: '11px',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            marginTop: '8px'
+          }}>
+            {isLogin ? 'Infrastructure Control' : 'Create New Account'}
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center">
-            <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-            <span className="text-sm">{error}</span>
+          <div style={{
+            backgroundColor: '#fff1f2',
+            border: '1px solid #fecdd3',
+            color: '#e11d48',
+            padding: '16px 20px',
+            borderRadius: '16px',
+            marginBottom: '24px',
+            fontSize: '13px',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px'
+          }}>
+            <AlertCircle style={{ width: '18px', height: '18px', flexShrink: 0, marginTop: '1px' }} />
+            <div>
+              <p style={{ fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Connection Error</p>
+              {error}
+            </div>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit}>
           {!isLogin && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  name="firstName"
-                  placeholder="First Name"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  required
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
-                <input
-                  type="text"
-                  name="lastName"
-                  placeholder="Last Name"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  required
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                />
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <input
                 type="text"
-                name="companyName"
-                placeholder="Company Name"
-                value={formData.companyName}
+                name="firstName"
+                placeholder="First Name"
+                value={formData.firstName}
                 onChange={handleChange}
-                required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                required={!isLogin}
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '16px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  outline: 'none',
+                  transition: 'all 0.2s',
+                  boxSizing: 'border-box'
+                }}
               />
-            </>
+              <input
+                type="text"
+                name="lastName"
+                placeholder="Last Name"
+                value={formData.lastName}
+                onChange={handleChange}
+                required={!isLogin}
+                style={{
+                  width: '100%',
+                  padding: '16px 20px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '16px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  outline: 'none',
+                  transition: 'all 0.2s',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </div>
           )}
-          
+
+          {!isLogin && (
+            <input
+              type="text"
+              name="companyName"
+              placeholder="Company Name"
+              value={formData.companyName}
+              onChange={handleChange}
+              required={!isLogin}
+              style={{
+                width: '100%',
+                padding: '16px 20px',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '16px',
+                fontSize: '14px',
+                fontWeight: 600,
+                outline: 'none',
+                marginBottom: '12px',
+                boxSizing: 'border-box'
+              }}
+            />
+          )}
+
           <input
             type="email"
             name="email"
@@ -196,9 +287,20 @@ const LoginForm = ({ onLogin, onRegister }) => {
             value={formData.email}
             onChange={handleChange}
             required
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+            style={{
+              width: '100%',
+              padding: '16px 20px',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '16px',
+              fontSize: '14px',
+              fontWeight: 600,
+              outline: 'none',
+              marginBottom: '12px',
+              boxSizing: 'border-box'
+            }}
           />
-          
+
           <input
             type="password"
             name="password"
@@ -206,32 +308,81 @@ const LoginForm = ({ onLogin, onRegister }) => {
             value={formData.password}
             onChange={handleChange}
             required
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+            style={{
+              width: '100%',
+              padding: '16px 20px',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '16px',
+              fontSize: '14px',
+              fontWeight: 600,
+              outline: 'none',
+              marginBottom: '20px',
+              boxSizing: 'border-box'
+            }}
           />
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium"
+            style={{
+              width: '100%',
+              padding: '18px 24px',
+              backgroundColor: '#4f46e5',
+              color: 'white',
+              border: 'none',
+              borderRadius: '20px',
+              fontSize: '16px',
+              fontWeight: 800,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+              boxShadow: '0 20px 40px rgba(79, 70, 229, 0.3)',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px'
+            }}
           >
             {loading ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Processing...
-              </div>
+              <>
+                <div style={{
+                  width: '20px',
+                  height: '20px',
+                  border: '2px solid white',
+                  borderTopColor: 'transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }} />
+                Connecting...
+              </>
             ) : (
-              isLogin ? 'Sign In' : 'Create Account'
+              isLogin ? 'Establish Connection' : 'Create Account'
             )}
           </button>
         </form>
 
-        <div className="text-center mt-6">
+        <div style={{ 
+          marginTop: '32px', 
+          paddingTop: '24px', 
+          borderTop: '1px solid #f1f5f9',
+          textAlign: 'center'
+        }}>
           <button
-            type="button"
             onClick={() => setIsLogin(!isLogin)}
-            className="text-blue-600 hover:text-blue-800 font-medium transition"
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#64748b',
+              fontSize: '12px',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.1em',
+              cursor: 'pointer',
+              transition: 'color 0.2s'
+            }}
           >
-            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+            {isLogin ? 'Request Access' : 'Back to Login'}
           </button>
         </div>
       </div>
@@ -241,10 +392,23 @@ const LoginForm = ({ onLogin, onRegister }) => {
 
 // Loading Component
 const LoadingSpinner = ({ message = "Loading..." }) => (
-  <div className="flex items-center justify-center p-8">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-      <p className="text-gray-600">{message}</p>
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '32px'
+  }}>
+    <div style={{ textAlign: 'center' }}>
+      <div style={{
+        width: '32px',
+        height: '32px',
+        border: '3px solid #e2e8f0',
+        borderTopColor: '#4f46e5',
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite',
+        margin: '0 auto 12px'
+      }} />
+      <p style={{ color: '#64748b', fontSize: '14px', fontWeight: 500 }}>{message}</p>
     </div>
   </div>
 );
@@ -262,28 +426,63 @@ const Notification = ({ notification, onClose }) => {
 
   if (!notification) return null;
 
+  const isError = notification.type === 'error';
+
   return (
-    <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
-      notification.type === 'error' 
-        ? 'bg-red-500 text-white' 
-        : 'bg-green-500 text-white'
-    }`}>
-      <div className="flex items-start">
-        {notification.type === 'success' ? (
-          <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-        ) : (
-          <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-        )}
-        <div className="flex-1">
-          <p className="text-sm font-medium">{notification.message}</p>
-        </div>
-        <button
-          onClick={onClose}
-          className="ml-2 flex-shrink-0 text-white hover:text-gray-200 transition"
-        >
-          ×
-        </button>
+    <div style={{
+      position: 'fixed',
+      top: '24px',
+      right: '24px',
+      zIndex: 10000,
+      padding: '16px 20px',
+      borderRadius: '16px',
+      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+      maxWidth: '400px',
+      backgroundColor: isError ? '#fef2f2' : '#ecfdf5',
+      border: `1px solid ${isError ? '#fecaca' : '#a7f3d0'}`,
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: '12px'
+    }}>
+      {isError ? (
+        <AlertCircle style={{ width: '20px', height: '20px', color: '#ef4444', flexShrink: 0 }} />
+      ) : (
+        <CheckCircle style={{ width: '20px', height: '20px', color: '#10b981', flexShrink: 0 }} />
+      )}
+      <div style={{ flex: 1 }}>
+        <p style={{ 
+          fontSize: '11px', 
+          fontWeight: 800, 
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          color: isError ? '#dc2626' : '#059669',
+          marginBottom: '4px'
+        }}>
+          {isError ? 'Error' : 'Success'}
+        </p>
+        <p style={{ 
+          fontSize: '14px', 
+          fontWeight: 500, 
+          color: isError ? '#7f1d1d' : '#065f46' 
+        }}>
+          {notification.message}
+        </p>
       </div>
+      <button
+        onClick={onClose}
+        style={{
+          background: 'none',
+          border: 'none',
+          padding: '4px',
+          cursor: 'pointer',
+          color: isError ? '#ef4444' : '#10b981',
+          fontSize: '20px',
+          lineHeight: 1
+        }}
+      >
+        ×
+      </button>
+    </div>
     </div>
   );
 };
@@ -2468,46 +2667,169 @@ const InvoiceGeneratorApp = () => {
       />
 
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="flex items-center mr-8">
-                <div className="inline-flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg mr-3">
-                  <FileText className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-800">Invoice Generator</h1>
-                  <p className="text-sm text-gray-500">Professional Invoice Management</p>
-                </div>
+      <div style={{
+        backgroundColor: 'white',
+        borderBottom: '1px solid #f1f5f9',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100
+      }}>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 32px' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            height: '80px'
+          }}>
+            {/* Logo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                width: '44px',
+                height: '44px',
+                backgroundColor: '#4f46e5',
+                borderRadius: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <FileText style={{ width: '24px', height: '24px', color: 'white', strokeWidth: 2.5 }} />
+              </div>
+              <div>
+                <h1 style={{ 
+                  fontSize: '20px', 
+                  fontWeight: 900, 
+                  color: '#0f172a',
+                  letterSpacing: '-0.025em',
+                  margin: 0
+                }}>
+                  Invoice<span style={{ color: '#4f46e5' }}>Pro</span>
+                </h1>
+                <p style={{ 
+                  fontSize: '11px', 
+                  color: '#94a3b8',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  margin: 0
+                }}>
+                  Global Infrastructure
+                </p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-700">{user.firstName} {user.lastName}</p>
-                <p className="text-xs text-gray-500">{user.email}</p>
+
+            {/* Navigation Tabs */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {[
+                { id: 'dashboard', label: 'Dashboard', permission: 'can_view_dashboard' },
+                { id: 'consultants', label: 'Consultants', permission: 'can_view_consultants' },
+                { id: 'clients', label: 'Clients', permission: 'can_view_clients' },
+                { id: 'contracts', label: 'Contracts', permission: 'can_view_contracts' },
+                { id: 'timesheets', label: 'Timesheets', permission: 'can_view_timesheets' },
+                { id: 'invoices', label: 'Invoices', permission: 'can_view_invoices' },
+                { id: 'history', label: 'History', permission: 'can_view_invoices' },
+                { id: 'users', label: 'Users', permission: 'can_manage_users' }
+              ]
+                .filter(tab => {
+                  const perms = user?.permissions || (user?.role === 'admin' ? {
+                    can_view_dashboard: true, can_view_contracts: true, can_view_consultants: true,
+                    can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: true
+                  } : {
+                    can_view_dashboard: false, can_view_contracts: false, can_view_consultants: true,
+                    can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: false
+                  });
+                  return perms[tab.permission];
+                })
+                .map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    style={{
+                      padding: '10px 20px',
+                      borderRadius: '12px',
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      backgroundColor: activeTab === tab.id ? '#eef2ff' : 'transparent',
+                      color: activeTab === tab.id ? '#4f46e5' : '#64748b'
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+            </div>
+
+            {/* User Menu */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                  {user.firstName} {user.lastName}
+                </p>
+                <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+                  {user.role === 'admin' ? 'System Admin' : 'Operator'}
+                </p>
               </div>
               
-              {/* User Menu */}
-              <div className="relative">
+              <div style={{ position: 'relative' }}>
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition"
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '14px',
+                    backgroundColor: '#fef2f2',
+                    color: '#ef4444',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.2s'
+                  }}
                 >
-                  <Users className="h-4 w-4" />
-                  Menu
+                  <LogOut style={{ width: '20px', height: '20px' }} />
                 </button>
                 
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-50">
+                  <div style={{
+                    position: 'absolute',
+                    right: 0,
+                    marginTop: '8px',
+                    width: '220px',
+                    backgroundColor: 'white',
+                    borderRadius: '16px',
+                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+                    border: '1px solid #f1f5f9',
+                    overflow: 'hidden',
+                    zIndex: 50
+                  }}>
                     <button
                       onClick={() => {
                         setChangePasswordModalOpen(true);
                         setUserMenuOpen(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '14px 20px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        color: '#475569',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit style={{ width: '16px', height: '16px' }} />
                       Change Password
                     </button>
                     
@@ -2517,18 +2839,52 @@ const InvoiceGeneratorApp = () => {
                           setSettingsModalOpen(true);
                           setUserMenuOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 border-t"
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          padding: '14px 20px',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: '#475569',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          borderTop: '1px solid #f1f5f9',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                       >
-                        <Edit className="h-4 w-4" />
+                        <Building style={{ width: '16px', height: '16px' }} />
                         Company Settings
                       </button>
                     )}
                     
                     <button
                       onClick={logout}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 border-t"
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '14px 20px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        color: '#ef4444',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        borderTop: '1px solid #f1f5f9',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#fef2f2'}
+                      onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                      <LogOut className="h-4 w-4" />
+                      <LogOut style={{ width: '16px', height: '16px' }} />
                       Logout
                     </button>
                   </div>
@@ -2536,47 +2892,10 @@ const InvoiceGeneratorApp = () => {
               </div>
             </div>
           </div>
-          
-          {/* Navigation Tabs */}
-          <div className="flex gap-1 mt-6 bg-gray-100 p-1 rounded-lg w-fit flex-wrap">
-            {[
-              { id: 'dashboard', label: 'Dashboard', permission: 'can_view_dashboard' },
-              { id: 'consultants', label: 'Consultants', permission: 'can_view_consultants' },
-              { id: 'clients', label: 'Clients', permission: 'can_view_clients' },
-              { id: 'contracts', label: 'Contracts', permission: 'can_view_contracts' },
-              { id: 'timesheets', label: 'Timesheets', permission: 'can_view_timesheets' },
-              { id: 'invoices', label: 'Invoices', permission: 'can_view_invoices' },
-              { id: 'history', label: 'History', permission: 'can_view_invoices' },
-              { id: 'users', label: 'Users', permission: 'can_manage_users' }
-            ]
-              .filter(tab => {
-                const perms = user?.permissions || (user?.role === 'admin' ? {
-                  can_view_dashboard: true, can_view_contracts: true, can_view_consultants: true,
-                  can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: true
-                } : {
-                  can_view_dashboard: false, can_view_contracts: false, can_view_consultants: true,
-                  can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: false
-                });
-                return perms[tab.permission];
-              })
-              .map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition ${
-                    activeTab === tab.id 
-                      ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:text-gray-800'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-          </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px' }}>
         {dataLoading && (
           <div className="bg-white rounded-lg border mb-6">
             <LoadingSpinner message="Loading data..." />
@@ -2585,80 +2904,160 @@ const InvoiceGeneratorApp = () => {
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
-          <div className="space-y-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+            {/* Page Title */}
+            <h1 style={{ 
+              fontSize: '48px', 
+              fontWeight: 900, 
+              color: '#0f172a',
+              letterSpacing: '-0.025em',
+              margin: 0
+            }}>
+              Command Center
+            </h1>
+
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
               {[
-                { label: 'Consultants', value: consultants.length, icon: Users, color: 'blue' },
-                { label: 'Clients', value: clients.length, icon: Building, color: 'green' },
-                { label: 'Contracts', value: contracts.length, icon: FileText, color: 'purple' },
-                { label: 'Invoices', value: invoices.length, icon: FileText, color: 'orange' }
+                { label: 'Resources Linked', value: consultants.length, icon: Users, color: '#6366f1', bg: '#eef2ff' },
+                { label: 'Partners', value: clients.length, icon: Building, color: '#10b981', bg: '#ecfdf5' },
+                { label: 'Active Contracts', value: contracts.length, icon: FileText, color: '#f59e0b', bg: '#fffbeb' },
+                { label: 'Total Invoices', value: invoices.length, icon: FileText, color: '#ef4444', bg: '#fef2f2' }
               ].map((stat, index) => (
-                <div key={index} className="bg-white rounded-lg p-6 border shadow-sm">
-                  <div className="flex items-center">
-                    <div className={`p-3 rounded-lg bg-${stat.color}-100 mr-4`}>
-                      <stat.icon className={`h-6 w-6 text-${stat.color}-600`} />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-medium text-gray-600">{stat.label}</h3>
-                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    </div>
+                <div key={index} style={{
+                  backgroundColor: 'white',
+                  borderRadius: '24px',
+                  padding: '32px',
+                  border: '1px solid #f1f5f9',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                  transition: 'all 0.3s'
+                }}>
+                  <div style={{
+                    width: '56px',
+                    height: '56px',
+                    backgroundColor: stat.bg,
+                    borderRadius: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '20px'
+                  }}>
+                    <stat.icon style={{ width: '28px', height: '28px', color: stat.color }} />
                   </div>
+                  <p style={{ 
+                    fontSize: '11px', 
+                    fontWeight: 700, 
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
+                    marginBottom: '8px'
+                  }}>
+                    {stat.label}
+                  </p>
+                  <p style={{ 
+                    fontSize: '40px', 
+                    fontWeight: 900, 
+                    color: '#0f172a',
+                    letterSpacing: '-0.025em',
+                    margin: 0
+                  }}>
+                    {stat.value}
+                  </p>
                 </div>
               ))}
             </div>
 
             {/* Timesheet Status Overview */}
-            <div className="bg-white rounded-lg border shadow-sm">
-              <div className="px-6 py-4 border-b">
-                <h2 className="text-lg font-semibold text-gray-800">Timesheet Status Overview</h2>
-                {timesheetStatus && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    {timesheetStatus.checking_month} {timesheetStatus.checking_year} 
-                    <span className="ml-2 text-gray-500">
-                      (Deadline: {timesheetStatus.deadline_day}th)
-                    </span>
-                  </p>
-                )}
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '24px',
+              border: '1px solid #f1f5f9',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+              overflow: 'hidden'
+            }}>
+              <div style={{ 
+                padding: '24px 32px', 
+                borderBottom: '1px solid #f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div>
+                  <h2 style={{ 
+                    fontSize: '20px', 
+                    fontWeight: 800, 
+                    color: '#0f172a',
+                    margin: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}>
+                    <span style={{ fontSize: '24px' }}>📊</span>
+                    Live Timesheet Activity
+                  </h2>
+                  {timesheetStatus && (
+                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+                      {timesheetStatus.checking_month} {timesheetStatus.checking_year} 
+                      <span style={{ marginLeft: '8px', color: '#94a3b8' }}>
+                        (Deadline: {timesheetStatus.deadline_day}th)
+                      </span>
+                    </p>
+                  )}
+                </div>
               </div>
-              <div className="p-6">
+              <div style={{ padding: '32px' }}>
                 {timesheetStatus ? (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-green-800">Received</h3>
-                        <CheckCircle className="h-5 w-5 text-green-600" />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                    <div style={{
+                      backgroundColor: '#ecfdf5',
+                      border: '1px solid #a7f3d0',
+                      borderRadius: '20px',
+                      padding: '28px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Received</span>
+                        <CheckCircle style={{ width: '24px', height: '24px', color: '#10b981' }} />
                       </div>
-                      <p className="text-3xl font-bold text-green-600">
+                      <p style={{ fontSize: '48px', fontWeight: 900, color: '#059669', margin: 0 }}>
                         {timesheetStatus.consultants?.filter(c => c.status === 'received').length || 0}
                       </p>
-                      <p className="text-xs text-green-700 mt-1">Timesheets submitted</p>
+                      <p style={{ fontSize: '12px', color: '#047857', marginTop: '8px', fontWeight: 500 }}>Timesheets submitted</p>
                     </div>
 
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-yellow-800">Waiting</h3>
-                        <AlertCircle className="h-5 w-5 text-yellow-600" />
+                    <div style={{
+                      backgroundColor: '#fffbeb',
+                      border: '1px solid #fde68a',
+                      borderRadius: '20px',
+                      padding: '28px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Waiting</span>
+                        <AlertCircle style={{ width: '24px', height: '24px', color: '#f59e0b' }} />
                       </div>
-                      <p className="text-3xl font-bold text-yellow-600">
+                      <p style={{ fontSize: '48px', fontWeight: 900, color: '#d97706', margin: 0 }}>
                         {timesheetStatus.consultants?.filter(c => c.status === 'waiting').length || 0}
                       </p>
-                      <p className="text-xs text-yellow-700 mt-1">Before deadline</p>
+                      <p style={{ fontSize: '12px', color: '#b45309', marginTop: '8px', fontWeight: 500 }}>Before deadline</p>
                     </div>
 
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="text-sm font-medium text-red-800">Overdue</h3>
-                        <AlertCircle className="h-5 w-5 text-red-600" />
+                    <div style={{
+                      backgroundColor: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      borderRadius: '20px',
+                      padding: '28px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Overdue</span>
+                        <AlertCircle style={{ width: '24px', height: '24px', color: '#ef4444' }} />
                       </div>
-                      <p className="text-3xl font-bold text-red-600">
+                      <p style={{ fontSize: '48px', fontWeight: 900, color: '#dc2626', margin: 0 }}>
                         {timesheetStatus.consultants?.filter(c => c.status === 'overdue').length || 0}
                       </p>
-                      <p className="text-xs text-red-700 mt-1">Past deadline</p>
+                      <p style={{ fontSize: '12px', color: '#b91c1c', marginTop: '8px', fontWeight: 500 }}>Past deadline</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center text-gray-500 py-8">
+                  <div style={{ textAlign: 'center', color: '#94a3b8', padding: '48px' }}>
                     <p>Loading timesheet status...</p>
                   </div>
                 )}
@@ -2666,11 +3065,31 @@ const InvoiceGeneratorApp = () => {
             </div>
 
             {/* Monthly Revenue Overview */}
-            <div className="bg-white rounded-lg border shadow-sm">
-              <div className="px-6 py-4 border-b">
-                <h2 className="text-lg font-semibold text-gray-800">Monthly Revenue Overview</h2>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '24px',
+              border: '1px solid #f1f5f9',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+              overflow: 'hidden'
+            }}>
+              <div style={{ 
+                padding: '24px 32px', 
+                borderBottom: '1px solid #f1f5f9'
+              }}>
+                <h2 style={{ 
+                  fontSize: '20px', 
+                  fontWeight: 800, 
+                  color: '#0f172a',
+                  margin: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
+                }}>
+                  <span style={{ fontSize: '24px' }}>💰</span>
+                  Pipeline Value
+                </h2>
               </div>
-              <div className="p-6">
+              <div style={{ padding: '32px' }}>
                 {(() => {
                   const now = new Date();
                   const currentMonth = now.getMonth();
@@ -2693,25 +3112,25 @@ const InvoiceGeneratorApp = () => {
                   const profit = clientRevenue - consultantRevenue;
                   
                   return (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="text-center">
-                        <p className="text-sm text-gray-600 mb-2">Client Invoices</p>
-                        <p className="text-3xl font-bold text-blue-600">{formatCurrency(clientRevenue)}</p>
-                        <p className="text-xs text-gray-500 mt-1">{currentMonthInvoices.filter(i => i.invoice_type === 'client').length} invoices</p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px' }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Client Invoices</p>
+                        <p style={{ fontSize: '36px', fontWeight: 900, color: '#4f46e5', margin: 0 }}>{formatCurrency(clientRevenue)}</p>
+                        <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>{currentMonthInvoices.filter(i => i.invoice_type === 'client').length} invoices</p>
                       </div>
                       
-                      <div className="text-center">
-                        <p className="text-sm text-gray-600 mb-2">Consultant Costs</p>
-                        <p className="text-3xl font-bold text-orange-600">{formatCurrency(consultantRevenue)}</p>
-                        <p className="text-xs text-gray-500 mt-1">{currentMonthInvoices.filter(i => i.invoice_type === 'consultant').length} invoices</p>
+                      <div style={{ textAlign: 'center' }}>
+                        <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Consultant Costs</p>
+                        <p style={{ fontSize: '36px', fontWeight: 900, color: '#f59e0b', margin: 0 }}>{formatCurrency(consultantRevenue)}</p>
+                        <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>{currentMonthInvoices.filter(i => i.invoice_type === 'consultant').length} invoices</p>
                       </div>
                       
-                      <div className="text-center">
-                        <p className="text-sm text-gray-600 mb-2">Net Profit</p>
-                        <p className={`text-3xl font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <div style={{ textAlign: 'center' }}>
+                        <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Net Profit</p>
+                        <p style={{ fontSize: '36px', fontWeight: 900, color: profit >= 0 ? '#10b981' : '#ef4444', margin: 0 }}>
                           {formatCurrency(profit)}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>
                           {now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                         </p>
                       </div>
@@ -2725,40 +3144,86 @@ const InvoiceGeneratorApp = () => {
 
         {/* Consultants Tab */}
         {activeTab === 'consultants' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">Consultants</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Consultants</h2>
               {user.role === 'admin' && (
-                <div className="flex gap-2">
+                <div style={{ display: 'flex', gap: '12px' }}>
                   <button
                     onClick={() => setCsvUploadModalOpen(true)}
-                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition"
+                    style={{
+                      backgroundColor: '#10b981',
+                      color: 'white',
+                      padding: '12px 20px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)'
+                    }}
                   >
-                    <Upload className="h-4 w-4" />
+                    <Upload style={{ width: '16px', height: '16px' }} />
                     Bulk Upload
                   </button>
                   <button
                     onClick={() => openAddModal('consultant')}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
+                    style={{
+                      backgroundColor: '#4f46e5',
+                      color: 'white',
+                      padding: '12px 20px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
+                    }}
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus style={{ width: '16px', height: '16px' }} />
                     Add Consultant
                   </button>
                 </div>
               )}
             </div>
 
-            <div className="bg-white rounded-lg border p-4">
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              border: '1px solid #e2e8f0',
+              padding: '16px'
+            }}>
               <input
                 type="text"
                 placeholder="Search consultants by name, company, VAT, email..."
                 value={searchQueries.consultants}
                 onChange={(e) => handleSearch('consultants', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                style={{
+                  width: '100%',
+                  padding: '14px 20px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
             
-            <div className="bg-white rounded-lg border shadow-sm">
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '24px',
+              border: '1px solid #f1f5f9',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+              overflow: 'hidden'
+            }}>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
