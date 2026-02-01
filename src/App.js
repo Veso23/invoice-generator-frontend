@@ -512,12 +512,21 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
   const renderField = (field) => {
     if (field.type === 'checkbox') {
       return (
-        <div key={field.name} style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div key={field.name} style={{ marginBottom: '16px' }}>
+          <label style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '12px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 500,
+            color: '#334155'
+          }}>
             <input
               type="checkbox"
               checked={formData[field.name] || false}
               onChange={(e) => setFormData({ ...formData, [field.name]: e.target.checked })}
+              style={{ width: '18px', height: '18px', cursor: 'pointer' }}
             />
             {field.label}
           </label>
@@ -527,9 +536,15 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
 
     if (field.type === 'select') {
       return (
-        <div key={field.name} style={{ marginBottom: '15px' }}>
-          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-            {field.label || field.placeholder}:
+        <div key={field.name} style={{ marginBottom: '16px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '8px', 
+            fontSize: '13px',
+            fontWeight: 700,
+            color: '#475569'
+          }}>
+            {field.label || field.placeholder}
           </label>
           <select
             value={formData[field.name] || ''}
@@ -537,8 +552,15 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
             required={field.required !== false}
             style={{ 
               width: '100%', 
-              padding: '8px',
-              cursor: 'pointer'
+              padding: '12px 16px',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              backgroundColor: 'white',
+              outline: 'none',
+              boxSizing: 'border-box'
             }}
           >
             <option value="">Select {field.label || field.placeholder}</option>
@@ -558,10 +580,16 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
       (field.name === 'consultantVatRate' && !formData.consultantVatEnabled);
 
     return (
-      <div key={field.name} style={{ marginBottom: '15px' }}>
+      <div key={field.name} style={{ marginBottom: '16px' }}>
         {field.label && (
-          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
-            {field.label}:
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '8px',
+            fontSize: '13px',
+            fontWeight: 700,
+            color: '#475569'
+          }}>
+            {field.label}
           </label>
         )}
         <input
@@ -574,10 +602,16 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
           step={field.step}
           style={{ 
             width: '100%', 
-            padding: '8px',
+            padding: '12px 16px',
+            border: '1px solid #e2e8f0',
+            borderRadius: '12px',
+            fontSize: '14px',
+            fontWeight: 500,
+            outline: 'none',
+            boxSizing: 'border-box',
             opacity: isDisabled ? 0.6 : 1,
             cursor: isDisabled ? 'not-allowed' : 'text',
-            backgroundColor: isDisabled ? '#f5f5f5' : 'white'
+            backgroundColor: isDisabled ? '#f8fafc' : 'white'
           }}
         />
       </div>
@@ -585,26 +619,74 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold mb-4">{title}</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(15, 23, 42, 0.6)',
+      backdropFilter: 'blur(4px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999,
+      padding: '24px'
+    }} onClick={onClose}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '24px',
+        padding: '32px',
+        width: '100%',
+        maxWidth: '480px',
+        maxHeight: '85vh',
+        overflowY: 'auto',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+      }} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ 
+          fontSize: '22px', 
+          fontWeight: 800, 
+          color: '#0f172a',
+          marginBottom: '24px'
+        }}>{title}</h3>
+        <form onSubmit={handleSubmit}>
           {fields.map(field => renderField(field))}
-          <div className="flex gap-2 pt-4">
-  <button
-    type="submit"
-    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-  >
-    {submitButtonText}
-  </button>
-  <button
-    type="button"
-    onClick={onClose}
-    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
-  >
-    Cancel
-  </button>
-</div>
+          <div style={{ display: 'flex', gap: '12px', paddingTop: '24px', borderTop: '1px solid #f1f5f9', marginTop: '24px' }}>
+            <button
+              type="submit"
+              style={{
+                flex: 1,
+                padding: '14px 24px',
+                backgroundColor: '#4f46e5',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '14px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
+              }}
+            >
+              {submitButtonText}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                flex: 1,
+                padding: '14px 24px',
+                backgroundColor: 'white',
+                color: '#64748b',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                fontSize: '14px',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Cancel
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -3222,48 +3304,98 @@ const InvoiceGeneratorApp = () => {
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
               overflow: 'hidden'
             }}>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('consultants', 'first_name')}>
-                        Name {sortConfig.consultants.key === 'first_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('consultants', 'first_name')}>
+                        Identity {sortConfig.consultants.key === 'first_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('consultants', 'company_name')}>
-                        Company {sortConfig.consultants.key === 'company_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('consultants', 'company_name')}>
+                        Legal Entity {sortConfig.consultants.key === 'company_name' && (sortConfig.consultants.direction === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="text-left p-4 font-medium text-gray-600">Address</th>
-                      <th className="text-left p-4 font-medium text-gray-600">VAT</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Phone</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Email</th>
-                      <th className="text-left p-4 font-medium text-gray-600">IBAN</th>
-                      <th className="text-left p-4 font-medium text-gray-600">SWIFT</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Created</th>
-                      {user.role === 'admin' && <th className="text-left p-4 font-medium text-gray-600">Actions</th>}
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tax ID</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Banking</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Created</th>
+                      {user.role === 'admin' && <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operations</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {filterAndSort(consultants, 'consultants').map((consultant) => (
-                      <tr key={consultant.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4 font-medium">{consultant.first_name} {consultant.last_name}</td>
-                        <td className="p-4">{consultant.company_name}</td>
-                        <td className="p-4 text-sm">{consultant.company_address || '-'}</td>
-                        <td className="p-4 font-mono text-sm">{consultant.company_vat}</td>
-                        <td className="p-4 font-mono text-sm">{consultant.consultant_contract_id || '-'}</td>
-                        <td className="p-4">{consultant.phone || '-'}</td>
-                        <td className="p-4">{consultant.email || '-'}</td>
-                        <td className="p-4 font-mono text-xs">{consultant.iban || '-'}</td>
-                        <td className="p-4 font-mono text-xs">{consultant.swift || '-'}</td>
-                        <td className="p-4 text-sm text-gray-600">{formatDate(consultant.created_at)}</td>
+                      <tr key={consultant.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
+                        <td style={{ padding: '16px 20px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '12px',
+                              backgroundColor: '#eef2ff',
+                              color: '#4f46e5',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '13px',
+                              fontWeight: 800
+                            }}>
+                              {(consultant.first_name?.[0] || '')}{(consultant.last_name?.[0] || '')}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>{consultant.first_name} {consultant.last_name}</div>
+                              <div style={{ fontSize: '12px', color: '#94a3b8' }}>{consultant.email || 'No email'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '16px 20px' }}>
+                          <div style={{ fontWeight: 600, color: '#334155', fontSize: '14px' }}>{consultant.company_name}</div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Limited Liability</div>
+                        </td>
+                        <td style={{ padding: '16px 20px' }}>
+                          <code style={{ fontSize: '12px', fontFamily: 'monospace', color: '#475569', backgroundColor: '#f1f5f9', padding: '4px 10px', borderRadius: '8px' }}>
+                            {consultant.company_vat}
+                          </code>
+                        </td>
+                        <td style={{ padding: '16px 20px' }}>
+                          <div style={{ fontSize: '13px', color: '#475569' }}>{consultant.phone || '-'}</div>
+                          <div style={{ fontSize: '12px', color: '#94a3b8' }}>{consultant.company_address || '-'}</div>
+                        </td>
+                        <td style={{ padding: '16px 20px' }}>
+                          <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#64748b' }}>{consultant.iban || '-'}</div>
+                          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{consultant.swift || '-'}</div>
+                        </td>
+                        <td style={{ padding: '16px 20px', fontSize: '13px', color: '#64748b' }}>{formatDate(consultant.created_at)}</td>
                         {user.role === 'admin' && (
-                          <td className="p-4">
-                            <div className="flex gap-2">
-                              <button onClick={() => editItem('consultant', consultant)} className="text-blue-600 hover:text-blue-800 p-1 transition" title="Edit">
-                                <Edit className="h-4 w-4" />
+                          <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                              <button 
+                                onClick={() => editItem('consultant', consultant)} 
+                                style={{
+                                  padding: '8px',
+                                  borderRadius: '10px',
+                                  border: '1px solid #e2e8f0',
+                                  backgroundColor: 'white',
+                                  color: '#64748b',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s'
+                                }}
+                                title="Edit"
+                              >
+                                <Edit style={{ width: '16px', height: '16px' }} />
                               </button>
-                              <button onClick={() => deleteConsultant(consultant.id)} className="text-red-600 hover:text-red-800 p-1 transition" title="Delete">
-                                <AlertCircle className="h-4 w-4" />
+                              <button 
+                                onClick={() => deleteConsultant(consultant.id)} 
+                                style={{
+                                  padding: '8px',
+                                  borderRadius: '10px',
+                                  border: '1px solid #e2e8f0',
+                                  backgroundColor: 'white',
+                                  color: '#64748b',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s'
+                                }}
+                                title="Delete"
+                              >
+                                <Trash2 style={{ width: '16px', height: '16px' }} />
                               </button>
                             </div>
                           </td>
@@ -3279,73 +3411,151 @@ const InvoiceGeneratorApp = () => {
 
         {/* Clients Tab */}
         {activeTab === 'clients' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">Clients</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Clients</h2>
               {user.role === 'admin' && (
                 <button
                   onClick={() => openAddModal('client')}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition"
+                  style={{
+                    backgroundColor: '#4f46e5',
+                    color: 'white',
+                    padding: '12px 20px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
+                  }}
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus style={{ width: '16px', height: '16px' }} />
                   Add Client
                 </button>
               )}
             </div>
 
-            <div className="bg-white rounded-lg border p-4">
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              border: '1px solid #e2e8f0',
+              padding: '16px'
+            }}>
               <input
                 type="text"
                 placeholder="Search clients by name, company, VAT, email..."
                 value={searchQueries.clients}
                 onChange={(e) => handleSearch('clients', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                style={{
+                  width: '100%',
+                  padding: '14px 20px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
             
-            <div className="bg-white rounded-lg border shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('clients', 'first_name')}>
-                        Name {sortConfig.clients.key === 'first_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '24px',
+              border: '1px solid #f1f5f9',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+              overflow: 'hidden'
+            }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('clients', 'first_name')}>
+                        Identity {sortConfig.clients.key === 'first_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('clients', 'company_name')}>
-                        Company {sortConfig.clients.key === 'company_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('clients', 'company_name')}>
+                        Legal Entity {sortConfig.clients.key === 'company_name' && (sortConfig.clients.direction === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="text-left p-4 font-medium text-gray-600">Address</th>
-                      <th className="text-left p-4 font-medium text-gray-600">VAT</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Contract ID</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Phone</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Email</th>
-                      <th className="text-left p-4 font-medium text-gray-600">IBAN</th>
-                      <th className="text-left p-4 font-medium text-gray-600">SWIFT</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Created</th>
-                      {user.role === 'admin' && <th className="text-left p-4 font-medium text-gray-600">Actions</th>}
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tax ID</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Created</th>
+                      {user.role === 'admin' && <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operations</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {filterAndSort(clients, 'clients').map((client) => (
-                      <tr key={client.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4 font-medium">{client.first_name} {client.last_name}</td>
-                        <td className="p-4">{client.company_name}</td>
-                        <td className="p-4 text-sm">{client.company_address || '-'}</td>
-                        <td className="p-4 font-mono text-sm">{client.company_vat}</td>
-                        <td className="p-4 font-mono text-sm">{client.client_contract_id || '-'}</td>
-                        <td className="p-4">{client.phone || '-'}</td>
-                        <td className="p-4">{client.email || '-'}</td>
-                        <td className="p-4 font-mono text-xs">{client.iban || '-'}</td>
-                        <td className="p-4 font-mono text-xs">{client.swift || '-'}</td>
-                        <td className="p-4 text-sm text-gray-600">{formatDate(client.created_at)}</td>
+                      <tr key={client.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
+                        <td style={{ padding: '16px 20px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '12px',
+                              backgroundColor: '#ecfdf5',
+                              color: '#059669',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '13px',
+                              fontWeight: 800
+                            }}>
+                              {(client.first_name?.[0] || '')}{(client.last_name?.[0] || '')}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>{client.first_name} {client.last_name}</div>
+                              <div style={{ fontSize: '12px', color: '#94a3b8' }}>{client.email || 'No email'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '16px 20px' }}>
+                          <div style={{ fontWeight: 600, color: '#334155', fontSize: '14px' }}>{client.company_name}</div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Partner</div>
+                        </td>
+                        <td style={{ padding: '16px 20px' }}>
+                          <code style={{ fontSize: '12px', fontFamily: 'monospace', color: '#475569', backgroundColor: '#f1f5f9', padding: '4px 10px', borderRadius: '8px' }}>
+                            {client.company_vat}
+                          </code>
+                        </td>
+                        <td style={{ padding: '16px 20px' }}>
+                          <div style={{ fontSize: '13px', color: '#475569' }}>{client.phone || '-'}</div>
+                          <div style={{ fontSize: '12px', color: '#94a3b8' }}>{client.company_address || '-'}</div>
+                        </td>
+                        <td style={{ padding: '16px 20px', fontSize: '13px', color: '#64748b' }}>{formatDate(client.created_at)}</td>
                         {user.role === 'admin' && (
-                          <td className="p-4">
-                            <div className="flex gap-2">
-                              <button onClick={() => editItem('client', client)} className="text-blue-600 hover:text-blue-800 p-1 transition" title="Edit">
-                                <Edit className="h-4 w-4" />
+                          <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                              <button 
+                                onClick={() => editItem('client', client)} 
+                                style={{
+                                  padding: '8px',
+                                  borderRadius: '10px',
+                                  border: '1px solid #e2e8f0',
+                                  backgroundColor: 'white',
+                                  color: '#64748b',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s'
+                                }}
+                                title="Edit"
+                              >
+                                <Edit style={{ width: '16px', height: '16px' }} />
                               </button>
-                              <button onClick={() => deleteClient(client.id)} className="text-red-600 hover:text-red-800 p-1 transition" title="Delete">
-                                <AlertCircle className="h-4 w-4" />
+                              <button 
+                                onClick={() => deleteClient(client.id)} 
+                                style={{
+                                  padding: '8px',
+                                  borderRadius: '10px',
+                                  border: '1px solid #e2e8f0',
+                                  backgroundColor: 'white',
+                                  color: '#64748b',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s'
+                                }}
+                                title="Delete"
+                              >
+                                <Trash2 style={{ width: '16px', height: '16px' }} />
                               </button>
                             </div>
                           </td>
@@ -3361,47 +3571,76 @@ const InvoiceGeneratorApp = () => {
 
         {/* Contracts Tab */}
         {activeTab === 'contracts' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">Contracts</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Contracts</h2>
               {user.role === 'admin' && (
                 <button
                   onClick={() => openAddModal('contract')}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
+                  style={{
+                    backgroundColor: '#4f46e5',
+                    color: 'white',
+                    padding: '12px 20px',
+                    borderRadius: '12px',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
+                  }}
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus style={{ width: '16px', height: '16px' }} />
                   Add Contract
                 </button>
               )}
             </div>
 
-            <div className="bg-white rounded-lg border p-4">
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              border: '1px solid #e2e8f0',
+              padding: '16px'
+            }}>
               <input
                 type="text"
                 placeholder="Search contracts by number, consultant, client..."
                 value={searchQueries.contracts}
                 onChange={(e) => handleSearch('contracts', e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                style={{
+                  width: '100%',
+                  padding: '14px 20px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
             
-            <div className="bg-white rounded-lg border shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('contracts', 'contract_number')}>
-                        Contract Number {sortConfig.contracts.key === 'contract_number' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '24px',
+              border: '1px solid #f1f5f9',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+              overflow: 'hidden'
+            }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('contracts', 'contract_number')}>
+                        Contract {sortConfig.contracts.key === 'contract_number' && (sortConfig.contracts.direction === 'asc' ? '↑' : '↓')}
                       </th>
-                      <th className="text-left p-4 font-medium text-gray-600">Consultant</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Client</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Contract IDs</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Period</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Purchase Price</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Sell Price</th>
-                      <th className="text-left p-4 font-medium text-gray-600">VAT Rates</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                      {user.role === 'admin' && <th className="text-left p-4 font-medium text-gray-600">Actions</th>}
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Parties</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Period</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pricing</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                      {user.role === 'admin' && <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operations</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -3415,70 +3654,90 @@ const InvoiceGeneratorApp = () => {
                       const isActive = today >= startDate && today <= endDate;
                       
                       return (
-                        <tr key={contract.id} className="border-b hover:bg-gray-50">
-                          <td className="p-4">
-                            <div className="font-mono text-sm font-medium text-blue-600">{contract.contract_number || ''}</div>
-                          </td>
-                          <td className="p-4">
-                            <div>
-                              <div className="font-medium">{contract.consultant_first_name} {contract.consultant_last_name}</div>
-                              <div className="text-gray-600">{contract.consultant_company_name}</div>
-                              <div className="text-xs text-gray-500 mt-1">VAT: {contract.consultant_company_vat || 'N/A'}</div>
+                        <tr key={contract.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
+                          <td style={{ padding: '16px 20px' }}>
+                            <code style={{ fontSize: '13px', fontFamily: 'monospace', color: '#4f46e5', fontWeight: 700 }}>{contract.contract_number || ''}</code>
+                            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+                              IDs: {contract.consultant_contract_id || 'N/A'} / {contract.client_contract_id || 'N/A'}
                             </div>
                           </td>
-                          <td className="p-4">
-                            <div>
-                              <div className="font-medium">{contract.client_first_name} {contract.client_last_name}</div>
-                              <div className="text-gray-600">{contract.client_company_name}</div>
-                              <div className="text-xs text-gray-500 mt-1">VAT: {contract.client_company_vat || 'N/A'}</div>
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div className="text-sm">
-                              <div className="font-mono text-xs text-gray-600">
-                                <span className="font-medium">Consultant:</span> {contract.consultant_contract_id || 'N/A'}
-                              </div>
-                              <div className="font-mono text-xs text-gray-600 mt-1">
-                                <span className="font-medium">Client:</span> {contract.client_contract_id || 'N/A'}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="p-4 text-sm">{formatDate(contract.from_date)} - {formatDate(contract.to_date)}</td>
-                          <td className="p-4">{formatCurrency(contract.purchase_price)}</td>
-                          <td className="p-4">{formatCurrency(contract.sell_price)}</td>
-                          <td className="p-4">
-                            <div className="text-sm">
-                              <div className="mb-1">
-                                <span className="text-xs text-gray-500">Consultant: </span>
-                                {contract.consultant_vat_enabled ? (
-                                  <span className="text-green-600 font-medium">{parseFloat(contract.consultant_vat_rate || 0).toFixed(0)}%</span>
-                                ) : (
-                                  <span className="text-gray-400 italic">No VAT</span>
-                                )}
+                          <td style={{ padding: '16px 20px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <div>
+                                <div style={{ fontSize: '12px', color: '#6366f1', fontWeight: 700, marginBottom: '2px' }}>Consultant</div>
+                                <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '13px' }}>{contract.consultant_first_name} {contract.consultant_last_name}</div>
+                                <div style={{ fontSize: '12px', color: '#64748b' }}>{contract.consultant_company_name}</div>
                               </div>
                               <div>
-                                <span className="text-xs text-gray-500">Client: </span>
-                                {contract.vat_enabled ? (
-                                  <span className="text-blue-600 font-medium">{parseFloat(contract.vat_rate || 0).toFixed(0)}%</span>
-                                ) : (
-                                  <span className="text-gray-400 italic">No VAT</span>
-                                )}
+                                <div style={{ fontSize: '12px', color: '#10b981', fontWeight: 700, marginBottom: '2px' }}>Client</div>
+                                <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '13px' }}>{contract.client_first_name} {contract.client_last_name}</div>
+                                <div style={{ fontSize: '12px', color: '#64748b' }}>{contract.client_company_name}</div>
                               </div>
                             </div>
                           </td>
-                          <td className="p-4">
-                            <span className={`px-2 py-1 rounded-full text-xs ${isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                              {isActive ? 'active' : 'inactive'}
+                          <td style={{ padding: '16px 20px' }}>
+                            <div style={{ fontSize: '13px', color: '#475569' }}>{formatDate(contract.from_date)}</div>
+                            <div style={{ fontSize: '11px', color: '#94a3b8' }}>to {formatDate(contract.to_date)}</div>
+                          </td>
+                          <td style={{ padding: '16px 20px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <div>
+                                <span style={{ fontSize: '11px', color: '#94a3b8' }}>Buy: </span>
+                                <span style={{ fontSize: '14px', fontWeight: 700, color: '#f59e0b' }}>{formatCurrency(contract.purchase_price)}</span>
+                              </div>
+                              <div>
+                                <span style={{ fontSize: '11px', color: '#94a3b8' }}>Sell: </span>
+                                <span style={{ fontSize: '14px', fontWeight: 700, color: '#10b981' }}>{formatCurrency(contract.sell_price)}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '16px 20px' }}>
+                            <span style={{
+                              padding: '6px 12px',
+                              borderRadius: '20px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.05em',
+                              backgroundColor: isActive ? '#ecfdf5' : '#f1f5f9',
+                              color: isActive ? '#059669' : '#64748b',
+                              border: isActive ? '1px solid #a7f3d0' : '1px solid #e2e8f0'
+                            }}>
+                              {isActive ? 'Active' : 'Inactive'}
                             </span>
                           </td>
                           {user.role === 'admin' && (
-                            <td className="p-4">
-                              <div className="flex gap-2">
-                                <button onClick={() => editItem('contract', contract)} className="text-blue-600 hover:text-blue-800 p-1 transition" title="Edit">
-                                  <Edit className="h-4 w-4" />
+                            <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                <button 
+                                  onClick={() => editItem('contract', contract)} 
+                                  style={{
+                                    padding: '8px',
+                                    borderRadius: '10px',
+                                    border: '1px solid #e2e8f0',
+                                    backgroundColor: 'white',
+                                    color: '#64748b',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  title="Edit"
+                                >
+                                  <Edit style={{ width: '16px', height: '16px' }} />
                                 </button>
-                                <button onClick={() => deleteContract(contract.id)} className="text-red-600 hover:text-red-800 p-1 transition" title="Delete">
-                                  <AlertCircle className="h-4 w-4" />
+                                <button 
+                                  onClick={() => deleteContract(contract.id)} 
+                                  style={{
+                                    padding: '8px',
+                                    borderRadius: '10px',
+                                    border: '1px solid #e2e8f0',
+                                    backgroundColor: 'white',
+                                    color: '#64748b',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                  }}
+                                  title="Delete"
+                                >
+                                  <Trash2 style={{ width: '16px', height: '16px' }} />
                                 </button>
                               </div>
                             </td>
@@ -3495,47 +3754,85 @@ const InvoiceGeneratorApp = () => {
 
         {/* Timesheets Tab - ✅ UPDATED WITH calculateTotalDays */}
         {activeTab === 'timesheets' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-gray-800">Timesheet Management</h2>
-                {timesheetStatus && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    Checking {timesheetStatus.checking_month} {timesheetStatus.checking_year} timesheets 
-                    (Deadline: {timesheetStatus.deadline_day}th of each month)
-                  </p>
-                )}
-              </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div>
+              <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Timesheet Management</h2>
+              {timesheetStatus && (
+                <p style={{ fontSize: '14px', color: '#64748b', marginTop: '8px' }}>
+                  Checking {timesheetStatus.checking_month} {timesheetStatus.checking_year} timesheets 
+                  <span style={{ color: '#94a3b8', marginLeft: '8px' }}>(Deadline: {timesheetStatus.deadline_day}th of each month)</span>
+                </p>
+              )}
             </div>
 
-            <div className="bg-white rounded-lg border shadow-sm">
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '24px',
+              border: '1px solid #f1f5f9',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+              overflow: 'hidden'
+            }}>
               {/* Subtab Navigation */}
-              <div className="flex gap-2 px-6 pt-4 border-b">
+              <div style={{ display: 'flex', gap: '8px', padding: '20px 24px', borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
                 <button
                   type="button"
                   onClick={() => setActiveTimesheetTab('current')}
-                  className={`px-4 py-2 rounded-t-lg font-medium transition ${
-                    activeTimesheetTab === 'current'
-                      ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                  }`}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    backgroundColor: activeTimesheetTab === 'current' ? '#4f46e5' : 'white',
+                    color: activeTimesheetTab === 'current' ? 'white' : '#64748b',
+                    boxShadow: activeTimesheetTab === 'current' ? '0 4px 14px rgba(79, 70, 229, 0.3)' : '0 1px 2px rgba(0,0,0,0.05)'
+                  }}
                 >
-                  Current Month ({timesheetStatus?.checking_month})
-                  <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs">
+                  Current Month
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    backgroundColor: activeTimesheetTab === 'current' ? 'rgba(255,255,255,0.2)' : '#ecfdf5',
+                    color: activeTimesheetTab === 'current' ? 'white' : '#059669'
+                  }}>
                     {timesheetStatus?.consultants?.filter(c => c.has_timesheet && c.timesheet_processed).length || 0}
                   </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTimesheetTab('older')}
-                  className={`px-4 py-2 rounded-t-lg font-medium transition ${
-                    activeTimesheetTab === 'older'
-                      ? 'bg-orange-100 text-orange-600 border-b-2 border-orange-600'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                  }`}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    backgroundColor: activeTimesheetTab === 'older' ? '#f59e0b' : 'white',
+                    color: activeTimesheetTab === 'older' ? 'white' : '#64748b',
+                    boxShadow: activeTimesheetTab === 'older' ? '0 4px 14px rgba(245, 158, 11, 0.3)' : '0 1px 2px rgba(0,0,0,0.05)'
+                  }}
                 >
                   Older Timesheets
-                  <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 rounded-full text-xs">
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    backgroundColor: activeTimesheetTab === 'older' ? 'rgba(255,255,255,0.2)' : '#fffbeb',
+                    color: activeTimesheetTab === 'older' ? 'white' : '#d97706'
+                  }}>
                     {timesheets.filter(ts => 
                       ts.month && 
                       ts.month.toLowerCase() !== timesheetStatus?.checking_month?.toLowerCase() &&
@@ -3547,14 +3844,31 @@ const InvoiceGeneratorApp = () => {
                 <button
                   type="button"
                   onClick={() => setActiveTimesheetTab('needs-review')}
-                  className={`px-4 py-2 rounded-t-lg font-medium transition ${
-                    activeTimesheetTab === 'needs-review'
-                      ? 'bg-yellow-100 text-yellow-600 border-b-2 border-yellow-600'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                  }`}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    backgroundColor: activeTimesheetTab === 'needs-review' ? '#eab308' : 'white',
+                    color: activeTimesheetTab === 'needs-review' ? 'white' : '#64748b',
+                    boxShadow: activeTimesheetTab === 'needs-review' ? '0 4px 14px rgba(234, 179, 8, 0.3)' : '0 1px 2px rgba(0,0,0,0.05)'
+                  }}
                 >
                   Needs Review
-                  <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    backgroundColor: activeTimesheetTab === 'needs-review' ? 'rgba(255,255,255,0.2)' : '#fef9c3',
+                    color: activeTimesheetTab === 'needs-review' ? 'white' : '#a16207'
+                  }}>
                     {timesheets.filter(ts => 
                       (ts.flagged_for_review || 
                        (!ts.month && ts.status !== 'no_pdf' && ts.status !== 'multiple_pdfs')) &&
@@ -3565,14 +3879,31 @@ const InvoiceGeneratorApp = () => {
                 <button
                   type="button"
                   onClick={() => setActiveTimesheetTab('problematic')}
-                  className={`px-4 py-2 rounded-t-lg font-medium transition ${
-                    activeTimesheetTab === 'problematic'
-                      ? 'bg-red-100 text-red-600 border-b-2 border-red-600'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-                  }`}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    backgroundColor: activeTimesheetTab === 'problematic' ? '#ef4444' : 'white',
+                    color: activeTimesheetTab === 'problematic' ? 'white' : '#64748b',
+                    boxShadow: activeTimesheetTab === 'problematic' ? '0 4px 14px rgba(239, 68, 68, 0.3)' : '0 1px 2px rgba(0,0,0,0.05)'
+                  }}
                 >
-                  Problematic Emails
-                  <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-xs">
+                  Problematic
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    backgroundColor: activeTimesheetTab === 'problematic' ? 'rgba(255,255,255,0.2)' : '#fef2f2',
+                    color: activeTimesheetTab === 'problematic' ? 'white' : '#dc2626'
+                  }}>
                     {timesheets.filter(ts => 
                       (ts.status === 'no_pdf' || ts.status === 'multiple_pdfs') &&
                       !ts.flagged_for_review
@@ -3583,17 +3914,17 @@ const InvoiceGeneratorApp = () => {
 
               {/* CURRENT MONTH TAB CONTENT */}
               {activeTimesheetTab === 'current' && (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="text-left p-4 font-medium text-gray-600">Date Received</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Name</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Email</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Month</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Days Worked</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Match Status</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date Received</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Month</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Days Worked</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Match Status</th>
+                        <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -4349,53 +4680,85 @@ const InvoiceGeneratorApp = () => {
  
         {/* Invoices Tab */}
         {activeTab === 'invoices' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">Generated Invoices</h2>
-              <p className="text-sm text-gray-600">{invoices.length} invoices total</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Generated Invoices</h2>
+              <span style={{ 
+                fontSize: '13px', 
+                color: '#64748b',
+                backgroundColor: '#f1f5f9',
+                padding: '8px 16px',
+                borderRadius: '20px',
+                fontWeight: 600
+              }}>{invoices.length} invoices total</span>
             </div>
 
             {invoices.length > 0 && (
-              <div className="bg-white rounded-lg border p-4">
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                padding: '16px'
+              }}>
                 <input
                   type="text"
                   placeholder="Search invoices by number, name, company..."
                   value={searchQueries.invoices}
                   onChange={(e) => handleSearch('invoices', e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  style={{
+                    width: '100%',
+                    padding: '14px 20px',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
                 />
               </div>
             )}
             
             {invoices.length === 0 ? (
-              <div className="bg-white rounded-lg p-12 text-center border shadow-sm">
-                <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-800 mb-2">No invoices generated yet</h3>
-                <p className="text-gray-600">Go to the dashboard to generate invoices from your contracts</p>
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '24px',
+                padding: '64px 32px',
+                textAlign: 'center',
+                border: '1px solid #f1f5f9',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+              }}>
+                <FileText style={{ width: '64px', height: '64px', color: '#cbd5e1', margin: '0 auto 24px' }} />
+                <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>No invoices generated yet</h3>
+                <p style={{ fontSize: '14px', color: '#64748b' }}>Go to the dashboard to generate invoices from your contracts</p>
               </div>
             ) : (
-              <div className="bg-white rounded-lg border shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('invoices', 'invoice_number')}>
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '24px',
+                border: '1px solid #f1f5f9',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                overflow: 'hidden'
+              }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('invoices', 'invoice_number')}>
                           Invoice # {sortConfig.invoices.key === 'invoice_number' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
                         </th>
-                        <th className="text-left p-4 font-medium text-gray-600">Name</th>
-                        <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('invoices', 'invoice_date')}>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('invoices', 'invoice_date')}>
                           Date {sortConfig.invoices.key === 'invoice_date' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
                         </th>
-                        <th className="text-left p-4 font-medium text-gray-600">Period</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Days</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Daily Rate</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Subtotal</th>
-                        <th className="text-left p-4 font-medium text-gray-600">VAT</th>
-                        <th className="text-left p-4 font-medium text-gray-600 cursor-pointer hover:bg-gray-100" onClick={() => handleSort('invoices', 'total_amount')}>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Period</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Days</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rate</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('invoices', 'total_amount')}>
                           Total {sortConfig.invoices.key === 'total_amount' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
                         </th>
-                        <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                        <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
