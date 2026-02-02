@@ -2578,7 +2578,7 @@ const InvoiceGeneratorApp = () => {
             lastName: row.lastName,
             companyName: row.companyName,
             companyAddress: row.companyAddress || '',
-            companyVAT: row.companyVAT,
+            companyVat: row.companyVAT,
             iban: row.iban || '',
             swift: row.swift || '',
             phone: row.phone || '',
