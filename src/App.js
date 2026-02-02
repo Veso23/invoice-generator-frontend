@@ -185,7 +185,7 @@ const LoginForm = ({ onLogin, onRegister }) => {
             letterSpacing: '0.1em',
             marginTop: '8px'
           }}>
-            {isLogin ? 'Infrastructure Control' : 'Create New Account'}
+            {isLogin ? 'Timesheet & Invoice Platform' : 'Create New Account'}
           </p>
         </div>
 
@@ -357,7 +357,7 @@ const LoginForm = ({ onLogin, onRegister }) => {
                 Connecting...
               </>
             ) : (
-              isLogin ? 'Establish Connection' : 'Create Account'
+              isLogin ? 'Login' : 'Create Account'
             )}
           </button>
         </form>
@@ -382,7 +382,7 @@ const LoginForm = ({ onLogin, onRegister }) => {
               transition: 'color 0.2s'
             }}
           >
-            {isLogin ? 'Request Access' : 'Back to Login'}
+            {isLogin ? 'Create Account' : 'Back to Login'}
           </button>
         </div>
       </div>
@@ -2792,7 +2792,7 @@ const InvoiceGeneratorApp = () => {
                   letterSpacing: '0.05em',
                   margin: 0
                 }}>
-                  Global Infrastructure
+                  Consultant Management
                 </p>
               </div>
             </div>
