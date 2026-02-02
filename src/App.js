@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle, Trash2, Upload } from 'lucide-react';
+import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle, AlertTriangle, Trash2, Upload } from 'lucide-react';
 import './App.css';
 
 // API Configuration
@@ -952,7 +952,8 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
   if (!isOpen) return null;
 
   const validCount = csvData.filter(row => row.isValid).length;
-  const invalidCount = csvData.filter(row => !row.isValid).length;
+  const invalidCount = csvData.filter(row => !row.isValid && !row.isDuplicate).length;
+  const duplicateCount = csvData.filter(row => row.isDuplicate).length;
 
   const downloadTemplate = () => {
     const headers = 'first_name,last_name,company_name,company_address,vat,iban,swift,phone,email,consultant_contract_id';
@@ -1101,7 +1102,7 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
                   Preview 
                   <span style={{ fontSize: '14px', fontWeight: 500, color: '#94a3b8' }}>({csvData.length} records)</span>
                 </h4>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                   <span style={{ 
                     fontSize: '11px', 
                     fontWeight: 700, 
@@ -1115,6 +1116,21 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
                   }}>
                     {validCount} Ready
                   </span>
+                  {duplicateCount > 0 && (
+                    <span style={{ 
+                      fontSize: '11px', 
+                      fontWeight: 700, 
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      color: '#d97706',
+                      backgroundColor: '#fffbeb',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #fde68a'
+                    }}>
+                      {duplicateCount} Duplicate
+                    </span>
+                  )}
                   {invalidCount > 0 && (
                     <span style={{ 
                       fontSize: '11px', 
@@ -1146,10 +1162,15 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
                     </thead>
                     <tbody>
                       {csvData.slice(0, 30).map((row, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: row.isValid ? 'white' : '#fff5f5' }}>
+                        <tr key={idx} style={{ 
+                          borderBottom: '1px solid #f1f5f9', 
+                          backgroundColor: row.isValid ? 'white' : (row.isDuplicate ? '#fffbeb' : '#fff5f5')
+                        }}>
                           <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                             {row.isValid ? (
                               <CheckCircle style={{ width: '20px', height: '20px', color: '#10b981' }} />
+                            ) : row.isDuplicate ? (
+                              <AlertTriangle style={{ width: '20px', height: '20px', color: '#f59e0b' }} />
                             ) : (
                               <AlertCircle style={{ width: '20px', height: '20px', color: '#f43f5e' }} />
                             )}
@@ -1160,8 +1181,8 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
                                 width: '36px', 
                                 height: '36px', 
                                 borderRadius: '10px',
-                                backgroundColor: '#e0e7ff',
-                                color: '#4f46e5',
+                                backgroundColor: row.isDuplicate ? '#fef3c7' : '#e0e7ff',
+                                color: row.isDuplicate ? '#d97706' : '#4f46e5',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -1181,13 +1202,35 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
                             <code style={{ 
                               fontSize: '12px', 
                               fontFamily: 'monospace',
-                              color: '#64748b',
-                              backgroundColor: '#f1f5f9',
+                              color: row.isDuplicate ? '#d97706' : '#64748b',
+                              backgroundColor: row.isDuplicate ? '#fef3c7' : '#f1f5f9',
                               padding: '4px 8px',
                               borderRadius: '6px'
                             }}>
                               {row.companyVAT || 'MISSING'}
                             </code>
+                            {/* Show error badges */}
+                            {row.errors && row.errors.length > 0 && (
+                              <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {row.errors.slice(0, 2).map((error, errIdx) => (
+                                  <span key={errIdx} style={{ 
+                                    fontSize: '10px', 
+                                    color: row.isDuplicate ? '#92400e' : '#be123c',
+                                    backgroundColor: row.isDuplicate ? '#fef3c7' : '#ffe4e6',
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    display: 'inline-block'
+                                  }}>
+                                    {error}
+                                  </span>
+                                ))}
+                                {row.errors.length > 2 && (
+                                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                                    +{row.errors.length - 2} more...
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -1212,7 +1255,11 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
           alignItems: 'center'
         }}>
           <div style={{ fontSize: '13px', color: '#94a3b8' }}>
-            {csvData.length > 0 ? `${validCount} records ready for import` : 'Select a CSV file to begin'}
+            {csvData.length > 0 
+              ? (duplicateCount > 0 
+                  ? `${validCount} ready, ${duplicateCount} duplicates will be skipped` 
+                  : `${validCount} records ready for import`)
+              : 'Select a CSV file to begin'}
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <button
@@ -2368,15 +2415,98 @@ const InvoiceGeneratorApp = () => {
       // Only add if has required fields
       if (row.firstName && row.lastName && row.companyName && row.companyVAT) {
         row.isValid = true;
+        row.errors = [];
       } else {
         row.isValid = false;
-        row.error = 'Missing required fields (firstName, lastName, companyName, companyVAT)';
+        row.errors = ['Missing required fields (firstName, lastName, companyName, companyVAT)'];
       }
       
       data.push(row);
     }
     
     return data;
+  };
+
+  // Check CSV data for duplicates against existing consultants
+  const checkCsvDuplicates = (csvRows) => {
+    const checkedRows = csvRows.map(row => {
+      if (!row.isValid) return row; // Skip already invalid rows
+      
+      const duplicateErrors = [];
+      
+      // Check against existing consultants in database
+      consultants.forEach(consultant => {
+        // Check VAT (case-insensitive)
+        if (row.companyVAT && consultant.company_vat && 
+            row.companyVAT.toLowerCase() === consultant.company_vat.toLowerCase()) {
+          duplicateErrors.push(`VAT "${row.companyVAT}" already exists (${consultant.first_name} ${consultant.last_name})`);
+        }
+        
+        // Check Email (case-insensitive)
+        if (row.email && consultant.email && 
+            row.email.toLowerCase() === consultant.email.toLowerCase()) {
+          duplicateErrors.push(`Email "${row.email}" already exists`);
+        }
+        
+        // Check IBAN (case-insensitive)
+        if (row.iban && consultant.iban && 
+            row.iban.toLowerCase() === consultant.iban.toLowerCase()) {
+          duplicateErrors.push(`IBAN already exists`);
+        }
+        
+        // Check Phone
+        if (row.phone && consultant.phone && 
+            row.phone.replace(/\s/g, '') === consultant.phone.replace(/\s/g, '')) {
+          duplicateErrors.push(`Phone "${row.phone}" already exists`);
+        }
+      });
+      
+      // Also check for duplicates within the CSV itself
+      csvRows.forEach((otherRow, otherIdx) => {
+        if (otherRow === row) return; // Skip self
+        
+        if (row.companyVAT && otherRow.companyVAT && 
+            row.companyVAT.toLowerCase() === otherRow.companyVAT.toLowerCase()) {
+          if (!duplicateErrors.some(e => e.includes('VAT') && e.includes('in CSV'))) {
+            duplicateErrors.push(`VAT "${row.companyVAT}" duplicated in CSV`);
+          }
+        }
+        
+        if (row.email && otherRow.email && 
+            row.email.toLowerCase() === otherRow.email.toLowerCase()) {
+          if (!duplicateErrors.some(e => e.includes('Email') && e.includes('in CSV'))) {
+            duplicateErrors.push(`Email "${row.email}" duplicated in CSV`);
+          }
+        }
+        
+        if (row.iban && otherRow.iban && 
+            row.iban.toLowerCase() === otherRow.iban.toLowerCase()) {
+          if (!duplicateErrors.some(e => e.includes('IBAN') && e.includes('in CSV'))) {
+            duplicateErrors.push(`IBAN duplicated in CSV`);
+          }
+        }
+        
+        if (row.phone && otherRow.phone && 
+            row.phone.replace(/\s/g, '') === otherRow.phone.replace(/\s/g, '')) {
+          if (!duplicateErrors.some(e => e.includes('Phone') && e.includes('in CSV'))) {
+            duplicateErrors.push(`Phone "${row.phone}" duplicated in CSV`);
+          }
+        }
+      });
+      
+      if (duplicateErrors.length > 0) {
+        return {
+          ...row,
+          isValid: false,
+          isDuplicate: true,
+          errors: [...(row.errors || []), ...duplicateErrors]
+        };
+      }
+      
+      return row;
+    });
+    
+    return checkedRows;
   };
 
   const handleCsvFileUpload = (event) => {
@@ -2387,7 +2517,9 @@ const InvoiceGeneratorApp = () => {
     reader.onload = (e) => {
       const text = e.target.result;
       const parsed = parseCSV(text);
-      setCsvData(parsed);
+      // Check for duplicates against existing consultants
+      const checkedData = checkCsvDuplicates(parsed);
+      setCsvData(checkedData);
     };
     reader.readAsText(file);
   };
