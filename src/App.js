@@ -1066,6 +1066,39 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
               e.currentTarget.style.borderColor = '#e2e8f0';
               e.currentTarget.style.backgroundColor = '#f8fafc';
             }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              e.currentTarget.style.borderColor = '#4f46e5';
+              e.currentTarget.style.backgroundColor = '#eef2ff';
+            }}
+            onDragEnter={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              e.currentTarget.style.borderColor = '#4f46e5';
+              e.currentTarget.style.backgroundColor = '#eef2ff';
+            }}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              e.currentTarget.style.borderColor = '#e2e8f0';
+              e.currentTarget.style.backgroundColor = '#f8fafc';
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              e.currentTarget.style.borderColor = '#e2e8f0';
+              e.currentTarget.style.backgroundColor = '#f8fafc';
+              
+              const files = e.dataTransfer.files;
+              if (files && files.length > 0) {
+                const file = files[0];
+                if (file.name.endsWith('.csv') || file.type === 'text/csv') {
+                  // Create a synthetic event object that mimics the file input change event
+                  onFileUpload({ target: { files: [file] } });
+                }
+              }
+            }}
             >
               <div style={{ 
                 width: '64px', 
