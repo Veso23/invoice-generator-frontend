@@ -768,69 +768,145 @@ const UserModal = ({ isOpen, onClose, onSubmit, mode, userData }) => {
     can_delete_timesheets: 'Delete Problematic Emails'
   };
 
+  const inputStyle = {
+    width: '100%',
+    padding: '12px 16px',
+    border: '1px solid #e2e8f0',
+    borderRadius: '12px',
+    fontSize: '14px',
+    fontWeight: 500,
+    outline: 'none',
+    boxSizing: 'border-box',
+    transition: 'border-color 0.2s, box-shadow 0.2s'
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold mb-4">{mode === 'edit' ? 'Edit User' : 'Create New User'}</h3>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-              <input type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="First Name" required />
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(15, 23, 42, 0.6)',
+      backdropFilter: 'blur(4px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999,
+      padding: '24px'
+    }} onClick={onClose}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '24px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        width: '100%',
+        maxWidth: '480px',
+        maxHeight: '90vh',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
+      }} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ padding: '24px 32px 20px', borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
+          <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+            {mode === 'edit' ? 'Edit User' : 'Create New User'}
+          </h3>
+        </div>
+        
+        {/* Form Content */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+          <div style={{ padding: '24px 32px', overflowY: 'auto', flex: 1 }}>
+            {/* Name Fields */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>First Name</label>
+                <input type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  style={inputStyle} placeholder="First Name" required />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Last Name</label>
+                <input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  style={inputStyle} placeholder="Last Name" required />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-              <input type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Last Name" required />
+            
+            {/* Email */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>Email</label>
+              <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                style={inputStyle} placeholder="email@example.com" required />
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="email@example.com" required />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {mode === 'edit' ? 'New Password (leave blank to keep current)' : 'Password'}
-            </label>
-            <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="••••••••" required={mode === 'create'} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="role" value="operator" checked={formData.role === 'operator'}
-                  onChange={() => handleRoleChange('operator')} className="w-4 h-4 text-blue-600" />
-                <span className="text-sm">Operator</span>
+            
+            {/* Password */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>
+                {mode === 'edit' ? 'New Password (leave blank to keep current)' : 'Password'}
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name="role" value="admin" checked={formData.role === 'admin'}
-                  onChange={() => handleRoleChange('admin')} className="w-4 h-4 text-blue-600" />
-                <span className="text-sm">Admin</span>
-              </label>
+              <input type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                style={inputStyle} placeholder="••••••••" required={mode === 'create'} />
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Permissions {formData.role === 'admin' && <span className="ml-2 text-xs text-gray-500">(Admins have all permissions)</span>}
-            </label>
-            <div className="space-y-2 bg-gray-50 p-3 rounded-lg">
-              {Object.entries(permissionLabels).map(([key, label]) => (
-                <label key={key} className={`flex items-center gap-2 ${formData.role === 'admin' ? 'opacity-60' : 'cursor-pointer'}`}>
-                  <input type="checkbox" checked={formData.permissions[key] || false} onChange={() => handlePermissionChange(key)}
-                    disabled={formData.role === 'admin'} className="w-4 h-4 text-blue-600 rounded" />
-                  <span className="text-sm">{label}</span>
+            
+            {/* Role */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '12px' }}>Role</label>
+              <div style={{ display: 'flex', gap: '24px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input type="radio" name="role" value="operator" checked={formData.role === 'operator'}
+                    onChange={() => handleRoleChange('operator')} style={{ width: '18px', height: '18px', accentColor: '#4f46e5' }} />
+                  <span style={{ fontSize: '14px', fontWeight: 500 }}>Operator</span>
                 </label>
-              ))}
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input type="radio" name="role" value="admin" checked={formData.role === 'admin'}
+                    onChange={() => handleRoleChange('admin')} style={{ width: '18px', height: '18px', accentColor: '#4f46e5' }} />
+                  <span style={{ fontSize: '14px', fontWeight: 500 }}>Admin</span>
+                </label>
+              </div>
+            </div>
+            
+            {/* Permissions */}
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '12px' }}>
+                Permissions {formData.role === 'admin' && <span style={{ marginLeft: '8px', fontSize: '12px', color: '#94a3b8', fontWeight: 400 }}>(Admins have all permissions)</span>}
+              </label>
+              <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                {Object.entries(permissionLabels).map(([key, label]) => (
+                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: formData.role === 'admin' ? 'default' : 'pointer', opacity: formData.role === 'admin' ? 0.6 : 1 }}>
+                    <input type="checkbox" checked={formData.permissions[key] || false} onChange={() => handlePermissionChange(key)}
+                      disabled={formData.role === 'admin'} style={{ width: '16px', height: '16px', accentColor: '#4f46e5', borderRadius: '4px' }} />
+                    <span style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>{label}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="flex gap-2 pt-4">
-            <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+          
+          {/* Footer Buttons */}
+          <div style={{ padding: '20px 32px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '12px' }}>
+            <button type="submit" style={{
+              flex: 1,
+              padding: '14px 24px',
+              backgroundColor: '#4f46e5',
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
+            }}>
               {mode === 'edit' ? 'Save Changes' : 'Create User'}
             </button>
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition">
+            <button type="button" onClick={onClose} style={{
+              flex: 1,
+              padding: '14px 24px',
+              backgroundColor: '#f1f5f9',
+              color: '#475569',
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}>
               Cancel
             </button>
           </div>
@@ -5273,34 +5349,58 @@ const InvoiceGeneratorApp = () => {
 
         {/* History Tab */}
         {activeTab === 'history' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">Timesheet & Invoice History</h2>
-              <p className="text-sm text-gray-600">{timesheetHistory.length} total records</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Timesheet & Invoice History</h2>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>{timesheetHistory.length} total records</span>
             </div>
 
             {/* Filters and Search */}
-            <div className="bg-white rounded-lg border shadow-sm p-4">
-              <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              border: '1px solid #e2e8f0',
+              padding: '20px'
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '16px' }}>
                 {/* Search Box */}
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Search</label>
                   <input
                     type="text"
                     placeholder="Search by name, email, invoice..."
                     value={searchQueries.history}
                     onChange={(e) => handleSearch('history', e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
                   />
                 </div>
                 
                 {/* Year Filter */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Year</label>
                   <select
                     value={historyFilters.year}
                     onChange={(e) => setHistoryFilters(prev => ({ ...prev, year: e.target.value }))}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      cursor: 'pointer'
+                    }}
                   >
                     <option value="all">All Years</option>
                     {[...new Set(timesheetHistory.map(ts => new Date(ts.created_at).getFullYear()))]
@@ -5314,11 +5414,21 @@ const InvoiceGeneratorApp = () => {
 
                 {/* Month Filter */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Month</label>
                   <select
                     value={historyFilters.month}
                     onChange={(e) => setHistoryFilters(prev => ({ ...prev, month: e.target.value }))}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      cursor: 'pointer'
+                    }}
                   >
                     <option value="all">All Months</option>
                     {['January', 'February', 'March', 'April', 'May', 'June', 
@@ -5330,11 +5440,21 @@ const InvoiceGeneratorApp = () => {
 
                 {/* Consultant Filter */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Consultant</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Consultant</label>
                   <select
                     value={historyFilters.consultant}
                     onChange={(e) => setHistoryFilters(prev => ({ ...prev, consultant: e.target.value }))}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      cursor: 'pointer'
+                    }}
                   >
                     <option value="all">All Consultants</option>
                     {consultants.map(c => (
@@ -5345,11 +5465,21 @@ const InvoiceGeneratorApp = () => {
 
                 {/* Status Filter */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</label>
                   <select
                     value={historyFilters.status}
                     onChange={(e) => setHistoryFilters(prev => ({ ...prev, status: e.target.value }))}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      outline: 'none',
+                      backgroundColor: 'white',
+                      cursor: 'pointer'
+                    }}
                   >
                     <option value="all">All Status</option>
                     <option value="invoiced">Invoiced</option>
@@ -5359,13 +5489,22 @@ const InvoiceGeneratorApp = () => {
               </div>
 
               {/* Clear Filters Button */}
-              <div className="mt-4 flex justify-end">
+              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
                 <button
                   onClick={() => {
                     setHistoryFilters({ year: 'all', month: 'all', consultant: 'all', status: 'all' });
                     handleSearch('history', '');
                   }}
-                  className="text-sm text-blue-600 hover:text-blue-800 transition"
+                  style={{
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    color: '#4f46e5',
+                    background: 'none',
+                    border: '1px solid #4f46e5',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    cursor: 'pointer'
+                  }}
                 >
                   Clear all filters
                 </button>
@@ -5373,25 +5512,30 @@ const InvoiceGeneratorApp = () => {
             </div>
 
             {/* History Table */}
-            <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left p-4 font-medium text-gray-600">Date</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Consultant</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Month</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Days</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Consultant Invoice</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Client Invoice</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Timesheet</th>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '24px',
+              border: '1px solid #f1f5f9',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+              overflow: 'hidden'
+            }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Consultant</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Month</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Days</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Consultant Invoice</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Client Invoice</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Timesheet</th>
                     </tr>
                   </thead>
                   <tbody>
                     {timesheetHistory
                       .filter(ts => {
-                        // Apply search filter
                         if (searchQueries.history) {
                           const query = searchQueries.history.toLowerCase();
                           const matchesSearch = 
@@ -5403,126 +5547,107 @@ const InvoiceGeneratorApp = () => {
                             (ts.consultant_company_name?.toLowerCase() || '').includes(query);
                           if (!matchesSearch) return false;
                         }
-                        
-                        // Apply year filter
                         if (historyFilters.year !== 'all') {
                           const tsYear = new Date(ts.created_at).getFullYear();
                           if (tsYear !== parseInt(historyFilters.year)) return false;
                         }
-                        
-                        // Apply month filter
                         if (historyFilters.month !== 'all') {
                           if (ts.month?.toLowerCase() !== historyFilters.month.toLowerCase()) return false;
                         }
-                        
-                        // Apply consultant filter
                         if (historyFilters.consultant !== 'all') {
                           if (ts.consultant_id !== parseInt(historyFilters.consultant)) return false;
                         }
-                        
-                        // Apply status filter
                         if (historyFilters.status !== 'all') {
                           const isInvoiced = ts.invoice_generated;
                           if (historyFilters.status === 'invoiced' && !isInvoiced) return false;
                           if (historyFilters.status === 'pending' && isInvoiced) return false;
                         }
-                        
                         return true;
                       })
                       .map((ts) => {
                         const totalDays = calculateTotalDays(ts);
                         
                         return (
-                          <tr key={ts.id} className="border-b hover:bg-gray-50 transition">
-                            <td className="p-4 text-sm">
+                          <tr key={ts.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.15s' }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                            <td style={{ padding: '16px 20px', fontSize: '13px', fontWeight: 500, color: '#64748b' }}>
                               {new Date(ts.created_at).toLocaleDateString('en-GB')}
                             </td>
-                            <td className="p-4">
+                            <td style={{ padding: '16px 20px' }}>
                               {ts.consultant_first_name ? (
                                 <>
-                                  <div className="font-medium">{ts.consultant_first_name} {ts.consultant_last_name}</div>
-                                  <div className="text-xs text-gray-500">{ts.consultant_company_name}</div>
+                                  <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>{ts.consultant_first_name} {ts.consultant_last_name}</div>
+                                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>{ts.consultant_company_name}</div>
                                 </>
                               ) : (
-                                <span className="text-gray-400 italic">{ts.sender_email || 'Unknown'}</span>
+                                <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '13px' }}>{ts.sender_email || 'Unknown'}</span>
                               )}
                             </td>
-                            <td className="p-4">
+                            <td style={{ padding: '16px 20px' }}>
                               {ts.month ? (
-                                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                                <span style={{ padding: '4px 12px', backgroundColor: '#eff6ff', color: '#3b82f6', borderRadius: '20px', fontSize: '12px', fontWeight: 600 }}>
                                   {ts.month}
                                 </span>
                               ) : (
-                                <span className="text-gray-400 italic">Not set</span>
+                                <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '13px' }}>Not set</span>
                               )}
                             </td>
-                            <td className="p-4 font-medium">
+                            <td style={{ padding: '16px 20px', fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>
                               {totalDays !== null ? totalDays : '-'}
                             </td>
-                            <td className="p-4">
+                            <td style={{ padding: '16px 20px' }}>
                               {ts.invoice_generated ? (
-                                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm flex items-center gap-1 w-fit">
-                                  <CheckCircle className="h-3 w-3" />
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 12px', backgroundColor: '#ecfdf5', color: '#059669', borderRadius: '20px', fontSize: '12px', fontWeight: 600 }}>
+                                  <CheckCircle style={{ width: '12px', height: '12px' }} />
                                   Invoiced
                                 </span>
                               ) : (
-                                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm flex items-center gap-1 w-fit">
-                                  <AlertCircle className="h-3 w-3" />
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 12px', backgroundColor: '#fef9c3', color: '#ca8a04', borderRadius: '20px', fontSize: '12px', fontWeight: 600 }}>
+                                  <AlertCircle style={{ width: '12px', height: '12px' }} />
                                   Pending
                                 </span>
                               )}
                             </td>
-                            <td className="p-4">
+                            <td style={{ padding: '16px 20px' }}>
                               {ts.consultant_invoice_number ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-mono">{ts.consultant_invoice_number}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{ fontSize: '13px', fontFamily: 'monospace', fontWeight: 600, color: '#0f172a' }}>{ts.consultant_invoice_number}</span>
                                   {ts.consultant_invoice_pdf_url && (
-                                    <a
-                                      href={ts.consultant_invoice_pdf_url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 hover:text-blue-800"
-                                      title="View PDF"
-                                    >
-                                      <FileText className="h-4 w-4" />
+                                    <a href={ts.consultant_invoice_pdf_url} target="_blank" rel="noopener noreferrer" style={{ color: '#4f46e5' }} title="View PDF">
+                                      <FileText style={{ width: '16px', height: '16px' }} />
                                     </a>
                                   )}
                                 </div>
                               ) : (
-                                <span className="text-gray-400">-</span>
+                                <span style={{ color: '#94a3b8' }}>-</span>
                               )}
                             </td>
-                            <td className="p-4">
+                            <td style={{ padding: '16px 20px' }}>
                               {ts.client_invoice_number ? (
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-mono">{ts.client_invoice_number}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{ fontSize: '13px', fontFamily: 'monospace', fontWeight: 600, color: '#0f172a' }}>{ts.client_invoice_number}</span>
                                   {ts.client_invoice_pdf_url && (
-                                    <a
-                                      href={ts.client_invoice_pdf_url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-blue-600 hover:text-blue-800"
-                                      title="View PDF"
-                                    >
-                                      <FileText className="h-4 w-4" />
+                                    <a href={ts.client_invoice_pdf_url} target="_blank" rel="noopener noreferrer" style={{ color: '#4f46e5' }} title="View PDF">
+                                      <FileText style={{ width: '16px', height: '16px' }} />
                                     </a>
                                   )}
                                 </div>
                               ) : (
-                                <span className="text-gray-400">-</span>
+                                <span style={{ color: '#94a3b8' }}>-</span>
                               )}
                             </td>
-                            <td className="p-4">
+                            <td style={{ padding: '16px 20px' }}>
                               {ts.timesheet_file_url && (
                                 <button
                                   onClick={() => {
                                     const fixedUrl = fixTimesheetUrl(ts.timesheet_file_url);
                                     window.open(fixedUrl, '_blank');
                                   }}
-                                  className="text-blue-600 hover:text-blue-800 transition"
+                                  style={{ color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
                                   title="View Timesheet PDF"
                                 >
-                                  <Eye className="h-4 w-4" />
+                                  <Eye style={{ width: '16px', height: '16px' }} />
                                 </button>
                               )}
                             </td>
@@ -5560,10 +5685,10 @@ const InvoiceGeneratorApp = () => {
                       return true;
                     }).length === 0 && (
                       <tr>
-                        <td colSpan="8" className="p-8 text-center text-gray-500">
-                          <FileText className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                          <p className="font-medium">No records found</p>
-                          <p className="text-sm">Try adjusting your filters or search query</p>
+                        <td colSpan="8" style={{ padding: '48px', textAlign: 'center' }}>
+                          <FileText style={{ width: '48px', height: '48px', color: '#e2e8f0', margin: '0 auto 12px' }} />
+                          <p style={{ fontWeight: 600, color: '#64748b', margin: 0 }}>No records found</p>
+                          <p style={{ fontSize: '13px', color: '#94a3b8', margin: '4px 0 0' }}>Try adjusting your filters or search query</p>
                         </td>
                       </tr>
                     )}
@@ -5573,26 +5698,26 @@ const InvoiceGeneratorApp = () => {
             </div>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg border p-4">
-                <p className="text-sm text-gray-600">Total Timesheets</p>
-                <p className="text-2xl font-bold text-gray-800">{timesheetHistory.length}</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+              <div style={{ backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px' }}>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '8px', fontWeight: 500 }}>Total Timesheets</p>
+                <p style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', margin: 0 }}>{timesheetHistory.length}</p>
               </div>
-              <div className="bg-white rounded-lg border p-4">
-                <p className="text-sm text-gray-600">Invoiced</p>
-                <p className="text-2xl font-bold text-green-600">
+              <div style={{ backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px' }}>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '8px', fontWeight: 500 }}>Invoiced</p>
+                <p style={{ fontSize: '28px', fontWeight: 800, color: '#059669', margin: 0 }}>
                   {timesheetHistory.filter(ts => ts.invoice_generated).length}
                 </p>
               </div>
-              <div className="bg-white rounded-lg border p-4">
-                <p className="text-sm text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-yellow-600">
+              <div style={{ backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px' }}>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '8px', fontWeight: 500 }}>Pending</p>
+                <p style={{ fontSize: '28px', fontWeight: 800, color: '#ca8a04', margin: 0 }}>
                   {timesheetHistory.filter(ts => !ts.invoice_generated).length}
                 </p>
               </div>
-              <div className="bg-white rounded-lg border p-4">
-                <p className="text-sm text-gray-600">Total Days Worked</p>
-                <p className="text-2xl font-bold text-blue-600">
+              <div style={{ backgroundColor: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px' }}>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '8px', fontWeight: 500 }}>Total Days Worked</p>
+                <p style={{ fontSize: '28px', fontWeight: 800, color: '#4f46e5', margin: 0 }}>
                   {timesheetHistory.reduce((sum, ts) => {
                     const days = calculateTotalDays(ts);
                     return sum + (days || 0);
@@ -5605,80 +5730,128 @@ const InvoiceGeneratorApp = () => {
 
         {/* Users Management Tab (Admin Only) */}
         {activeTab === 'users' && user.role === 'admin' && (
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-800">User Management</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>User Management</h2>
               <button
                 onClick={openCreateUserModal}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition"
+                style={{
+                  backgroundColor: '#4f46e5',
+                  color: 'white',
+                  padding: '12px 20px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
+                }}
               >
-                <Plus className="h-4 w-4" />
+                <Plus style={{ width: '16px', height: '16px' }} />
                 Create User
               </button>
             </div>
             
-            <div className="bg-white rounded-lg border shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-left p-4 font-medium text-gray-600">Name</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Email</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Role</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Permissions</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Actions</th>
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '24px',
+              border: '1px solid #f1f5f9',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+              overflow: 'hidden'
+            }}>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Role</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Permissions</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map((u) => (
-                      <tr key={u.id} className="border-b hover:bg-gray-50">
-                        <td className="p-4">
-                          <div className="font-medium">{u.name || `${u.first_name || ''} ${u.last_name || ''}`}</div>
-                          {u.id === user.id && <span className="text-xs text-blue-600">(You)</span>}
+                      <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.15s' }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                        <td style={{ padding: '16px 20px' }}>
+                          <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>{u.name || `${u.first_name || ''} ${u.last_name || ''}`}</div>
+                          {u.id === user.id && <span style={{ fontSize: '11px', color: '#4f46e5', fontWeight: 600 }}>(You)</span>}
                         </td>
-                        <td className="p-4 text-sm">{u.email}</td>
-                        <td className="p-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}`}>
+                        <td style={{ padding: '16px 20px', fontSize: '13px', color: '#64748b' }}>{u.email}</td>
+                        <td style={{ padding: '16px 20px' }}>
+                          <span style={{
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            backgroundColor: u.role === 'admin' ? '#f3e8ff' : '#f1f5f9',
+                            color: u.role === 'admin' ? '#7c3aed' : '#64748b'
+                          }}>
                             {u.role}
                           </span>
                         </td>
-                        <td className="p-4">
+                        <td style={{ padding: '16px 20px' }}>
                           {u.role === 'admin' ? (
-                            <span className="text-xs text-gray-500 italic">All permissions</span>
+                            <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>All permissions</span>
                           ) : (
-                            <div className="flex flex-wrap gap-1 max-w-xs">
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', maxWidth: '280px' }}>
                               {u.permissions?.can_view_dashboard && (
-                                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">Dashboard</span>
+                                <span style={{ padding: '2px 8px', backgroundColor: '#eff6ff', color: '#3b82f6', borderRadius: '4px', fontSize: '10px', fontWeight: 600 }}>Dashboard</span>
                               )}
                               {u.permissions?.can_view_contracts && (
-                                <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs">Contracts</span>
+                                <span style={{ padding: '2px 8px', backgroundColor: '#f3e8ff', color: '#7c3aed', borderRadius: '4px', fontSize: '10px', fontWeight: 600 }}>Contracts</span>
                               )}
                               {u.permissions?.can_view_consultants && (
-                                <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-xs">Consultants</span>
+                                <span style={{ padding: '2px 8px', backgroundColor: '#ecfdf5', color: '#059669', borderRadius: '4px', fontSize: '10px', fontWeight: 600 }}>Consultants</span>
                               )}
                               {u.permissions?.can_view_clients && (
-                                <span className="px-1.5 py-0.5 bg-teal-100 text-teal-700 rounded text-xs">Clients</span>
+                                <span style={{ padding: '2px 8px', backgroundColor: '#f0fdfa', color: '#0d9488', borderRadius: '4px', fontSize: '10px', fontWeight: 600 }}>Clients</span>
                               )}
                               {u.permissions?.can_view_timesheets && (
-                                <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded text-xs">Timesheets</span>
+                                <span style={{ padding: '2px 8px', backgroundColor: '#fef9c3', color: '#ca8a04', borderRadius: '4px', fontSize: '10px', fontWeight: 600 }}>Timesheets</span>
                               )}
                               {u.permissions?.can_view_invoices && (
-                                <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">Invoices</span>
+                                <span style={{ padding: '2px 8px', backgroundColor: '#ffedd5', color: '#ea580c', borderRadius: '4px', fontSize: '10px', fontWeight: 600 }}>Invoices</span>
                               )}
                             </div>
                           )}
                         </td>
-                        <td className="p-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${u.active !== false ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                        <td style={{ padding: '16px 20px' }}>
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            backgroundColor: u.active !== false ? '#ecfdf5' : '#fef2f2',
+                            color: u.active !== false ? '#059669' : '#dc2626'
+                          }}>
                             {u.active !== false ? 'Active' : 'Disabled'}
                           </span>
                         </td>
-                        <td className="p-4">
-                          <div className="flex gap-2">
+                        <td style={{ padding: '16px 20px' }}>
+                          <div style={{ display: 'flex', gap: '8px' }}>
                             <button
                               onClick={() => openEditUserModal(u)}
-                              className="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200 transition"
+                              style={{
+                                padding: '6px 12px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                backgroundColor: '#eff6ff',
+                                color: '#3b82f6',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer'
+                              }}
                               title="Edit User"
                             >
                               Edit
@@ -5687,12 +5860,34 @@ const InvoiceGeneratorApp = () => {
                               <>
                                 <button
                                   onClick={() => toggleUserActive(u.id)}
-                                  className={`px-3 py-1 text-xs rounded transition ${u.active !== false ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' : 'bg-green-100 text-green-800 hover:bg-green-200'}`}
+                                  style={{
+                                    padding: '6px 12px',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    backgroundColor: u.active !== false ? '#fef9c3' : '#ecfdf5',
+                                    color: u.active !== false ? '#ca8a04' : '#059669',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer'
+                                  }}
                                   title={u.active !== false ? 'Disable User' : 'Enable User'}
                                 >
                                   {u.active !== false ? 'Disable' : 'Enable'}
                                 </button>
-                                <button onClick={() => deleteUser(u.id)} className="px-3 py-1 text-xs bg-red-100 text-red-800 rounded hover:bg-red-200 transition" title="Delete User">
+                                <button
+                                  onClick={() => deleteUser(u.id)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    backgroundColor: '#fef2f2',
+                                    color: '#dc2626',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer'
+                                  }}
+                                  title="Delete User"
+                                >
                                   Delete
                                 </button>
                               </>
