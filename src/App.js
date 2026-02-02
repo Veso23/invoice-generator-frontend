@@ -2511,7 +2511,7 @@ const InvoiceGeneratorApp = () => {
         let value = values[index] || '';
         value = value.replace(/^["']|["']$/g, '').trim();
         // Replace non-breaking spaces and other special chars
-        value = value.replace(/\u00a0/g, ' ').replace(/[\x00-\x1f]/g, ' ');
+        value = value.replace(/\u00a0/g, ' ').replace(/[\t\r\n]/g, ' ');
         row[fieldName] = value;
       });
       
