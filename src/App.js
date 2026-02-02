@@ -948,22 +948,30 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
 };
 
 // CSV Upload Modal Component
-const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uploading }) => {
+const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uploading, title = 'Bulk Synchronizer', entityType = 'consultant' }) => {
   if (!isOpen) return null;
 
   const validCount = csvData.filter(row => row.isValid).length;
   const invalidCount = csvData.filter(row => !row.isValid && !row.isDuplicate).length;
   const duplicateCount = csvData.filter(row => row.isDuplicate).length;
 
+  const isClient = entityType === 'client';
+  const entityName = isClient ? 'client' : 'consultant';
+  const entityNamePlural = isClient ? 'clients' : 'consultants';
+
   const downloadTemplate = () => {
-    const headers = 'first_name,last_name,company_name,company_address,vat,iban,swift,phone,email,consultant_contract_id';
-    const example = 'John,Doe,Acme Ltd,"123 Main St, City",BG123456789,BG12IBAN1234567890,SWIFT123,+1234567890,john@acme.com,CONS-001';
+    const headers = isClient 
+      ? 'first_name,last_name,company_name,company_address,vat,iban,swift,phone,email,client_contract_id'
+      : 'first_name,last_name,company_name,company_address,vat,iban,swift,phone,email,consultant_contract_id';
+    const example = isClient
+      ? 'Jane,Smith,Client Corp,"456 Business Ave, Town",BG987654321,BG98IBAN0987654321,SWIFT456,+0987654321,jane@client.com,CLI-001'
+      : 'John,Doe,Acme Ltd,"123 Main St, City",BG123456789,BG12IBAN1234567890,SWIFT123,+1234567890,john@acme.com,CONS-001';
     const template = `${headers}\n${example}`;
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'consultants_template.csv';
+    a.download = `${entityNamePlural}_template.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -1003,9 +1011,9 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
         <div style={{ padding: '24px 32px 20px', borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
-              <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Bulk Synchronizer</h3>
+              <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 }}>{title}</h3>
               <p style={{ fontSize: '14px', color: '#94a3b8', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                Import consultant pool via CSV.
+                Import {entityName} pool via CSV.
                 <button 
                   onClick={downloadTemplate} 
                   style={{ 
@@ -1893,6 +1901,10 @@ const InvoiceGeneratorApp = () => {
   const [csvUploadModalOpen, setCsvUploadModalOpen] = useState(false);
   const [csvData, setCsvData] = useState([]);
   const [csvUploading, setCsvUploading] = useState(false);
+  // Client CSV upload state
+  const [clientCsvUploadModalOpen, setClientCsvUploadModalOpen] = useState(false);
+  const [clientCsvData, setClientCsvData] = useState([]);
+  const [clientCsvUploading, setClientCsvUploading] = useState(false);
   const [searchQueries, setSearchQueries] = useState({
     consultants: '',
     clients: '',
@@ -2397,13 +2409,68 @@ const InvoiceGeneratorApp = () => {
     }
   };
 
-  // CSV Upload Functions
-  const parseCSV = (text) => {
-    const lines = text.split('\n').filter(line => line.trim());
-    if (lines.length < 2) return [];
+  // CSV Upload Functions - Robust parser that handles multiline quoted fields and auto-detects delimiter
+  const parseCSV = (text, type = 'consultant') => {
+    // Clean the text - normalize line endings and remove BOM
+    const cleanText = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    
+    // Auto-detect delimiter (comma or semicolon) from header row
+    const firstLine = cleanText.split('\n')[0];
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    const semicolonCount = (firstLine.match(/;/g) || []).length;
+    const delimiter = semicolonCount > commaCount ? ';' : ',';
+    
+    // Parse CSV properly handling quoted fields with newlines
+    const parseRow = (text, startIdx = 0) => {
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+      let i = startIdx;
+      
+      while (i < text.length) {
+        const char = text[i];
+        
+        if (char === '"') {
+          if (inQuotes && text[i + 1] === '"') {
+            // Escaped quote
+            current += '"';
+            i += 2;
+            continue;
+          }
+          inQuotes = !inQuotes;
+          i++;
+          continue;
+        }
+        
+        if (char === delimiter && !inQuotes) {
+          values.push(current.trim());
+          current = '';
+          i++;
+          continue;
+        }
+        
+        if ((char === '\n' || char === '\r') && !inQuotes) {
+          // End of row
+          values.push(current.trim());
+          // Skip \r\n
+          if (char === '\r' && text[i + 1] === '\n') i++;
+          return { values, nextIdx: i + 1 };
+        }
+        
+        current += char;
+        i++;
+      }
+      
+      // End of text
+      values.push(current.trim());
+      return { values, nextIdx: i };
+    };
     
     // Parse header row
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+    const { values: rawHeaders, nextIdx: dataStart } = parseRow(cleanText, 0);
+    const headers = rawHeaders.map(h => h.toLowerCase().replace(/['"]/g, '').trim());
+    
+    if (headers.length < 3) return [];
     
     // Map common header variations to our field names
     const headerMap = {
@@ -2416,33 +2483,36 @@ const InvoiceGeneratorApp = () => {
       'swift': 'swift', 'bic': 'swift',
       'phone': 'phone', 'telephone': 'phone', 'tel': 'phone',
       'email': 'email', 'e-mail': 'email',
-      'consultant_contract_id': 'consultantContractId', 'contract_id': 'consultantContractId', 'contract id': 'consultantContractId'
+      'consultant_contract_id': 'consultantContractId', 'contract_id': type === 'consultant' ? 'consultantContractId' : 'clientContractId', 'contract id': type === 'consultant' ? 'consultantContractId' : 'clientContractId',
+      'client_contract_id': 'clientContractId'
     };
     
     // Parse data rows
     const data = [];
-    for (let i = 1; i < lines.length; i++) {
-      const values = [];
-      let current = '';
-      let inQuotes = false;
-      
-      // Handle quoted values with commas
-      for (const char of lines[i]) {
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          values.push(current.trim());
-          current = '';
-        } else {
-          current += char;
-        }
+    let currentIdx = dataStart;
+    
+    while (currentIdx < cleanText.length) {
+      // Skip empty lines
+      if (cleanText[currentIdx] === '\n') {
+        currentIdx++;
+        continue;
       }
-      values.push(current.trim());
+      
+      const { values, nextIdx } = parseRow(cleanText, currentIdx);
+      currentIdx = nextIdx;
+      
+      // Skip empty rows
+      if (values.every(v => !v)) continue;
       
       const row = {};
       headers.forEach((header, index) => {
         const fieldName = headerMap[header] || header;
-        row[fieldName] = values[index]?.replace(/^["']|["']$/g, '') || '';
+        // Clean the value - remove quotes and special characters
+        let value = values[index] || '';
+        value = value.replace(/^["']|["']$/g, '').trim();
+        // Replace non-breaking spaces and other special chars
+        value = value.replace(/\u00a0/g, ' ').replace(/[\x00-\x1f]/g, ' ');
+        row[fieldName] = value;
       });
       
       // Only add if has required fields
@@ -2600,6 +2670,120 @@ const InvoiceGeneratorApp = () => {
     
     if (errorCount === 0) {
       showNotification(`Successfully imported ${successCount} consultants!`);
+    } else {
+      showNotification(`Imported ${successCount}, failed ${errorCount}. Errors: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? '...' : ''}`, 'error');
+    }
+  };
+
+  // Client CSV Upload Functions
+  const checkClientCsvDuplicates = (csvRows) => {
+    const checkedRows = csvRows.map(row => {
+      if (!row.isValid) return row;
+      
+      const duplicateErrors = [];
+      
+      // Check against existing clients in database
+      clients.forEach(client => {
+        if (row.companyVAT && client.company_vat && 
+            row.companyVAT.toLowerCase() === client.company_vat.toLowerCase()) {
+          duplicateErrors.push(`VAT "${row.companyVAT}" already exists (${client.first_name} ${client.last_name})`);
+        }
+        if (row.email && client.email && 
+            row.email.toLowerCase() === client.email.toLowerCase()) {
+          duplicateErrors.push(`Email "${row.email}" already exists`);
+        }
+        if (row.iban && client.iban && 
+            row.iban.toLowerCase() === client.iban.toLowerCase()) {
+          duplicateErrors.push(`IBAN already exists`);
+        }
+        if (row.phone && client.phone && 
+            row.phone.replace(/\s/g, '') === client.phone.replace(/\s/g, '')) {
+          duplicateErrors.push(`Phone "${row.phone}" already exists`);
+        }
+      });
+      
+      // Check for duplicates within the CSV itself
+      csvRows.forEach((otherRow, otherIdx) => {
+        if (otherRow === row) return;
+        if (otherRow.companyVAT && row.companyVAT && 
+            otherRow.companyVAT.toLowerCase() === row.companyVAT.toLowerCase()) {
+          if (!duplicateErrors.some(e => e.includes('VAT') && e.includes('duplicated'))) {
+            duplicateErrors.push(`VAT "${row.companyVAT}" duplicated in CSV`);
+          }
+        }
+        if (otherRow.email && row.email && 
+            otherRow.email.toLowerCase() === row.email.toLowerCase()) {
+          if (!duplicateErrors.some(e => e.includes('Email') && e.includes('duplicated'))) {
+            duplicateErrors.push(`Email "${row.email}" duplicated in CSV`);
+          }
+        }
+      });
+      
+      if (duplicateErrors.length > 0) {
+        return { ...row, isValid: false, isDuplicate: true, errors: [...(row.errors || []), ...duplicateErrors] };
+      }
+      return row;
+    });
+    return checkedRows;
+  };
+
+  const handleClientCsvFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const parsed = parseCSV(text, 'client');
+      const checkedData = checkClientCsvDuplicates(parsed);
+      setClientCsvData(checkedData);
+    };
+    reader.readAsText(file);
+  };
+
+  const uploadClientsCsv = async () => {
+    const validRows = clientCsvData.filter(row => row.isValid);
+    if (validRows.length === 0) {
+      showNotification('No valid rows to upload', 'error');
+      return;
+    }
+    
+    setClientCsvUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+    
+    for (const row of validRows) {
+      try {
+        await apiCall('/clients', {
+          method: 'POST',
+          body: JSON.stringify({
+            firstName: row.firstName,
+            lastName: row.lastName,
+            companyName: row.companyName,
+            companyAddress: row.companyAddress || '',
+            companyVat: row.companyVAT,
+            iban: row.iban || '',
+            swift: row.swift || '',
+            phone: row.phone || '',
+            email: row.email || '',
+            clientContractId: row.clientContractId || ''
+          })
+        });
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        errors.push(`${row.firstName} ${row.lastName}: ${error.message}`);
+      }
+    }
+    
+    setClientCsvUploading(false);
+    setClientCsvUploadModalOpen(false);
+    setClientCsvData([]);
+    loadData();
+    
+    if (errorCount === 0) {
+      showNotification(`Successfully imported ${successCount} clients!`);
     } else {
       showNotification(`Imported ${successCount}, failed ${errorCount}. Errors: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? '...' : ''}`, 'error');
     }
@@ -2909,6 +3093,21 @@ const InvoiceGeneratorApp = () => {
         onFileUpload={handleCsvFileUpload}
         onUpload={uploadConsultantsCsv}
         uploading={csvUploading}
+      />
+
+      {/* Client CSV Upload Modal */}
+      <CsvUploadModal
+        isOpen={clientCsvUploadModalOpen}
+        onClose={() => {
+          setClientCsvUploadModalOpen(false);
+          setClientCsvData([]);
+        }}
+        csvData={clientCsvData}
+        onFileUpload={handleClientCsvFileUpload}
+        onUpload={uploadClientsCsv}
+        uploading={clientCsvUploading}
+        title="Bulk Upload Clients"
+        entityType="client"
       />
 
       {/* Header */}
@@ -3590,26 +3789,47 @@ const InvoiceGeneratorApp = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Clients</h2>
               {user.role === 'admin' && (
-                <button
-                  onClick={() => openAddModal('client')}
-                  style={{
-                    backgroundColor: '#4f46e5',
-                    color: 'white',
-                    padding: '12px 20px',
-                    borderRadius: '12px',
-                    border: 'none',
-                    fontWeight: 700,
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
-                  }}
-                >
-                  <Plus style={{ width: '16px', height: '16px' }} />
-                  Add Client
-                </button>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    onClick={() => setClientCsvUploadModalOpen(true)}
+                    style={{
+                      backgroundColor: 'white',
+                      color: '#4f46e5',
+                      padding: '12px 20px',
+                      borderRadius: '12px',
+                      border: '2px solid #4f46e5',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <Upload style={{ width: '16px', height: '16px' }} />
+                    Bulk Upload
+                  </button>
+                  <button
+                    onClick={() => openAddModal('client')}
+                    style={{
+                      backgroundColor: '#4f46e5',
+                      color: 'white',
+                      padding: '12px 20px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
+                    }}
+                  >
+                    <Plus style={{ width: '16px', height: '16px' }} />
+                    Add Client
+                  </button>
+                </div>
               )}
             </div>
 
