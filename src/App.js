@@ -2163,41 +2163,42 @@ const InvoiceGeneratorApp = () => {
       consultant: {
         title: 'Edit Consultant',
         fields: [
-          { name: 'firstName', placeholder: 'First Name', value: item.first_name },
-          { name: 'lastName', placeholder: 'Last Name', value: item.last_name },
-          { name: 'companyName', placeholder: 'Company Name', value: item.company_name },
-          { name: 'companyAddress', placeholder: 'Company Address', value: item.company_address },
-          { name: 'companyVAT', placeholder: 'VAT Number', value: item.company_vat },
-          { name: 'consultantContractId', placeholder: 'Consultant Contract ID', value: item.consultant_contract_id },
-          { name: 'iban', placeholder: 'IBAN', value: item.iban },
-          { name: 'swift', placeholder: 'SWIFT Code', value: item.swift },
-          { name: 'email', placeholder: 'Email', type: 'email', value: item.email },
-          { name: 'phone', placeholder: 'Phone', value: item.phone }
+          { name: 'firstName', label: 'First Name', placeholder: 'First Name', value: item.first_name },
+          { name: 'lastName', label: 'Last Name', placeholder: 'Last Name', value: item.last_name },
+          { name: 'companyName', label: 'Company Name', placeholder: 'Company Name', value: item.company_name },
+          { name: 'companyAddress', label: 'Company Address', placeholder: 'Company Address', value: item.company_address },
+          { name: 'companyVAT', label: 'VAT Number', placeholder: 'VAT Number', value: item.company_vat },
+          { name: 'consultantContractId', label: 'Consultant Contract ID', placeholder: 'e.g., CONS-001', value: item.consultant_contract_id },
+          { name: 'iban', label: 'IBAN', placeholder: 'IBAN', value: item.iban },
+          { name: 'swift', label: 'SWIFT Code', placeholder: 'SWIFT Code', value: item.swift },
+          { name: 'email', label: 'Email', placeholder: 'Email', type: 'email', value: item.email },
+          { name: 'phone', label: 'Phone', placeholder: 'Phone', value: item.phone }
         ],
         onSubmit: (data) => updateConsultant(item.id, data)
       },
       client: {
         title: 'Edit Client',
         fields: [
-          { name: 'firstName', placeholder: 'First Name', value: item.first_name },
-          { name: 'lastName', placeholder: 'Last Name', value: item.last_name },
-          { name: 'companyName', placeholder: 'Company Name', value: item.company_name },
-          { name: 'companyAddress', placeholder: 'Company Address', value: item.company_address },
-          { name: 'companyVAT', placeholder: 'VAT Number', value: item.company_vat },
-          { name: 'clientContractId', placeholder: 'Client Contract ID', value: item.client_contract_id },
-          { name: 'iban', placeholder: 'IBAN', value: item.iban },
-          { name: 'swift', placeholder: 'SWIFT Code', value: item.swift },
-          { name: 'email', placeholder: 'Email', type: 'email', value: item.email },
-          { name: 'phone', placeholder: 'Phone', value: item.phone }
+          { name: 'firstName', label: 'First Name', placeholder: 'First Name', value: item.first_name },
+          { name: 'lastName', label: 'Last Name', placeholder: 'Last Name', value: item.last_name },
+          { name: 'companyName', label: 'Company Name', placeholder: 'Company Name', value: item.company_name },
+          { name: 'companyAddress', label: 'Company Address', placeholder: 'Company Address', value: item.company_address },
+          { name: 'companyVAT', label: 'VAT Number', placeholder: 'VAT Number', value: item.company_vat },
+          { name: 'clientContractId', label: 'Client Contract ID', placeholder: 'e.g., CLI-001', value: item.client_contract_id },
+          { name: 'iban', label: 'IBAN', placeholder: 'IBAN', value: item.iban },
+          { name: 'swift', label: 'SWIFT Code', placeholder: 'SWIFT Code', value: item.swift },
+          { name: 'email', label: 'Email', placeholder: 'Email', type: 'email', value: item.email },
+          { name: 'phone', label: 'Phone', placeholder: 'Phone', value: item.phone }
         ],
         onSubmit: (data) => updateClient(item.id, data)
       },
       contract: {
         title: 'Edit Contract',
         fields: [
-          { name: 'contractNumber', placeholder: 'Contract Number', value: item.contract_number },
+          { name: 'contractNumber', label: 'Contract Number', placeholder: 'Contract Number', value: item.contract_number },
           { 
             name: 'consultantId', 
+            label: 'Consultant',
             placeholder: 'Select Consultant', 
             type: 'select',
             value: item.consultant_id,
@@ -2208,6 +2209,7 @@ const InvoiceGeneratorApp = () => {
           },
           { 
             name: 'clientId', 
+            label: 'Client',
             placeholder: 'Select Client', 
             type: 'select',
             value: item.client_id,
@@ -3014,41 +3016,42 @@ const InvoiceGeneratorApp = () => {
       consultant: {
         title: 'Add New Consultant',
         fields: [
-          { name: 'firstName', placeholder: 'First Name' },
-          { name: 'lastName', placeholder: 'Last Name' },
-          { name: 'companyName', placeholder: 'Company Name' },
-          { name: 'companyAddress', placeholder: 'Company Address' },
-          { name: 'companyVAT', placeholder: 'VAT Number' },
-          { name: 'consultantContractId', placeholder: 'Consultant Contract ID' },
-          { name: 'iban', placeholder: 'IBAN' },
-          { name: 'swift', placeholder: 'SWIFT Code' },
-          { name: 'email', placeholder: 'Email', type: 'email' },
-          { name: 'phone', placeholder: 'Phone' }
+          { name: 'firstName', label: 'First Name', placeholder: 'First Name' },
+          { name: 'lastName', label: 'Last Name', placeholder: 'Last Name' },
+          { name: 'companyName', label: 'Company Name', placeholder: 'Company Name' },
+          { name: 'companyAddress', label: 'Company Address', placeholder: 'Company Address' },
+          { name: 'companyVAT', label: 'VAT Number', placeholder: 'VAT Number' },
+          { name: 'consultantContractId', label: 'Consultant Contract ID', placeholder: 'e.g., CONS-001' },
+          { name: 'iban', label: 'IBAN', placeholder: 'IBAN' },
+          { name: 'swift', label: 'SWIFT Code', placeholder: 'SWIFT Code' },
+          { name: 'email', label: 'Email', placeholder: 'Email', type: 'email' },
+          { name: 'phone', label: 'Phone', placeholder: 'Phone' }
         ],
         onSubmit: addConsultant
       },
       client: {
         title: 'Add New Client',
         fields: [
-          { name: 'firstName', placeholder: 'First Name' },
-          { name: 'lastName', placeholder: 'Last Name' },
-          { name: 'companyName', placeholder: 'Company Name' },
-          { name: 'companyAddress', placeholder: 'Company Address' },
-          { name: 'companyVAT', placeholder: 'VAT Number' },
-          { name: 'clientContractId', placeholder: 'Client Contract ID' },
-          { name: 'iban', placeholder: 'IBAN' },
-          { name: 'swift', placeholder: 'SWIFT Code' },
-          { name: 'email', placeholder: 'Email', type: 'email' },
-          { name: 'phone', placeholder: 'Phone' }
+          { name: 'firstName', label: 'First Name', placeholder: 'First Name' },
+          { name: 'lastName', label: 'Last Name', placeholder: 'Last Name' },
+          { name: 'companyName', label: 'Company Name', placeholder: 'Company Name' },
+          { name: 'companyAddress', label: 'Company Address', placeholder: 'Company Address' },
+          { name: 'companyVAT', label: 'VAT Number', placeholder: 'VAT Number' },
+          { name: 'clientContractId', label: 'Client Contract ID', placeholder: 'e.g., CLI-001' },
+          { name: 'iban', label: 'IBAN', placeholder: 'IBAN' },
+          { name: 'swift', label: 'SWIFT Code', placeholder: 'SWIFT Code' },
+          { name: 'email', label: 'Email', placeholder: 'Email', type: 'email' },
+          { name: 'phone', label: 'Phone', placeholder: 'Phone' }
         ],
         onSubmit: addClient
       },
       contract: {
         title: 'Add New Contract',
         fields: [
-          { name: 'contractNumber', placeholder: 'Contract Number (e.g., CNT-2024-001)' },
+          { name: 'contractNumber', label: 'Contract Number', placeholder: 'Contract Number (e.g., CNT-2024-001)' },
           { 
             name: 'consultantId', 
+            label: 'Consultant',
             placeholder: 'Select Consultant', 
             type: 'select', 
             options: consultants.map(c => ({ 
@@ -3058,6 +3061,7 @@ const InvoiceGeneratorApp = () => {
           },
           { 
             name: 'clientId', 
+            label: 'Client',
             placeholder: 'Select Client', 
             type: 'select', 
             options: clients.map(c => ({ 
@@ -3067,8 +3071,8 @@ const InvoiceGeneratorApp = () => {
           },
           { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date' },
           { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date' },
-          { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
-          { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' },
+          { name: 'purchasePrice', label: 'Purchase Price (€)', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
+          { name: 'sellPrice', label: 'Sell Price (€)', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' },
           { name: 'consultantVatEnabled', type: 'checkbox', label: 'Enable VAT for Consultant Invoices' },
           { name: 'consultantVatRate', type: 'number', step: '0.01', label: 'Consultant VAT Rate (%)' },
           { name: 'vatEnabled', type: 'checkbox', label: 'Enable VAT for Client Invoices' },
@@ -3957,6 +3961,7 @@ const InvoiceGeneratorApp = () => {
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tax ID</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contract ID</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact</th>
+                      <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Banking</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Created</th>
                       {user.role === 'admin' && <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operations</th>}
                     </tr>
@@ -4007,6 +4012,10 @@ const InvoiceGeneratorApp = () => {
                         <td style={{ padding: '16px 20px' }}>
                           <div style={{ fontSize: '13px', color: '#475569' }}>{client.phone || '-'}</div>
                           <div style={{ fontSize: '12px', color: '#94a3b8' }}>{client.company_address || '-'}</div>
+                        </td>
+                        <td style={{ padding: '16px 20px' }}>
+                          <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#64748b' }}>{client.iban || '-'}</div>
+                          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{client.swift || '-'}</div>
                         </td>
                         <td style={{ padding: '16px 20px', fontSize: '13px', color: '#64748b' }}>{formatDate(client.created_at)}</td>
                         {user.role === 'admin' && (
