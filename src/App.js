@@ -947,58 +947,106 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
 
   if (!isOpen) return null;
 
+  const inputStyle = {
+    width: '100%',
+    padding: '14px 16px',
+    border: '1px solid #e2e8f0',
+    borderRadius: '12px',
+    fontSize: '14px',
+    fontWeight: 500,
+    outline: 'none',
+    boxSizing: 'border-box',
+    transition: 'border-color 0.2s, box-shadow 0.2s'
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold mb-4">Change Password</h3>
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(15, 23, 42, 0.6)',
+      backdropFilter: 'blur(4px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999,
+      padding: '24px'
+    }} onClick={onClose}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '24px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        width: '100%',
+        maxWidth: '440px',
+        overflow: 'hidden'
+      }} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{ padding: '24px 32px 20px', borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
+          <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Change Password</h3>
+        </div>
         
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
-            {error}
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Current Password
-            </label>
-            <input
-              type="password"
-              value={formData.currentPassword}
-              onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              New Password
-            </label>
-            <input
-              type="password"
-              value={formData.newPassword}
-              onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Confirm New Password
-            </label>
-            <input
-              type="password"
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-              required
-            />
+        {/* Form Content */}
+        <form onSubmit={handleSubmit}>
+          <div style={{ padding: '24px 32px' }}>
+            {error && (
+              <div style={{
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                color: '#dc2626',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                marginBottom: '20px',
+                fontSize: '13px',
+                fontWeight: 600
+              }}>
+                {error}
+              </div>
+            )}
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>
+                Current Password
+              </label>
+              <input
+                type="password"
+                value={formData.currentPassword}
+                onChange={(e) => setFormData({ ...formData, currentPassword: e.target.value })}
+                style={inputStyle}
+                required
+              />
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>
+                New Password
+              </label>
+              <input
+                type="password"
+                value={formData.newPassword}
+                onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+                style={inputStyle}
+                required
+              />
+            </div>
+            
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '8px' }}>
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                style={inputStyle}
+                required
+              />
+            </div>
           </div>
 
-          <div className="flex gap-2 pt-4">
+          {/* Footer Buttons */}
+          <div style={{ padding: '20px 32px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '12px' }}>
             <button
               type="button"
               onClick={() => {
@@ -1006,13 +1054,34 @@ const ChangePasswordModal = ({ isOpen, onClose, onSubmit }) => {
                 setError('');
                 onClose();
               }}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              style={{
+                flex: 1,
+                padding: '14px 24px',
+                backgroundColor: '#f1f5f9',
+                color: '#475569',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '14px',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              style={{
+                flex: 1,
+                padding: '14px 24px',
+                backgroundColor: '#4f46e5',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '14px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
+              }}
             >
               Change Password
             </button>
@@ -1485,7 +1554,8 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
         smtp_password: settings.smtp_password || '',
         smtp_from_email: settings.smtp_from_email || '',
         smtp_from_name: settings.smtp_from_name || '',
-        smtp_secure: settings.smtp_secure !== false
+        smtp_secure: settings.smtp_secure !== false,
+        timesheet_email: settings.timesheet_email || ''
       });
     }
   }, [isOpen, settings]);
@@ -1497,177 +1567,157 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
 
   if (!isOpen) return null;
 
+  const inputStyle = {
+    width: '100%',
+    padding: '12px 16px',
+    border: '1px solid #e2e8f0',
+    borderRadius: '12px',
+    fontSize: '14px',
+    fontWeight: 500,
+    outline: 'none',
+    boxSizing: 'border-box',
+    transition: 'border-color 0.2s'
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: '#374151',
+    marginBottom: '8px'
+  };
+
+  const tabStyle = (isActive) => ({
+    padding: '12px 20px',
+    fontSize: '13px',
+    fontWeight: 700,
+    color: isActive ? '#4f46e5' : '#64748b',
+    backgroundColor: isActive ? '#eef2ff' : 'transparent',
+    border: 'none',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    transition: 'all 0.2s'
+  });
+
+  const sectionTitleStyle = {
+    fontSize: '15px',
+    fontWeight: 700,
+    color: '#0f172a',
+    marginBottom: '16px',
+    paddingBottom: '8px',
+    borderBottom: '1px solid #f1f5f9'
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-3xl max-h-[85vh] flex flex-col">
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(15, 23, 42, 0.6)',
+      backdropFilter: 'blur(4px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999,
+      padding: '24px'
+    }} onClick={onClose}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '24px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        width: '100%',
+        maxWidth: '720px',
+        maxHeight: '85vh',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
+      }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="px-6 py-4 border-b">
-          <h3 className="text-lg font-semibold">Company Settings</h3>
+        <div style={{ padding: '24px 32px 20px', borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
+          <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Company Settings</h3>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 px-6 pt-4 border-b">
-          <button
-            type="button"
-            onClick={() => setActiveSettingsTab('company')}
-            className={`px-4 py-2 rounded-t-lg font-medium transition ${
-              activeSettingsTab === 'company'
-                ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-            }`}
-          >
+        <div style={{ display: 'flex', gap: '8px', padding: '16px 32px', borderBottom: '1px solid #f1f5f9' }}>
+          <button type="button" onClick={() => setActiveSettingsTab('company')} style={tabStyle(activeSettingsTab === 'company')}>
             Company & Bank
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveSettingsTab('email')}
-            className={`px-4 py-2 rounded-t-lg font-medium transition ${
-              activeSettingsTab === 'email'
-                ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-            }`}
-          >
+          <button type="button" onClick={() => setActiveSettingsTab('email')} style={tabStyle(activeSettingsTab === 'email')}>
             Email (SMTP)
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveSettingsTab('invoice')}
-            className={`px-4 py-2 rounded-t-lg font-medium transition ${
-              activeSettingsTab === 'invoice'
-                ? 'bg-blue-100 text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-            }`}
-          >
+          <button type="button" onClick={() => setActiveSettingsTab('invoice')} style={tabStyle(activeSettingsTab === 'invoice')}>
             Invoice Settings
           </button>
         </div>
 
         {/* Form Content */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-          <div className="overflow-y-auto px-6 py-4 flex-1">
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+          <div style={{ overflowY: 'auto', padding: '24px 32px', flex: 1 }}>
             {/* Company & Bank Tab */}
             {activeSettingsTab === 'company' && (
-              <div className="space-y-6">
+              <div>
                 {/* Company Info Section */}
-                <div>
-                  <h4 className="font-medium text-gray-700 mb-3">Company Information</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      />
+                <div style={{ marginBottom: '32px' }}>
+                  <h4 style={sectionTitleStyle}>Company Information</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={labelStyle}>Company Name</label>
+                      <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} style={inputStyle} />
                     </div>
 
-  <div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">Timesheet Email</label>
-  <input
-    type="email"
-    value={formData.timesheet_email}
-    onChange={(e) => setFormData({ ...formData, timesheet_email: e.target.value })}
-    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-    placeholder="timesheets@yourcompany.com"
-  />
-  <p className="text-xs text-gray-500 mt-1">
-    Email address where consultants send timesheets
-  </p>
-</div>
+                    <div>
+                      <label style={labelStyle}>Timesheet Email</label>
+                      <input type="email" value={formData.timesheet_email || ''} onChange={(e) => setFormData({ ...formData, timesheet_email: e.target.value })} style={inputStyle} placeholder="timesheets@yourcompany.com" />
+                      <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Email address where consultants send timesheets</p>
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Company VAT</label>
+                      <input type="text" value={formData.company_vat} onChange={(e) => setFormData({ ...formData, company_vat: e.target.value })} style={inputStyle} />
+                    </div>
                     
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Company Address</label>
-                      <textarea
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        rows="2"
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        placeholder="Street, City, Country"
-                      />
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={labelStyle}>Company Address</label>
+                      <textarea value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} rows="2" style={{ ...inputStyle, resize: 'vertical' }} placeholder="Street, City, Country" />
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Company VAT</label>
-                      <input
-                        type="text"
-                        value={formData.company_vat}
-                        onChange={(e) => setFormData({ ...formData, company_vat: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Company Email</label>
-                      <input
-                        type="email"
-                        value={formData.company_email}
-                        onChange={(e) => setFormData({ ...formData, company_email: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      />
+                      <label style={labelStyle}>Company Email</label>
+                      <input type="email" value={formData.company_email} onChange={(e) => setFormData({ ...formData, company_email: e.target.value })} style={inputStyle} />
                     </div>
 
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Representative Name</label>
-                      <input
-                        type="text"
-                        value={formData.representative_name}
-                        onChange={(e) => setFormData({ ...formData, representative_name: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Person representing the company on invoices
-                      </p>
+                    <div>
+                      <label style={labelStyle}>Representative Name</label>
+                      <input type="text" value={formData.representative_name} onChange={(e) => setFormData({ ...formData, representative_name: e.target.value })} style={inputStyle} />
+                      <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Person representing the company on invoices</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Bank Info Section */}
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-3">Bank Information</h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <h4 style={sectionTitleStyle}>Bank Information</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
-                      <input
-                        type="text"
-                        value={formData.bank_name}
-                        onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        placeholder="e.g., DSK Bank"
-                      />
+                      <label style={labelStyle}>Bank Name</label>
+                      <input type="text" value={formData.bank_name} onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })} style={inputStyle} placeholder="e.g., DSK Bank" />
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">SWIFT Code</label>
-                      <input
-                        type="text"
-                        value={formData.bank_swift}
-                        onChange={(e) => setFormData({ ...formData, bank_swift: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        placeholder="e.g., STSABGSF"
-                      />
+                      <label style={labelStyle}>SWIFT Code</label>
+                      <input type="text" value={formData.bank_swift} onChange={(e) => setFormData({ ...formData, bank_swift: e.target.value })} style={inputStyle} placeholder="e.g., STSABGSF" />
                     </div>
                     
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">IBAN</label>
-                      <input
-                        type="text"
-                        value={formData.bank_iban}
-                        onChange={(e) => setFormData({ ...formData, bank_iban: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        placeholder="e.g., BG19STSA93000031081943"
-                      />
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={labelStyle}>IBAN</label>
+                      <input type="text" value={formData.bank_iban} onChange={(e) => setFormData({ ...formData, bank_iban: e.target.value })} style={inputStyle} placeholder="e.g., BG19STSA93000031081943" />
                     </div>
                     
-                    <div className="col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Bank Address</label>
-                      <input
-                        type="text"
-                        value={formData.bank_address}
-                        onChange={(e) => setFormData({ ...formData, bank_address: e.target.value })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        placeholder="Bank street, city, country"
-                      />
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={labelStyle}>Bank Address</label>
+                      <input type="text" value={formData.bank_address} onChange={(e) => setFormData({ ...formData, bank_address: e.target.value })} style={inputStyle} placeholder="Bank street, city, country" />
                     </div>
                   </div>
                 </div>
@@ -1676,92 +1726,52 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
 
             {/* Email Settings Tab */}
             {activeSettingsTab === 'email' && (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600 mb-4">
+              <div>
+                <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px', padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: '10px' }}>
                   Configure your email server to send invoices. Need help? 
-                  <button type="button" onClick={() => window.open('https://support.google.com/accounts/answer/185833', '_blank')} className="text-blue-600 hover:text-blue-800 ml-1 underline">View Gmail SMTP guide</button>
+                  <button type="button" onClick={() => window.open('https://support.google.com/accounts/answer/185833', '_blank')} style={{ color: '#4f46e5', marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', fontWeight: 600 }}>View Gmail SMTP guide</button>
                 </p>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Host</label>
-                    <input
-                      type="text"
-                      value={formData.smtp_host}
-                      onChange={(e) => setFormData({ ...formData, smtp_host: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="e.g., smtp.gmail.com or smtp.office365.com"
-                    />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={labelStyle}>SMTP Host</label>
+                    <input type="text" value={formData.smtp_host} onChange={(e) => setFormData({ ...formData, smtp_host: e.target.value })} style={inputStyle} placeholder="e.g., smtp.gmail.com or smtp.office365.com" />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Port</label>
-                    <input
-                      type="number"
-                      value={formData.smtp_port}
-                      onChange={(e) => setFormData({ ...formData, smtp_port: parseInt(e.target.value) })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="587"
-                    />
+                    <label style={labelStyle}>SMTP Port</label>
+                    <input type="number" value={formData.smtp_port} onChange={(e) => setFormData({ ...formData, smtp_port: parseInt(e.target.value) })} style={inputStyle} placeholder="587" />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Secure Connection</label>
-                    <select
-                      value={formData.smtp_secure ? 'true' : 'false'}
-                      onChange={(e) => setFormData({ ...formData, smtp_secure: e.target.value === 'true' })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    >
+                    <label style={labelStyle}>Secure Connection</label>
+                    <select value={formData.smtp_secure ? 'true' : 'false'} onChange={(e) => setFormData({ ...formData, smtp_secure: e.target.value === 'true' })} style={{ ...inputStyle, cursor: 'pointer', backgroundColor: 'white' }}>
                       <option value="true">TLS/SSL (Port 587 or 465)</option>
                       <option value="false">No Encryption</option>
                     </select>
                   </div>
                   
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Username</label>
-                    <input
-                      type="text"
-                      value={formData.smtp_username}
-                      onChange={(e) => setFormData({ ...formData, smtp_username: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="your-email@company.com"
-                    />
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={labelStyle}>SMTP Username</label>
+                    <input type="text" value={formData.smtp_username} onChange={(e) => setFormData({ ...formData, smtp_username: e.target.value })} style={inputStyle} placeholder="your-email@company.com" />
                   </div>
                   
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">SMTP Password</label>
-                    <input
-                      type="password"
-                      value={formData.smtp_password}
-                      onChange={(e) => setFormData({ ...formData, smtp_password: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="Your email password or app password"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      For Gmail, use an <a href="https://support.google.com/accounts/answer/185833" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">App Password</a>
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={labelStyle}>SMTP Password</label>
+                    <input type="password" value={formData.smtp_password} onChange={(e) => setFormData({ ...formData, smtp_password: e.target.value })} style={inputStyle} placeholder="Your email password or app password" />
+                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+                      For Gmail, use an <a href="https://support.google.com/accounts/answer/185833" target="_blank" rel="noopener noreferrer" style={{ color: '#4f46e5' }}>App Password</a>
                     </p>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">From Email</label>
-                    <input
-                      type="email"
-                      value={formData.smtp_from_email}
-                      onChange={(e) => setFormData({ ...formData, smtp_from_email: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="invoices@company.com"
-                    />
+                    <label style={labelStyle}>From Email</label>
+                    <input type="email" value={formData.smtp_from_email} onChange={(e) => setFormData({ ...formData, smtp_from_email: e.target.value })} style={inputStyle} placeholder="invoices@company.com" />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">From Name</label>
-                    <input
-                      type="text"
-                      value={formData.smtp_from_name}
-                      onChange={(e) => setFormData({ ...formData, smtp_from_name: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      placeholder="Company Name"
-                    />
+                    <label style={labelStyle}>From Name</label>
+                    <input type="text" value={formData.smtp_from_name} onChange={(e) => setFormData({ ...formData, smtp_from_name: e.target.value })} style={inputStyle} placeholder="Company Name" />
                   </div>
                 </div>
               </div>
@@ -1769,42 +1779,22 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
 
             {/* Invoice Settings Tab */}
             {activeSettingsTab === 'invoice' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Timesheet Deadline (Day of Month)
-                    </label>
-                    <select
-                      value={formData.timesheet_deadline_day}
-                      onChange={(e) => setFormData({ ...formData, timesheet_deadline_day: parseInt(e.target.value) })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    >
+                    <label style={labelStyle}>Timesheet Deadline (Day of Month)</label>
+                    <select value={formData.timesheet_deadline_day} onChange={(e) => setFormData({ ...formData, timesheet_deadline_day: parseInt(e.target.value) })} style={{ ...inputStyle, cursor: 'pointer', backgroundColor: 'white' }}>
                       {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
                         <option key={day} value={day}>{day}</option>
                       ))}
                     </select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Day of the month by which timesheets must be received
-                    </p>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Day of the month by which timesheets must be received</p>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Default VAT Rate (%)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={formData.default_vat_rate}
-                      onChange={(e) => setFormData({ ...formData, default_vat_rate: parseFloat(e.target.value) })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Default VAT percentage applied to new invoices
-                    </p>
+                    <label style={labelStyle}>Default VAT Rate (%)</label>
+                    <input type="number" step="0.01" min="0" max="100" value={formData.default_vat_rate} onChange={(e) => setFormData({ ...formData, default_vat_rate: parseFloat(e.target.value) })} style={inputStyle} />
+                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Default VAT percentage applied to new invoices</p>
                   </div>
                 </div>
               </div>
@@ -1812,18 +1802,32 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
           </div>
 
           {/* Footer Buttons */}
-          <div className="px-6 py-4 border-t bg-gray-50 flex gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition"
-            >
+          <div style={{ padding: '20px 32px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '12px', backgroundColor: '#f8fafc' }}>
+            <button type="button" onClick={onClose} style={{
+              flex: 1,
+              padding: '14px 24px',
+              backgroundColor: '#f1f5f9',
+              color: '#475569',
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}>
               Cancel
             </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
+            <button type="submit" style={{
+              flex: 1,
+              padding: '14px 24px',
+              backgroundColor: '#4f46e5',
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
+            }}>
               Save Settings
             </button>
           </div>
