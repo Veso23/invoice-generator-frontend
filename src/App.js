@@ -3087,7 +3087,12 @@ const InvoiceGeneratorApp = () => {
     return <LoginForm onLogin={login} onRegister={register} />;
   }
 
-  const formatCurrency = (amount) => `€${parseFloat(amount).toFixed(2)}`;
+  const formatCurrency = (amount) => {
+    const num = parseFloat(amount).toFixed(2);
+    const parts = num.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    return `€${parts.join('.')}`;
+  };
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString();
 
   return (
