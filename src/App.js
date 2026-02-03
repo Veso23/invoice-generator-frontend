@@ -2638,12 +2638,6 @@ const InvoiceGeneratorApp = () => {
             row.iban.toLowerCase() === consultant.iban.toLowerCase()) {
           duplicateErrors.push(`IBAN already exists`);
         }
-        
-        // Check Phone
-        if (row.phone && consultant.phone && 
-            row.phone.replace(/\s/g, '') === consultant.phone.replace(/\s/g, '')) {
-          duplicateErrors.push(`Phone "${row.phone}" already exists`);
-        }
       });
       
       // Also check for duplicates within the CSV itself
@@ -2668,13 +2662,6 @@ const InvoiceGeneratorApp = () => {
             row.iban.toLowerCase() === otherRow.iban.toLowerCase()) {
           if (!duplicateErrors.some(e => e.includes('IBAN') && e.includes('in CSV'))) {
             duplicateErrors.push(`IBAN duplicated in CSV`);
-          }
-        }
-        
-        if (row.phone && otherRow.phone && 
-            row.phone.replace(/\s/g, '') === otherRow.phone.replace(/\s/g, '')) {
-          if (!duplicateErrors.some(e => e.includes('Phone') && e.includes('in CSV'))) {
-            duplicateErrors.push(`Phone "${row.phone}" duplicated in CSV`);
           }
         }
       });
@@ -2778,10 +2765,6 @@ const InvoiceGeneratorApp = () => {
             row.iban.toLowerCase() === client.iban.toLowerCase()) {
           duplicateErrors.push(`IBAN already exists`);
         }
-        if (row.phone && client.phone && 
-            row.phone.replace(/\s/g, '') === client.phone.replace(/\s/g, '')) {
-          duplicateErrors.push(`Phone "${row.phone}" already exists`);
-        }
       });
       
       // Check for duplicates within the CSV itself
@@ -2797,6 +2780,12 @@ const InvoiceGeneratorApp = () => {
             otherRow.email.toLowerCase() === row.email.toLowerCase()) {
           if (!duplicateErrors.some(e => e.includes('Email') && e.includes('duplicated'))) {
             duplicateErrors.push(`Email "${row.email}" duplicated in CSV`);
+          }
+        }
+        if (otherRow.iban && row.iban && 
+            otherRow.iban.toLowerCase() === row.iban.toLowerCase()) {
+          if (!duplicateErrors.some(e => e.includes('IBAN') && e.includes('duplicated'))) {
+            duplicateErrors.push(`IBAN duplicated in CSV`);
           }
         }
       });
