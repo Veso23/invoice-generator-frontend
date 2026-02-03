@@ -3443,7 +3443,17 @@ const InvoiceGeneratorApp = () => {
               {[
                 { label: 'Resources Linked', value: consultants.length, icon: Users, color: '#6366f1', bg: '#eef2ff' },
                 { label: 'Partners', value: clients.length, icon: Building, color: '#10b981', bg: '#ecfdf5' },
-                { label: 'Active Contracts', value: contracts.length, icon: FileText, color: '#f59e0b', bg: '#fffbeb' },
+                { label: 'Active Contracts', value: contracts.filter(c => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const fromDate = c.from_date ? new Date(c.from_date) : null;
+                  const toDate = c.to_date ? new Date(c.to_date) : null;
+                  if (fromDate) fromDate.setHours(0, 0, 0, 0);
+                  if (toDate) toDate.setHours(0, 0, 0, 0);
+                  const hasStarted = !fromDate || fromDate <= today;
+                  const hasNotEnded = !toDate || toDate >= today;
+                  return hasStarted && hasNotEnded;
+                }).length, icon: FileText, color: '#f59e0b', bg: '#fffbeb' },
                 { label: 'Total Invoices', value: invoices.length, icon: FileText, color: '#ef4444', bg: '#fef2f2' }
               ].map((stat, index) => (
                 <div key={index} style={{
