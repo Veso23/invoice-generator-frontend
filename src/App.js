@@ -5242,21 +5242,23 @@ const InvoiceGeneratorApp = () => {
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('invoices', 'invoice_number')}>
+                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('invoices', 'invoice_number')}>
                           Invoice # {sortConfig.invoices.key === 'invoice_number' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
                         </th>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</th>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('invoices', 'invoice_date')}>
+                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</th>
+                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('invoices', 'invoice_date')}>
                           Date {sortConfig.invoices.key === 'invoice_date' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
                         </th>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Period</th>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Days</th>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rate</th>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('invoices', 'total_amount')}>
+                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Period</th>
+                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Days</th>
+                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rate</th>
+                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subtotal</th>
+                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>VAT</th>
+                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('invoices', 'total_amount')}>
                           Total {sortConfig.invoices.key === 'total_amount' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
                         </th>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-                        <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
+                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                        <th style={{ textAlign: 'center', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -5268,88 +5270,90 @@ const InvoiceGeneratorApp = () => {
                         const total = subtotal + vatAmount;
                         
                         return (
-                          <tr key={invoice.id} className="border-b hover:bg-gray-50 group">
-                            <td className="p-4 font-mono text-xs">
+                          <tr key={invoice.id} style={{ borderBottom: '1px solid #e2e8f0' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
+                            <td style={{ padding: '16px', fontFamily: 'monospace', fontSize: '12px' }}>
                               {editingInvoiceNumber === invoice.id ? (
-                                <div className="flex items-center gap-1">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   <input
                                     type="text"
                                     value={editInvoiceNumberValue}
                                     onChange={(e) => setEditInvoiceNumberValue(e.target.value)}
-                                    className="border border-blue-500 rounded px-2 py-1 text-xs w-40 focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                    style={{ border: '1px solid #3b82f6', borderRadius: '4px', padding: '4px 8px', fontSize: '12px', width: '160px', outline: 'none' }}
                                     autoFocus
                                     onKeyPress={(e) => {
                                       if (e.key === 'Enter') updateInvoiceNumber(invoice.id);
                                       if (e.key === 'Escape') cancelEditInvoiceNumber();
                                     }}
                                   />
-                                  <button onClick={() => updateInvoiceNumber(invoice.id)} className="text-green-600 hover:text-green-800 p-1" title="Save">
-                                    <CheckCircle className="h-4 w-4" />
+                                  <button onClick={() => updateInvoiceNumber(invoice.id)} style={{ color: '#16a34a', padding: '4px' }} title="Save">
+                                    <CheckCircle style={{ width: '16px', height: '16px' }} />
                                   </button>
-                                  <button onClick={cancelEditInvoiceNumber} className="text-gray-400 hover:text-gray-600 p-1" title="Cancel">×</button>
+                                  <button onClick={cancelEditInvoiceNumber} style={{ color: '#9ca3af', padding: '4px' }} title="Cancel">×</button>
                                 </div>
                               ) : (
-                                <div onClick={() => startEditInvoiceNumber(invoice)} className="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded transition inline-block" title="Click to edit">
+                                <div onClick={() => startEditInvoiceNumber(invoice)} style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', display: 'inline-block' }} title="Click to edit">
                                   {invoice.invoice_number}
                                 </div>
                               )}
                             </td>
-                            <td className="p-4 text-sm">
+                            <td style={{ padding: '16px', fontSize: '14px' }}>
                               <div>
                                 {invoice.invoice_type === 'consultant' ? (
                                   <>
-                                    <div className="font-medium">{invoice.consultant_first_name} {invoice.consultant_last_name}</div>
-                                    <div className="text-gray-600">{invoice.consultant_company_name}</div>
+                                    <div style={{ fontWeight: 500 }}>{invoice.consultant_first_name} {invoice.consultant_last_name}</div>
+                                    <div style={{ color: '#64748b', fontSize: '13px' }}>{invoice.consultant_company_name}</div>
                                   </>
                                 ) : (
                                   <>
-                                    <div className="font-medium">{invoice.client_first_name} {invoice.client_last_name}</div>
-                                    <div className="text-gray-600">{invoice.client_company_name}</div>
+                                    <div style={{ fontWeight: 500 }}>{invoice.client_first_name} {invoice.client_last_name}</div>
+                                    <div style={{ color: '#64748b', fontSize: '13px' }}>{invoice.client_company_name}</div>
                                   </>
                                 )}
                               </div>
                             </td>
-                            <td className="p-4 text-sm">{new Date(invoice.period_to).toLocaleDateString('en-GB')}</td>
-                            <td className="p-4 text-xs">{new Date(invoice.period_to).toLocaleDateString('en-US', { month: 'long' })}</td>
-                            <td className="p-4 font-medium">{invoice.days_worked}</td>
-                            <td className="p-4">{formatCurrency(invoice.daily_rate)}</td>
-                            <td className="p-4 font-medium">{formatCurrency(subtotal)}</td>
-                            <td className="p-4">
+                            <td style={{ padding: '16px', fontSize: '14px' }}>{new Date(invoice.period_to).toLocaleDateString('en-GB')}</td>
+                            <td style={{ padding: '16px', fontSize: '12px' }}>{new Date(invoice.period_to).toLocaleDateString('en-US', { month: 'long' })}</td>
+                            <td style={{ padding: '16px', fontWeight: 500 }}>{invoice.days_worked}</td>
+                            <td style={{ padding: '16px' }}>{formatCurrency(invoice.daily_rate)}</td>
+                            <td style={{ padding: '16px', fontWeight: 500 }}>{formatCurrency(subtotal)}</td>
+                            <td style={{ padding: '16px' }}>
                               {invoice.vat_enabled ? (
-                                <div className="text-sm">
-                                  <div className="text-gray-600">{parseFloat(invoice.vat_rate).toFixed(0)}%</div>
-                                  <div className="font-medium text-gray-700">{formatCurrency(vatAmount)}</div>
+                                <div style={{ fontSize: '14px' }}>
+                                  <div style={{ color: '#64748b' }}>{parseFloat(invoice.vat_rate).toFixed(0)}%</div>
+                                  <div style={{ fontWeight: 500, color: '#374151' }}>{formatCurrency(vatAmount)}</div>
                                 </div>
                               ) : (
-                                <span className="text-xs text-gray-400 italic">No VAT</span>
+                                <span style={{ fontSize: '12px', color: '#9ca3af', fontStyle: 'italic' }}>No VAT</span>
                               )}
                             </td>
-                            <td className="p-4 font-bold text-green-600">{formatCurrency(total)}</td>
-                            <td className="p-4">
-                              <span className={`px-2 py-1 rounded-full text-xs ${
-                                invoice.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                                invoice.status === 'sent' ? 'bg-blue-100 text-blue-800' :
-                                invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
+                            <td style={{ padding: '16px', fontWeight: 700, color: '#0f172a' }}>{formatCurrency(total)}</td>
+                            <td style={{ padding: '16px' }}>
+                              <span style={{
+                                padding: '4px 8px',
+                                borderRadius: '9999px',
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                backgroundColor: invoice.status === 'draft' ? '#fef9c3' : invoice.status === 'sent' ? '#dbeafe' : invoice.status === 'paid' ? '#dcfce7' : '#f3f4f6',
+                                color: invoice.status === 'draft' ? '#854d0e' : invoice.status === 'sent' ? '#1e40af' : invoice.status === 'paid' ? '#166534' : '#374151'
+                              }}>
                                 {invoice.status}
                               </span>
                             </td>
-                            <td className="p-4">
-                              <div className="flex gap-2">
-                                <button onClick={() => viewTimesheet(invoice)} className="text-blue-600 hover:text-blue-800 p-1 transition" title="View Timesheet">
-                                  <Eye className="h-4 w-4" />
+                            <td style={{ padding: '16px' }}>
+                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                <button onClick={() => viewTimesheet(invoice)} style={{ color: '#2563eb', padding: '4px', transition: 'color 0.2s' }} title="View Timesheet">
+                                  <Eye style={{ width: '16px', height: '16px' }} />
                                 </button>
-                                <button onClick={() => downloadPDF(invoice)} className="text-green-600 hover:text-green-800 p-1 transition" title={invoice.pdf_url ? "Download PDF" : "Generate & Download PDF"} disabled={dataLoading}>
-                                  <Download className="h-4 w-4" />
+                                <button onClick={() => downloadPDF(invoice)} style={{ color: '#16a34a', padding: '4px', transition: 'color 0.2s' }} title={invoice.pdf_url ? "Download PDF" : "Generate & Download PDF"} disabled={dataLoading}>
+                                  <Download style={{ width: '16px', height: '16px' }} />
                                 </button>
                                 <button
                                   onClick={() => sendInvoiceEmail(invoice)}
-                                  className={`p-1 transition ${invoice.email_sent ? 'text-green-600 hover:text-green-800' : 'text-purple-600 hover:text-purple-800'}`}
+                                  style={{ color: invoice.email_sent ? '#16a34a' : '#9333ea', padding: '4px', transition: 'color 0.2s' }}
                                   title={invoice.email_sent ? `Sent to ${invoice.email_sent_to}` : "Send Invoice Email"}
                                   disabled={dataLoading}
                                 >
-                                  {invoice.email_sent ? <CheckCircle className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+                                  {invoice.email_sent ? <CheckCircle style={{ width: '16px', height: '16px' }} /> : <Send style={{ width: '16px', height: '16px' }} />}
                                 </button>
                               </div>
                             </td>
