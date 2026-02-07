@@ -4760,7 +4760,6 @@ const InvoiceGeneratorApp = () => {
                         // Use assigned timesheet, or if only one unassigned exists, use it
                         const timesheet = assignedTimesheet || (unassignedTimesheets.length === 1 ? unassignedTimesheets[0] : null);
                         const hasMultipleUnassigned = !assignedTimesheet && unassignedTimesheets.length > 1;
-                        const needsSelection = !assignedTimesheet && unassignedTimesheets.length > 0;
                         
                         // Determine row color
                         let rowBgColor = '';
