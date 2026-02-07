@@ -489,6 +489,8 @@ const Notification = ({ notification, onClose }) => {
 // Simple Form Modal Component
 const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonText = 'Add' }) => {
   const [formData, setFormData] = useState({});
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [isValidating, setIsValidating] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -497,11 +499,32 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
         initialData[field.name] = field.value !== undefined ? field.value : (field.type === 'checkbox' ? false : '');
       });
       setFormData(initialData);
+      setFieldErrors({});
     }
   }, [isOpen, fields]);
 
+  // Validate a field
+  const validateField = async (field, value) => {
+    if (field.validate && value) {
+      setIsValidating(true);
+      try {
+        const error = await field.validate(value);
+        setFieldErrors(prev => ({ ...prev, [field.name]: error }));
+      } catch (e) {
+        console.error('Validation error:', e);
+      }
+      setIsValidating(false);
+    } else {
+      setFieldErrors(prev => ({ ...prev, [field.name]: null }));
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Check if there are any errors
+    if (Object.values(fieldErrors).some(error => error)) {
+      return;
+    }
     onSubmit(formData);
     onClose();
   };
@@ -510,6 +533,8 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
 
   // ✅ renderField MUST BE INSIDE SimpleModal
   const renderField = (field) => {
+    const error = fieldErrors[field.name];
+    
     if (field.type === 'checkbox') {
       return (
         <div key={field.name} style={{ marginBottom: '16px' }}>
@@ -596,14 +621,19 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
           type={field.type || 'text'}
           placeholder={field.placeholder}
           value={formData[field.name] || ''}
-          onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+          onChange={(e) => {
+            setFormData({ ...formData, [field.name]: e.target.value });
+            // Clear error while typing
+            if (error) setFieldErrors(prev => ({ ...prev, [field.name]: null }));
+          }}
+          onBlur={(e) => validateField(field, e.target.value)}
           disabled={isDisabled}
           required={field.required !== false}
           step={field.step}
           style={{ 
             width: '100%', 
             padding: '12px 16px',
-            border: '1px solid #e2e8f0',
+            border: error ? '2px solid #ef4444' : '1px solid #e2e8f0',
             borderRadius: '12px',
             fontSize: '14px',
             fontWeight: 500,
@@ -611,12 +641,27 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
             boxSizing: 'border-box',
             opacity: isDisabled ? 0.6 : 1,
             cursor: isDisabled ? 'not-allowed' : 'text',
-            backgroundColor: isDisabled ? '#f8fafc' : 'white'
+            backgroundColor: isDisabled ? '#f8fafc' : error ? '#fef2f2' : 'white'
           }}
         />
+        {error && (
+          <p style={{ 
+            color: '#ef4444', 
+            fontSize: '12px', 
+            marginTop: '6px',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
+          }}>
+            ⚠️ {error}
+          </p>
+        )}
       </div>
     );
   };
+
+  const hasErrors = Object.values(fieldErrors).some(error => error);
 
   return (
     <div style={{
@@ -654,20 +699,22 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
           <div style={{ display: 'flex', gap: '12px', paddingTop: '24px', borderTop: '1px solid #f1f5f9', marginTop: '24px' }}>
             <button
               type="submit"
+              disabled={hasErrors || isValidating}
               style={{
                 flex: 1,
                 padding: '14px 24px',
-                backgroundColor: '#4f46e5',
+                backgroundColor: hasErrors ? '#94a3b8' : '#4f46e5',
                 color: 'white',
                 border: 'none',
                 borderRadius: '12px',
                 fontSize: '14px',
                 fontWeight: 700,
-                cursor: 'pointer',
-                boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
+                cursor: hasErrors ? 'not-allowed' : 'pointer',
+                boxShadow: hasErrors ? 'none' : '0 4px 14px rgba(79, 70, 229, 0.3)',
+                opacity: hasErrors || isValidating ? 0.7 : 1
               }}
             >
-              {submitButtonText}
+              {isValidating ? 'Checking...' : submitButtonText}
             </button>
             <button
               type="button"
@@ -1740,15 +1787,13 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                   
                   <div>
                     <label style={labelStyle}>SMTP Port</label>
-                    <input type="number" value={formData.smtp_port} onChange={(e) => setFormData({ ...formData, smtp_port: parseInt(e.target.value) })} style={inputStyle} placeholder="587" />
+                    <input type="number" value={formData.smtp_port} onChange={(e) => setFormData({ ...formData, smtp_port: parseInt(e.target.value) })} style={inputStyle} placeholder="465" />
+                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Use 465 for Gmail/SSL, 587 for STARTTLS</p>
                   </div>
                   
                   <div>
-                    <label style={labelStyle}>Secure Connection</label>
-                    <select value={formData.smtp_secure ? 'true' : 'false'} onChange={(e) => setFormData({ ...formData, smtp_secure: e.target.value === 'true' })} style={{ ...inputStyle, cursor: 'pointer', backgroundColor: 'white' }}>
-                      <option value="true">TLS/SSL (Port 587 or 465)</option>
-                      <option value="false">No Encryption</option>
-                    </select>
+                    <label style={labelStyle}>From Name</label>
+                    <input type="text" value={formData.smtp_from_name} onChange={(e) => setFormData({ ...formData, smtp_from_name: e.target.value })} style={inputStyle} placeholder="Company Name" />
                   </div>
                   
                   <div style={{ gridColumn: 'span 2' }}>
@@ -1764,14 +1809,10 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                     </p>
                   </div>
                   
-                  <div>
+                  <div style={{ gridColumn: 'span 2' }}>
                     <label style={labelStyle}>From Email</label>
                     <input type="email" value={formData.smtp_from_email} onChange={(e) => setFormData({ ...formData, smtp_from_email: e.target.value })} style={inputStyle} placeholder="invoices@company.com" />
-                  </div>
-                  
-                  <div>
-                    <label style={labelStyle}>From Name</label>
-                    <input type="text" value={formData.smtp_from_name} onChange={(e) => setFormData({ ...formData, smtp_from_name: e.target.value })} style={inputStyle} placeholder="Company Name" />
+                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Usually the same as SMTP Username</p>
                   </div>
                 </div>
               </div>
@@ -2005,6 +2046,16 @@ const InvoiceGeneratorApp = () => {
     contracts: { key: null, direction: 'asc' },
     invoices: { key: null, direction: 'asc' }
   });
+  
+  // Contract selection for timesheets with multiple contracts
+  const [contractSelectionModal, setContractSelectionModal] = useState({
+    open: false,
+    timesheetId: null,
+    contracts: [],
+    consultant: null,
+    period: null,
+    currentContractId: null
+  });
 
   useEffect(() => {
     localStorage.setItem('activeTab', activeTab);
@@ -2013,6 +2064,87 @@ const InvoiceGeneratorApp = () => {
   // Show notification
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
+  };
+
+  // Check and handle contract selection for timesheet
+  const checkContractsForTimesheet = async (timesheetId) => {
+    try {
+      const result = await apiCall(`/timesheets/${timesheetId}/available-contracts`);
+      
+      if (result.requiresSelection) {
+        // Multiple contracts - show selection modal
+        setContractSelectionModal({
+          open: true,
+          timesheetId: timesheetId,
+          contracts: result.contracts,
+          consultant: result.consultant,
+          period: result.period,
+          currentContractId: result.currentContractId
+        });
+        return { requiresSelection: true };
+      }
+      
+      // Single contract or already selected - can proceed
+      return { requiresSelection: false, contract: result.contracts[0] };
+    } catch (error) {
+      console.error('Error checking contracts:', error);
+      throw error;
+    }
+  };
+
+  // Set contract for timesheet
+  const setContractForTimesheet = async (timesheetId, contractId) => {
+    try {
+      await apiCall(`/timesheets/${timesheetId}/contract`, {
+        method: 'PUT',
+        body: JSON.stringify({ contractId })
+      });
+      showNotification('Contract selected successfully');
+      loadData();
+      return true;
+    } catch (error) {
+      showNotification('Failed to set contract: ' + error.message, 'error');
+      return false;
+    }
+  };
+
+  // Generate invoice with contract check
+  const generateInvoiceForTimesheet = async (timesheet) => {
+    try {
+      setGeneratingInvoice(timesheet.id);
+      
+      // If no contract is selected, check if selection is needed
+      if (!timesheet.contract_id) {
+        const checkResult = await checkContractsForTimesheet(timesheet.id);
+        if (checkResult.requiresSelection) {
+          setGeneratingInvoice(null);
+          return; // Modal will be shown
+        }
+      }
+      
+      // Proceed with invoice generation
+      await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
+        method: 'POST'
+      });
+      showNotification('Invoice generated successfully!');
+      loadData();
+    } catch (error) {
+      // Check if error indicates multiple contracts
+      if (error.message && error.message.includes('Multiple contracts')) {
+        try {
+          const checkResult = await checkContractsForTimesheet(timesheet.id);
+          if (checkResult.requiresSelection) {
+            return; // Modal will be shown
+          }
+        } catch (e) {
+          showNotification('Failed to load contracts: ' + e.message, 'error');
+        }
+      } else {
+        showNotification('Failed to generate invoice: ' + error.message, 'error');
+      }
+    } finally {
+      setGeneratingInvoice(null);
+    }
   };
 
   // Load data from API
@@ -2195,7 +2327,18 @@ const InvoiceGeneratorApp = () => {
       contract: {
         title: 'Edit Contract',
         fields: [
-          { name: 'contractNumber', label: 'Contract Number', placeholder: 'Contract Number', value: item.contract_number },
+          { 
+            name: 'contractNumber', 
+            label: 'Contract Number', 
+            placeholder: 'Contract Number', 
+            value: item.contract_number,
+            validate: (value) => {
+              const exists = contracts.some(c => 
+                c.contract_number?.toLowerCase() === value?.toLowerCase() && c.id !== item.id
+              );
+              return exists ? 'Contract number already exists' : null;
+            }
+          },
           { 
             name: 'consultantId', 
             label: 'Consultant',
@@ -3037,7 +3180,17 @@ const InvoiceGeneratorApp = () => {
       contract: {
         title: 'Add New Contract',
         fields: [
-          { name: 'contractNumber', label: 'Contract Number', placeholder: 'Contract Number (e.g., CNT-2024-001)' },
+          { 
+            name: 'contractNumber', 
+            label: 'Contract Number', 
+            placeholder: 'Contract Number (e.g., CNT-2024-001)',
+            validate: (value) => {
+              const exists = contracts.some(c => 
+                c.contract_number?.toLowerCase() === value?.toLowerCase()
+              );
+              return exists ? 'Contract number already exists' : null;
+            }
+          },
           { 
             name: 'consultantId', 
             label: 'Consultant',
@@ -3187,6 +3340,165 @@ const InvoiceGeneratorApp = () => {
         title="Bulk Upload Clients"
         entityType="client"
       />
+
+      {/* Contract Selection Modal */}
+      {contractSelectionModal.open && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '24px',
+            padding: '32px',
+            width: '90%',
+            maxWidth: '600px',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div>
+                <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                  Select Contract
+                </h2>
+                <p style={{ fontSize: '14px', color: '#64748b', marginTop: '4px' }}>
+                  {contractSelectionModal.consultant?.name} - {contractSelectionModal.period?.month} {contractSelectionModal.period?.year}
+                </p>
+              </div>
+              <button
+                onClick={() => setContractSelectionModal({ open: false, timesheetId: null, contracts: [], consultant: null, period: null, currentContractId: null })}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#64748b',
+                  padding: '4px'
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{
+              backgroundColor: '#fef3c7',
+              border: '1px solid #f59e0b',
+              borderRadius: '12px',
+              padding: '16px',
+              marginBottom: '24px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '12px'
+            }}>
+              <AlertCircle style={{ width: '20px', height: '20px', color: '#d97706', flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: '#92400e', margin: 0 }}>
+                  Multiple contracts found for this period
+                </p>
+                <p style={{ fontSize: '13px', color: '#a16207', margin: '4px 0 0 0' }}>
+                  This consultant has {contractSelectionModal.contracts.length} contracts covering this timesheet period. Please select which contract this timesheet belongs to.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {contractSelectionModal.contracts.map((contract) => (
+                <div
+                  key={contract.id}
+                  onClick={async () => {
+                    const success = await setContractForTimesheet(contractSelectionModal.timesheetId, contract.id);
+                    if (success) {
+                      setContractSelectionModal({ open: false, timesheetId: null, contracts: [], consultant: null, period: null, currentContractId: null });
+                    }
+                  }}
+                  style={{
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: contractSelectionModal.currentContractId === contract.id 
+                      ? '2px solid #4f46e5' 
+                      : '1px solid #e2e8f0',
+                    backgroundColor: contractSelectionModal.currentContractId === contract.id 
+                      ? '#eef2ff' 
+                      : 'white',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseOver={(e) => {
+                    if (contractSelectionModal.currentContractId !== contract.id) {
+                      e.currentTarget.style.backgroundColor = '#f8fafc';
+                      e.currentTarget.style.borderColor = '#cbd5e1';
+                    }
+                  }}
+                  onMouseOut={(e) => {
+                    if (contractSelectionModal.currentContractId !== contract.id) {
+                      e.currentTarget.style.backgroundColor = 'white';
+                      e.currentTarget.style.borderColor = '#e2e8f0';
+                    }
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '14px' }}>
+                        {contract.contract_number || `Contract #${contract.id}`}
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: '13px', marginTop: '4px' }}>
+                        Client: {contract.client_company_name || `${contract.client_first_name} ${contract.client_last_name}`}
+                      </div>
+                      <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '4px' }}>
+                        Period: {new Date(contract.from_date).toLocaleDateString('en-GB')} - {new Date(contract.to_date).toLocaleDateString('en-GB')}
+                      </div>
+                    </div>
+                    <span style={{
+                      padding: '4px 10px',
+                      borderRadius: '20px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      backgroundColor: contract.status === 'active' ? '#dcfce7' : contract.status === 'ended' ? '#fef3c7' : '#f1f5f9',
+                      color: contract.status === 'active' ? '#166534' : contract.status === 'ended' ? '#92400e' : '#64748b',
+                      textTransform: 'uppercase'
+                    }}>
+                      {contract.status}
+                    </span>
+                  </div>
+                  {contractSelectionModal.currentContractId === contract.id && (
+                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#4f46e5', fontWeight: 500 }}>
+                      ✓ Currently selected
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button
+                onClick={() => setContractSelectionModal({ open: false, timesheetId: null, contracts: [], consultant: null, period: null, currentContractId: null })}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0',
+                  backgroundColor: 'white',
+                  color: '#64748b',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div style={{
@@ -4567,20 +4879,7 @@ const InvoiceGeneratorApp = () => {
                                 )}
                                 {timesheet && !timesheet.invoice_generated && (
                                   <button
-                                    onClick={async () => {
-                                      try {
-                                        setGeneratingInvoice(timesheet.id);
-                                        await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
-                                          method: 'POST'
-                                        });
-                                        showNotification('Invoice generated successfully!');
-                                        loadData();
-                                      } catch (error) {
-                                        showNotification('Failed to generate invoice: ' + error.message, 'error');
-                                      } finally {
-                                        setGeneratingInvoice(null);
-                                      }
-                                    }}
+                                    onClick={() => generateInvoiceForTimesheet(timesheet)}
                                     disabled={generatingInvoice === timesheet.id}
                                     className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
                                       generatingInvoice === timesheet.id 
@@ -4835,20 +5134,7 @@ const InvoiceGeneratorApp = () => {
                                   )}
                                   {timesheet.month && !timesheet.invoice_generated && (
                                     <button
-                                      onClick={async () => {
-                                        try {
-                                          setGeneratingInvoice(timesheet.id);
-                                          await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
-                                            method: 'POST'
-                                          });
-                                          showNotification('Invoice generated successfully!');
-                                          loadData();
-                                        } catch (error) {
-                                          showNotification('Failed to generate invoice: ' + error.message, 'error');
-                                        } finally {
-                                          setGeneratingInvoice(null);
-                                        }
-                                      }}
+                                      onClick={() => generateInvoiceForTimesheet(timesheet)}
                                       disabled={generatingInvoice === timesheet.id}
                                       className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
                                         generatingInvoice === timesheet.id 
@@ -5007,20 +5293,7 @@ const InvoiceGeneratorApp = () => {
                                     </button>
                                   )}
                                   <button
-                                    onClick={async () => {
-                                      try {
-                                        setGeneratingInvoice(timesheet.id);
-                                        await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
-                                          method: 'POST'
-                                        });
-                                        showNotification('Invoice generated successfully!');
-                                        loadData();
-                                      } catch (error) {
-                                        showNotification('Failed to generate invoice: ' + error.message, 'error');
-                                      } finally {
-                                        setGeneratingInvoice(null);
-                                      }
-                                    }}
+                                    onClick={() => generateInvoiceForTimesheet(timesheet)}
                                     disabled={generatingInvoice === timesheet.id}
                                     className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
                                       generatingInvoice === timesheet.id 
