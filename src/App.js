@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle, AlertTriangle, Trash2, Upload } from 'lucide-react';
+import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle, AlertTriangle, Trash2, Upload, Clock } from 'lucide-react';
 import './App.css';
 
 // API Configuration
@@ -4612,7 +4612,7 @@ const InvoiceGeneratorApp = () => {
                     backgroundColor: activeTimesheetTab === 'current' ? 'rgba(255,255,255,0.2)' : '#ecfdf5',
                     color: activeTimesheetTab === 'current' ? 'white' : '#059669'
                   }}>
-                    {timesheetStatus?.consultants?.filter(c => c.has_timesheet && c.timesheet_processed).length || 0}
+                    {timesheetStatus?.contracts?.filter(c => c.has_timesheet).length || 0}/{timesheetStatus?.contracts?.length || 0}
                   </span>
                 </button>
                 <button
@@ -4728,75 +4728,118 @@ const InvoiceGeneratorApp = () => {
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Date Received</th>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Name</th>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email</th>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Month</th>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Days Worked</th>
-                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Match Status</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Consultant</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contract → Client</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Period</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Timesheet</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Days</th>
+                        <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
                         <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {timesheetStatus?.consultants?.map((consultant) => {
-                        // Find matching timesheet - exclude flagged items (they're in Needs Review)
-                        const timesheet = timesheets.find(ts => {
-                          if (ts.flagged_for_review) return false; // Exclude flagged items
-                          if (ts.sender_email?.toLowerCase() !== consultant.email?.toLowerCase()) return false;
-                          if (ts.month) {
-                            return ts.month.toLowerCase() === consultant.checking_month?.toLowerCase();
+                      {(timesheetStatus?.contracts || []).map((contract) => {
+                        // Find timesheet directly assigned to this contract
+                        const assignedTimesheet = timesheets.find(ts => {
+                          if (ts.flagged_for_review) return false;
+                          if (ts.contract_id === contract.contract_id) {
+                            return ts.month?.toLowerCase() === contract.checking_month?.toLowerCase();
                           }
-                          const checkingDate = new Date(consultant.checking_year, 
-                            ['January', 'February', 'March', 'April', 'May', 'June', 
-                             'July', 'August', 'September', 'October', 'November', 'December']
-                            .indexOf(consultant.checking_month), 1);
-                          const timesheetDate = new Date(ts.created_at);
-                          return timesheetDate.getMonth() === checkingDate.getMonth() &&
-                                 timesheetDate.getFullYear() === checkingDate.getFullYear();
+                          return false;
                         });
                         
+                        // Find all unassigned timesheets from this consultant for this month
+                        const unassignedTimesheets = timesheets.filter(ts => {
+                          if (ts.flagged_for_review) return false;
+                          if (ts.contract_id) return false; // Skip already assigned
+                          if (ts.sender_email?.toLowerCase() !== contract.consultant_email?.toLowerCase()) return false;
+                          if (ts.month) return ts.month.toLowerCase() === contract.checking_month?.toLowerCase();
+                          return false;
+                        });
+                        
+                        // Use assigned timesheet, or if only one unassigned exists, use it
+                        const timesheet = assignedTimesheet || (unassignedTimesheets.length === 1 ? unassignedTimesheets[0] : null);
+                        const hasMultipleUnassigned = !assignedTimesheet && unassignedTimesheets.length > 1;
+                        const needsSelection = !assignedTimesheet && unassignedTimesheets.length > 0;
+                        
+                        // Determine row color
                         let rowBgColor = '';
-                        // ✅ FIXED: If timesheet found with invoice generated, always green
-                        if (timesheet?.invoice_generated || consultant.status === 'received') {
+                        if (timesheet?.invoice_generated) {
                           rowBgColor = 'bg-green-50';
                         } else if (timesheet) {
-                          // Timesheet exists but not invoiced yet - still good (green-ish)
                           rowBgColor = 'bg-green-50';
-                        } else if (consultant.status === 'waiting') {
+                        } else if (hasMultipleUnassigned) {
+                          rowBgColor = 'bg-blue-50'; // Needs selection
+                        } else if (contract.status === 'waiting') {
                           rowBgColor = 'bg-yellow-50';
-                        } else if (consultant.status === 'overdue') {
+                        } else if (contract.status === 'overdue') {
                           rowBgColor = 'bg-red-50';
                         }
                         
-                        // ✅ Calculate total days using helper function
                         const totalDays = calculateTotalDays(timesheet);
                         
-                        let matchStatus = '-';
-                        if (timesheet) {
-                          const pdfDays = parseFloat(timesheet.pdf_days);
-                          const emailDays = parseFloat(timesheet.email_days);
-                          if (pdfDays && emailDays) {
-                            matchStatus = pdfDays === emailDays ? 
-                              'Days Match ✓' : 
-                              `Days Don't Match (PDF: ${pdfDays}, Email: ${emailDays})`;
-                          }
-                        }
+                        // Format period dates
+                        const periodStart = new Date(contract.period_start).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+                        const periodEnd = new Date(contract.period_end).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
                         
                         return (
-                          <tr key={consultant.id} className={`border-b hover:opacity-80 transition ${rowBgColor}`}>
-                            <td className="p-4 text-sm">
-                              {timesheet ? new Date(timesheet.created_at).toLocaleDateString('en-GB') : '-'}
+                          <tr key={contract.contract_id} className={`border-b hover:opacity-80 transition ${rowBgColor}`}>
+                            <td className="p-4">
+                              <div className="font-medium">{contract.consultant_name}</div>
+                              <div className="text-xs text-gray-500">{contract.consultant_company}</div>
                             </td>
                             <td className="p-4">
-                              <div className="font-medium">{consultant.first_name} {consultant.last_name}</div>
-                              <div className="text-xs text-gray-600">{consultant.company_name}</div>
+                              <div className="flex items-center gap-2">
+                                <code className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-mono">
+                                  {contract.contract_number || `#${contract.contract_id}`}
+                                </code>
+                                <span className="text-gray-400">→</span>
+                                <span className="text-sm font-medium">{contract.client_name}</span>
+                              </div>
                             </td>
-                            <td className="p-4 text-sm font-mono">{consultant.email}</td>
-                            <td className="p-4 text-sm font-medium">
-                              {timesheet?.month ? (
-                                <span>{timesheet.month} {consultant.checking_year}</span>
+                            <td className="p-4">
+                              <span className="text-sm text-gray-600">
+                                {periodStart} - {periodEnd}
+                              </span>
+                            </td>
+                            <td className="p-4">
+                              {/* Timesheet selection dropdown */}
+                              {hasMultipleUnassigned ? (
+                                <select
+                                  className="border border-blue-300 rounded px-2 py-1 text-sm bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                  style={{ minWidth: '140px' }}
+                                  defaultValue=""
+                                  onChange={async (e) => {
+                                    if (e.target.value) {
+                                      try {
+                                        await apiCall(`/timesheets/${e.target.value}/contract`, {
+                                          method: 'PUT',
+                                          body: JSON.stringify({ contractId: contract.contract_id })
+                                        });
+                                        showNotification('Timesheet assigned to contract');
+                                        loadData();
+                                      } catch (error) {
+                                        showNotification('Failed to assign: ' + error.message, 'error');
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <option value="">Select timesheet...</option>
+                                  {unassignedTimesheets.map(ts => (
+                                    <option key={ts.id} value={ts.id}>
+                                      #{ts.id} - {calculateTotalDays(ts)} days ({new Date(ts.created_at).toLocaleDateString('en-GB')})
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : timesheet ? (
+                                <span className="text-xs text-gray-500">
+                                  #{timesheet.id}
+                                  {assignedTimesheet && (
+                                    <span className="ml-1 text-green-600">✓</span>
+                                  )}
+                                </span>
                               ) : (
-                                <span>{consultant.checking_month} {consultant.checking_year}</span>
+                                <span className="text-gray-400 text-sm">-</span>
                               )}
                             </td>
                             <td className="p-4">
@@ -4816,30 +4859,14 @@ const InvoiceGeneratorApp = () => {
                                           if (e.key === 'Escape') cancelEditDays();
                                         }}
                                       />
-                                      <button
-                                        onClick={() => updateDays(timesheet.id, editDaysValue)}
-                                        className="text-green-600 hover:text-green-800 p-1"
-                                        title="Save"
-                                      >
+                                      <button onClick={() => updateDays(timesheet.id, editDaysValue)} className="text-green-600 hover:text-green-800 p-1" title="Save">
                                         <CheckCircle className="h-4 w-4" />
                                       </button>
-                                      <button
-                                        onClick={cancelEditDays}
-                                        className="text-gray-400 hover:text-gray-600 p-1"
-                                        title="Cancel"
-                                      >
-                                        ×
-                                      </button>
+                                      <button onClick={cancelEditDays} className="text-gray-400 hover:text-gray-600 p-1" title="Cancel">×</button>
                                     </div>
                                   ) : (
-                                    <div
-                                      onClick={() => startEditDays(timesheet)}
-                                      className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-block"
-                                      title="Click to edit"
-                                    >
-                                      <span className="font-bold text-blue-600">
-                                        {totalDays}
-                                      </span>
+                                    <div onClick={() => startEditDays(timesheet)} className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-block" title="Click to edit">
+                                      <span className="font-bold text-blue-600">{totalDays}</span>
                                     </div>
                                   )
                                 ) : (
@@ -4853,18 +4880,30 @@ const InvoiceGeneratorApp = () => {
                               )}
                             </td>
                             <td className="p-4">
-                              {timesheet ? (
-                                <span className={`text-sm ${
-                                  matchStatus.includes('Match ✓') ? 'text-green-600 font-medium' : 'text-red-600'
-                                }`}>
-                                  {matchStatus}
+                              {timesheet?.invoice_generated ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                  <CheckCircle className="h-3 w-3" />
+                                  Invoiced
+                                </span>
+                              ) : timesheet ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                                  <FileText className="h-3 w-3" />
+                                  Received
+                                </span>
+                              ) : contract.status === 'overdue' ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                  <AlertCircle className="h-3 w-3" />
+                                  Overdue
                                 </span>
                               ) : (
-                                <span className="text-gray-400">-</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
+                                  <Clock className="h-3 w-3" />
+                                  Waiting
+                                </span>
                               )}
                             </td>
                             <td className="p-4">
-                              <div className="flex gap-2">
+                              <div className="flex gap-2 justify-center">
                                 {timesheet?.timesheet_file_url && (
                                   <button
                                     onClick={() => {
@@ -4901,12 +4940,6 @@ const InvoiceGeneratorApp = () => {
                                     )}
                                   </button>
                                 )}
-                                {timesheet?.invoice_generated && (
-                                  <span className="text-xs text-green-600 flex items-center gap-1">
-                                    <CheckCircle className="h-3 w-3" />
-                                    Invoiced
-                                  </span>
-                                )}
                                 {timesheet && !timesheet.invoice_generated && !timesheet.flagged_for_review && (
                                   <button
                                     onClick={() => flagForReview(timesheet.id)}
@@ -4922,6 +4955,13 @@ const InvoiceGeneratorApp = () => {
                           </tr>
                         );
                       })}
+                      {(!timesheetStatus?.contracts || timesheetStatus.contracts.length === 0) && (
+                        <tr>
+                          <td colSpan="6" className="p-8 text-center text-gray-500">
+                            No active contracts found for {timesheetStatus?.checking_month} {timesheetStatus?.checking_year}
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
