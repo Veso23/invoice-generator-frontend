@@ -2018,6 +2018,8 @@ const InvoiceGeneratorApp = () => {
   const [userModalMode, setUserModalMode] = useState('create');
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  // Pending timesheet selection (contract_id -> selected timesheet_id before confirm)
+  const [pendingTimesheetSelection, setPendingTimesheetSelection] = useState({});
   const [activeTimesheetTab, setActiveTimesheetTab] = useState('current');
   const [csvUploadModalOpen, setCsvUploadModalOpen] = useState(false);
   const [csvData, setCsvData] = useState([]);
@@ -2054,7 +2056,8 @@ const InvoiceGeneratorApp = () => {
     contracts: [],
     consultant: null,
     period: null,
-    currentContractId: null
+    currentContractId: null,
+    selectedContractId: null  // For confirm button flow
   });
 
   useEffect(() => {
@@ -2071,7 +2074,8 @@ const InvoiceGeneratorApp = () => {
     try {
       const result = await apiCall(`/timesheets/${timesheetId}/available-contracts`);
       
-      if (result.requiresSelection) {
+      // Show modal if there are 2+ contracts (always let user choose)
+      if (result.contracts && result.contracts.length >= 2) {
         // Multiple contracts - show selection modal
         setContractSelectionModal({
           open: true,
@@ -2079,7 +2083,8 @@ const InvoiceGeneratorApp = () => {
           contracts: result.contracts,
           consultant: result.consultant,
           period: result.period,
-          currentContractId: result.currentContractId
+          currentContractId: result.currentContractId,
+          selectedContractId: result.currentContractId || null  // Pre-select if already assigned
         });
         return { requiresSelection: true };
       }
@@ -2113,16 +2118,14 @@ const InvoiceGeneratorApp = () => {
     try {
       setGeneratingInvoice(timesheet.id);
       
-      // If no contract is selected, check if selection is needed
-      if (!timesheet.contract_id) {
-        const checkResult = await checkContractsForTimesheet(timesheet.id);
-        if (checkResult.requiresSelection) {
-          setGeneratingInvoice(null);
-          return; // Modal will be shown
-        }
+      // Always check contracts - show modal if there are 2+ contracts
+      const checkResult = await checkContractsForTimesheet(timesheet.id);
+      if (checkResult.requiresSelection) {
+        setGeneratingInvoice(null);
+        return; // Modal will be shown
       }
       
-      // Proceed with invoice generation
+      // Proceed with invoice generation (single contract case)
       await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
         method: 'POST'
       });
@@ -3142,6 +3145,29 @@ const InvoiceGeneratorApp = () => {
       showNotification('Failed to unflag timesheet: ' + error.message, 'error');
     }
   };
+
+  // Confirm timesheet assignment to contract
+  const confirmTimesheetSelection = async (contractId) => {
+    const timesheetId = pendingTimesheetSelection[contractId];
+    if (!timesheetId) return;
+    
+    try {
+      await apiCall(`/timesheets/${timesheetId}/contract`, {
+        method: 'PUT',
+        body: JSON.stringify({ contractId: contractId })
+      });
+      showNotification('Timesheet assigned to contract');
+      // Clear pending selection
+      setPendingTimesheetSelection(prev => {
+        const newState = { ...prev };
+        delete newState[contractId];
+        return newState;
+      });
+      loadData();
+    } catch (error) {
+      showNotification('Failed to assign: ' + error.message, 'error');
+    }
+  };
   
   const openAddModal = (type) => {
     const configs = {
@@ -3412,76 +3438,87 @@ const InvoiceGeneratorApp = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {contractSelectionModal.contracts.map((contract) => (
-                <div
-                  key={contract.id}
-                  onClick={async () => {
-                    const success = await setContractForTimesheet(contractSelectionModal.timesheetId, contract.id);
-                    if (success) {
-                      setContractSelectionModal({ open: false, timesheetId: null, contracts: [], consultant: null, period: null, currentContractId: null });
-                    }
-                  }}
-                  style={{
-                    padding: '16px',
-                    borderRadius: '12px',
-                    border: contractSelectionModal.currentContractId === contract.id 
-                      ? '2px solid #4f46e5' 
-                      : '1px solid #e2e8f0',
-                    backgroundColor: contractSelectionModal.currentContractId === contract.id 
-                      ? '#eef2ff' 
-                      : 'white',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseOver={(e) => {
-                    if (contractSelectionModal.currentContractId !== contract.id) {
-                      e.currentTarget.style.backgroundColor = '#f8fafc';
-                      e.currentTarget.style.borderColor = '#cbd5e1';
-                    }
-                  }}
-                  onMouseOut={(e) => {
-                    if (contractSelectionModal.currentContractId !== contract.id) {
-                      e.currentTarget.style.backgroundColor = 'white';
-                      e.currentTarget.style.borderColor = '#e2e8f0';
-                    }
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
-                      <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '14px' }}>
-                        {contract.contract_number || `Contract #${contract.id}`}
+              {contractSelectionModal.contracts.map((contract) => {
+                const isSelected = contractSelectionModal.selectedContractId === contract.id;
+                const isCurrent = contractSelectionModal.currentContractId === contract.id;
+                
+                return (
+                  <div
+                    key={contract.id}
+                    onClick={() => {
+                      // Just select, don't submit
+                      setContractSelectionModal(prev => ({
+                        ...prev,
+                        selectedContractId: contract.id
+                      }));
+                    }}
+                    style={{
+                      padding: '16px',
+                      borderRadius: '12px',
+                      border: isSelected 
+                        ? '2px solid #4f46e5' 
+                        : '1px solid #e2e8f0',
+                      backgroundColor: isSelected 
+                        ? '#eef2ff' 
+                        : 'white',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseOver={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = '#f8fafc';
+                        e.currentTarget.style.borderColor = '#cbd5e1';
+                      }
+                    }}
+                    onMouseOut={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = 'white';
+                        e.currentTarget.style.borderColor = '#e2e8f0';
+                      }
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '14px' }}>
+                          {contract.contract_number || `Contract #${contract.id}`}
+                        </div>
+                        <div style={{ color: '#64748b', fontSize: '13px', marginTop: '4px' }}>
+                          Client: {contract.client_company_name || `${contract.client_first_name} ${contract.client_last_name}`}
+                        </div>
+                        <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '4px' }}>
+                          Period: {new Date(contract.from_date).toLocaleDateString('en-GB')} - {new Date(contract.to_date).toLocaleDateString('en-GB')}
+                        </div>
                       </div>
-                      <div style={{ color: '#64748b', fontSize: '13px', marginTop: '4px' }}>
-                        Client: {contract.client_company_name || `${contract.client_first_name} ${contract.client_last_name}`}
-                      </div>
-                      <div style={{ color: '#94a3b8', fontSize: '12px', marginTop: '4px' }}>
-                        Period: {new Date(contract.from_date).toLocaleDateString('en-GB')} - {new Date(contract.to_date).toLocaleDateString('en-GB')}
-                      </div>
+                      <span style={{
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        backgroundColor: contract.status === 'active' ? '#dcfce7' : contract.status === 'ended' ? '#fef3c7' : '#f1f5f9',
+                        color: contract.status === 'active' ? '#166534' : contract.status === 'ended' ? '#92400e' : '#64748b',
+                        textTransform: 'uppercase'
+                      }}>
+                        {contract.status}
+                      </span>
                     </div>
-                    <span style={{
-                      padding: '4px 10px',
-                      borderRadius: '20px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      backgroundColor: contract.status === 'active' ? '#dcfce7' : contract.status === 'ended' ? '#fef3c7' : '#f1f5f9',
-                      color: contract.status === 'active' ? '#166534' : contract.status === 'ended' ? '#92400e' : '#64748b',
-                      textTransform: 'uppercase'
-                    }}>
-                      {contract.status}
-                    </span>
+                    {isSelected && (
+                      <div style={{ marginTop: '8px', fontSize: '12px', color: '#4f46e5', fontWeight: 500 }}>
+                        ✓ Selected
+                      </div>
+                    )}
+                    {isCurrent && !isSelected && (
+                      <div style={{ marginTop: '8px', fontSize: '12px', color: '#64748b', fontWeight: 500 }}>
+                        (Currently assigned)
+                      </div>
+                    )}
                   </div>
-                  {contractSelectionModal.currentContractId === contract.id && (
-                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#4f46e5', fontWeight: 500 }}>
-                      ✓ Currently selected
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button
-                onClick={() => setContractSelectionModal({ open: false, timesheetId: null, contracts: [], consultant: null, period: null, currentContractId: null })}
+                onClick={() => setContractSelectionModal({ open: false, timesheetId: null, contracts: [], consultant: null, period: null, currentContractId: null, selectedContractId: null })}
                 style={{
                   padding: '10px 20px',
                   borderRadius: '10px',
@@ -3494,6 +3531,51 @@ const InvoiceGeneratorApp = () => {
                 }}
               >
                 Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!contractSelectionModal.selectedContractId) return;
+                  const success = await setContractForTimesheet(
+                    contractSelectionModal.timesheetId, 
+                    contractSelectionModal.selectedContractId
+                  );
+                  if (success) {
+                    // Close modal first
+                    const timesheetId = contractSelectionModal.timesheetId;
+                    setContractSelectionModal({ open: false, timesheetId: null, contracts: [], consultant: null, period: null, currentContractId: null, selectedContractId: null });
+                    
+                    // Now generate the invoice
+                    try {
+                      setGeneratingInvoice(timesheetId);
+                      await apiCall(`/timesheets/${timesheetId}/generate-invoice`, {
+                        method: 'POST'
+                      });
+                      showNotification('Invoice generated successfully!');
+                      loadData();
+                    } catch (error) {
+                      showNotification('Failed to generate invoice: ' + error.message, 'error');
+                    } finally {
+                      setGeneratingInvoice(null);
+                    }
+                  }
+                }}
+                disabled={!contractSelectionModal.selectedContractId}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  backgroundColor: contractSelectionModal.selectedContractId ? '#4f46e5' : '#cbd5e1',
+                  color: 'white',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  cursor: contractSelectionModal.selectedContractId ? 'pointer' : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <CheckCircle style={{ width: '16px', height: '16px' }} />
+                Confirm & Generate Invoice
               </button>
             </div>
           </div>
@@ -4802,34 +4884,38 @@ const InvoiceGeneratorApp = () => {
                               </span>
                             </td>
                             <td className="p-4">
-                              {/* Timesheet selection dropdown */}
+                              {/* Timesheet selection dropdown with Confirm button */}
                               {hasMultipleUnassigned ? (
-                                <select
-                                  className="border border-blue-300 rounded px-2 py-1 text-sm bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-300"
-                                  style={{ minWidth: '140px' }}
-                                  defaultValue=""
-                                  onChange={async (e) => {
-                                    if (e.target.value) {
-                                      try {
-                                        await apiCall(`/timesheets/${e.target.value}/contract`, {
-                                          method: 'PUT',
-                                          body: JSON.stringify({ contractId: contract.contract_id })
-                                        });
-                                        showNotification('Timesheet assigned to contract');
-                                        loadData();
-                                      } catch (error) {
-                                        showNotification('Failed to assign: ' + error.message, 'error');
-                                      }
-                                    }
-                                  }}
-                                >
-                                  <option value="">Select timesheet...</option>
-                                  {unassignedTimesheets.map(ts => (
-                                    <option key={ts.id} value={ts.id}>
-                                      #{ts.id} - {calculateTotalDays(ts)} days ({new Date(ts.created_at).toLocaleDateString('en-GB')})
-                                    </option>
-                                  ))}
-                                </select>
+                                <div className="flex items-center gap-2">
+                                  <select
+                                    className="border border-blue-300 rounded px-2 py-1 text-sm bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                    style={{ minWidth: '130px' }}
+                                    value={pendingTimesheetSelection[contract.contract_id] || ''}
+                                    onChange={(e) => {
+                                      setPendingTimesheetSelection(prev => ({
+                                        ...prev,
+                                        [contract.contract_id]: e.target.value ? parseInt(e.target.value) : null
+                                      }));
+                                    }}
+                                  >
+                                    <option value="">Select...</option>
+                                    {unassignedTimesheets.map(ts => (
+                                      <option key={ts.id} value={ts.id}>
+                                        #{ts.id} - {calculateTotalDays(ts)} days
+                                      </option>
+                                    ))}
+                                  </select>
+                                  {pendingTimesheetSelection[contract.contract_id] && (
+                                    <button
+                                      onClick={() => confirmTimesheetSelection(contract.contract_id)}
+                                      className="px-2 py-1 text-xs rounded bg-green-600 text-white hover:bg-green-700 transition flex items-center gap-1"
+                                      title="Confirm assignment"
+                                    >
+                                      <CheckCircle className="h-3 w-3" />
+                                      Confirm
+                                    </button>
+                                  )}
+                                </div>
                               ) : timesheet ? (
                                 <span className="text-xs text-gray-500">
                                   #{timesheet.id}
