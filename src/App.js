@@ -1440,7 +1440,7 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
                               padding: '4px 8px',
                               borderRadius: '6px'
                             }}>
-                              {row.companyVAT || 'MISSING'}
+                              {row.companyVat || 'MISSING'}
                             </code>
                             {/* Show error badges */}
                             {row.errors && row.errors.length > 0 && (
@@ -2299,7 +2299,7 @@ const InvoiceGeneratorApp = () => {
           { name: 'lastName', label: 'Last Name', placeholder: 'Last Name', value: item.last_name },
           { name: 'companyName', label: 'Company Name', placeholder: 'Company Name', value: item.company_name },
           { name: 'companyAddress', label: 'Company Address', placeholder: 'Company Address', value: item.company_address },
-          { name: 'companyVAT', label: 'VAT Number', placeholder: 'VAT Number', value: item.company_vat },
+          { name: 'companyVat', label: 'VAT Number', placeholder: 'VAT Number', value: item.company_vat },
           { name: 'consultantContractId', label: 'Consultant Contract ID', placeholder: 'e.g., CONS-001', value: item.consultant_contract_id },
           { name: 'iban', label: 'IBAN', placeholder: 'IBAN', value: item.iban },
           { name: 'swift', label: 'SWIFT Code', placeholder: 'SWIFT Code', value: item.swift },
@@ -2315,7 +2315,7 @@ const InvoiceGeneratorApp = () => {
           { name: 'lastName', label: 'Last Name', placeholder: 'Last Name', value: item.last_name },
           { name: 'companyName', label: 'Company Name', placeholder: 'Company Name', value: item.company_name },
           { name: 'companyAddress', label: 'Company Address', placeholder: 'Company Address', value: item.company_address },
-          { name: 'companyVAT', label: 'VAT Number', placeholder: 'VAT Number', value: item.company_vat },
+          { name: 'companyVat', label: 'VAT Number', placeholder: 'VAT Number', value: item.company_vat },
           { name: 'clientContractId', label: 'Client Contract ID', placeholder: 'e.g., CLI-001', value: item.client_contract_id },
           { name: 'iban', label: 'IBAN', placeholder: 'IBAN', value: item.iban },
           { name: 'swift', label: 'SWIFT Code', placeholder: 'SWIFT Code', value: item.swift },
@@ -2703,7 +2703,7 @@ const InvoiceGeneratorApp = () => {
       'last_name': 'lastName', 'lastname': 'lastName', 'last name': 'lastName',
       'company_name': 'companyName', 'companyname': 'companyName', 'company name': 'companyName', 'company': 'companyName',
       'company_address': 'companyAddress', 'companyaddress': 'companyAddress', 'company address': 'companyAddress', 'address': 'companyAddress',
-      'company_vat': 'companyVAT', 'companyvat': 'companyVAT', 'vat': 'companyVAT', 'vat_number': 'companyVAT', 'vat number': 'companyVAT',
+      'company_vat': 'companyVat', 'companyvat': 'companyVat', 'vat': 'companyVat', 'vat_number': 'companyVat', 'vat number': 'companyVat',
       'iban': 'iban',
       'swift': 'swift', 'bic': 'swift',
       'phone': 'phone', 'telephone': 'phone', 'tel': 'phone',
@@ -2741,12 +2741,12 @@ const InvoiceGeneratorApp = () => {
       });
       
       // Only add if has required fields
-      if (row.firstName && row.lastName && row.companyName && row.companyVAT) {
+      if (row.firstName && row.lastName && row.companyName) {
         row.isValid = true;
         row.errors = [];
       } else {
         row.isValid = false;
-        row.errors = ['Missing required fields (firstName, lastName, companyName, companyVAT)'];
+        row.errors = ['Missing required fields (firstName, lastName, companyName)'];
       }
       
       data.push(row);
@@ -2765,9 +2765,9 @@ const InvoiceGeneratorApp = () => {
       // Check against existing consultants in database
       consultants.forEach(consultant => {
         // Check VAT (case-insensitive)
-        if (row.companyVAT && consultant.company_vat && 
-            row.companyVAT.toLowerCase() === consultant.company_vat.toLowerCase()) {
-          duplicateErrors.push(`VAT "${row.companyVAT}" already exists (${consultant.first_name} ${consultant.last_name})`);
+        if (row.companyVat && consultant.company_vat && 
+            row.companyVat.toLowerCase() === consultant.company_vat.toLowerCase()) {
+          duplicateErrors.push(`VAT "${row.companyVat}" already exists (${consultant.first_name} ${consultant.last_name})`);
         }
         
         // Check Email (case-insensitive)
@@ -2787,10 +2787,10 @@ const InvoiceGeneratorApp = () => {
       csvRows.forEach((otherRow, otherIdx) => {
         if (otherRow === row) return; // Skip self
         
-        if (row.companyVAT && otherRow.companyVAT && 
-            row.companyVAT.toLowerCase() === otherRow.companyVAT.toLowerCase()) {
+        if (row.companyVat && otherRow.companyVat && 
+            row.companyVat.toLowerCase() === otherRow.companyVat.toLowerCase()) {
           if (!duplicateErrors.some(e => e.includes('VAT') && e.includes('in CSV'))) {
-            duplicateErrors.push(`VAT "${row.companyVAT}" duplicated in CSV`);
+            duplicateErrors.push(`VAT "${row.companyVat}" duplicated in CSV`);
           }
         }
         
@@ -2860,7 +2860,7 @@ const InvoiceGeneratorApp = () => {
             lastName: row.lastName,
             companyName: row.companyName,
             companyAddress: row.companyAddress || '',
-            companyVat: row.companyVAT,
+            companyVat: row.companyVat,
             iban: row.iban || '',
             swift: row.swift || '',
             phone: row.phone || '',
@@ -2896,9 +2896,9 @@ const InvoiceGeneratorApp = () => {
       
       // Check against existing clients in database
       clients.forEach(client => {
-        if (row.companyVAT && client.company_vat && 
-            row.companyVAT.toLowerCase() === client.company_vat.toLowerCase()) {
-          duplicateErrors.push(`VAT "${row.companyVAT}" already exists (${client.first_name} ${client.last_name})`);
+        if (row.companyVat && client.company_vat && 
+            row.companyVat.toLowerCase() === client.company_vat.toLowerCase()) {
+          duplicateErrors.push(`VAT "${row.companyVat}" already exists (${client.first_name} ${client.last_name})`);
         }
         if (row.email && client.email && 
             row.email.toLowerCase() === client.email.toLowerCase()) {
@@ -2913,10 +2913,10 @@ const InvoiceGeneratorApp = () => {
       // Check for duplicates within the CSV itself
       csvRows.forEach((otherRow, otherIdx) => {
         if (otherRow === row) return;
-        if (otherRow.companyVAT && row.companyVAT && 
-            otherRow.companyVAT.toLowerCase() === row.companyVAT.toLowerCase()) {
+        if (otherRow.companyVat && row.companyVat && 
+            otherRow.companyVat.toLowerCase() === row.companyVat.toLowerCase()) {
           if (!duplicateErrors.some(e => e.includes('VAT') && e.includes('duplicated'))) {
-            duplicateErrors.push(`VAT "${row.companyVAT}" duplicated in CSV`);
+            duplicateErrors.push(`VAT "${row.companyVat}" duplicated in CSV`);
           }
         }
         if (otherRow.email && row.email && 
@@ -2976,7 +2976,7 @@ const InvoiceGeneratorApp = () => {
             lastName: row.lastName,
             companyName: row.companyName,
             companyAddress: row.companyAddress || '',
-            companyVat: row.companyVAT,
+            companyVat: row.companyVat,
             iban: row.iban || '',
             swift: row.swift || '',
             phone: row.phone || '',
@@ -3152,7 +3152,7 @@ const InvoiceGeneratorApp = () => {
           { name: 'lastName', label: 'Last Name', placeholder: 'Last Name' },
           { name: 'companyName', label: 'Company Name', placeholder: 'Company Name' },
           { name: 'companyAddress', label: 'Company Address', placeholder: 'Company Address' },
-          { name: 'companyVAT', label: 'VAT Number', placeholder: 'VAT Number' },
+          { name: 'companyVat', label: 'VAT Number', placeholder: 'VAT Number' },
           { name: 'consultantContractId', label: 'Consultant Contract ID', placeholder: 'e.g., CONS-001' },
           { name: 'iban', label: 'IBAN', placeholder: 'IBAN' },
           { name: 'swift', label: 'SWIFT Code', placeholder: 'SWIFT Code' },
@@ -3168,7 +3168,7 @@ const InvoiceGeneratorApp = () => {
           { name: 'lastName', label: 'Last Name', placeholder: 'Last Name' },
           { name: 'companyName', label: 'Company Name', placeholder: 'Company Name' },
           { name: 'companyAddress', label: 'Company Address', placeholder: 'Company Address' },
-          { name: 'companyVAT', label: 'VAT Number', placeholder: 'VAT Number' },
+          { name: 'companyVat', label: 'VAT Number', placeholder: 'VAT Number' },
           { name: 'clientContractId', label: 'Client Contract ID', placeholder: 'e.g., CLI-001' },
           { name: 'iban', label: 'IBAN', placeholder: 'IBAN' },
           { name: 'swift', label: 'SWIFT Code', placeholder: 'SWIFT Code' },
