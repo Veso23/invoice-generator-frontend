@@ -3218,18 +3218,18 @@ const InvoiceGeneratorApp = () => {
       
       console.log('🔐 Impersonate result:', result);
       
-      // Store original token and user info
-      const originalToken = localStorage.getItem('token');
-      const originalUser = JSON.parse(localStorage.getItem('user') || '{}');
+      // Store original token and user info (using correct keys: authToken, userData)
+      const originalToken = localStorage.getItem('authToken');
+      const originalUser = localStorage.getItem('userData');
       
       localStorage.setItem('originalToken', originalToken);
-      localStorage.setItem('originalUser', JSON.stringify(originalUser));
+      localStorage.setItem('originalUser', originalUser);
       localStorage.setItem('isImpersonating', 'true');
       localStorage.setItem('impersonatingCompanyName', companyName);
       
-      // Set new token and user
-      localStorage.setItem('token', result.token);
-      localStorage.setItem('user', JSON.stringify(result.user));
+      // Set new token and user (using correct keys!)
+      localStorage.setItem('authToken', result.token);
+      localStorage.setItem('userData', JSON.stringify(result.user));
       
       showNotification(`Logged in as ${result.user.firstName} ${result.user.lastName} (${companyName})`);
       
@@ -3248,8 +3248,9 @@ const InvoiceGeneratorApp = () => {
     const originalUser = localStorage.getItem('originalUser');
     
     if (originalToken && originalUser) {
-      localStorage.setItem('token', originalToken);
-      localStorage.setItem('user', originalUser);
+      // Restore original credentials (using correct keys!)
+      localStorage.setItem('authToken', originalToken);
+      localStorage.setItem('userData', originalUser);
       localStorage.removeItem('originalToken');
       localStorage.removeItem('originalUser');
       localStorage.removeItem('isImpersonating');
