@@ -3210,10 +3210,13 @@ const InvoiceGeneratorApp = () => {
   };
 
   const impersonateCompany = async (companyId, companyName) => {
+    console.log('🔐 Attempting to impersonate company:', companyId, companyName);
     try {
       const result = await apiCall(`/superadmin/impersonate/${companyId}`, {
         method: 'POST'
       });
+      
+      console.log('🔐 Impersonate result:', result);
       
       // Store original token and user info
       const originalToken = localStorage.getItem('token');
@@ -3222,19 +3225,20 @@ const InvoiceGeneratorApp = () => {
       localStorage.setItem('originalToken', originalToken);
       localStorage.setItem('originalUser', JSON.stringify(originalUser));
       localStorage.setItem('isImpersonating', 'true');
+      localStorage.setItem('impersonatingCompanyName', companyName);
       
       // Set new token and user
       localStorage.setItem('token', result.token);
       localStorage.setItem('user', JSON.stringify(result.user));
       
-      setImpersonationInfo({
-        companyName: companyName,
-        originalUser: originalUser
-      });
+      showNotification(`Logged in as ${result.user.firstName} ${result.user.lastName} (${companyName})`);
       
-      // Reload the page to reset state
-      window.location.reload();
+      // Reload the page to reset state after short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (error) {
+      console.error('🔐 Impersonate error:', error);
       showNotification('Failed to impersonate: ' + error.message, 'error');
     }
   };
@@ -3249,27 +3253,44 @@ const InvoiceGeneratorApp = () => {
       localStorage.removeItem('originalToken');
       localStorage.removeItem('originalUser');
       localStorage.removeItem('isImpersonating');
+      localStorage.removeItem('impersonatingCompanyName');
+      
+      showNotification('Exited impersonation mode');
       
       // Reload the page
-      window.location.reload();
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     }
   };
 
   // Check if we're impersonating on mount
   useEffect(() => {
     const isImpersonating = localStorage.getItem('isImpersonating') === 'true';
-    const originalUser = localStorage.getItem('originalUser');
+    const originalToken = localStorage.getItem('originalToken');
+    const companyName = localStorage.getItem('impersonatingCompanyName');
     
-    if (isImpersonating && originalUser) {
+    // Only set impersonation info if we have BOTH the flag AND the original token
+    if (isImpersonating && originalToken) {
+      const originalUser = localStorage.getItem('originalUser');
       try {
-        const parsed = JSON.parse(originalUser);
+        const parsed = originalUser ? JSON.parse(originalUser) : null;
         setImpersonationInfo({
-          companyName: user?.companyName || 'Unknown Company',
+          companyName: companyName || user?.companyName || 'Unknown Company',
           originalUser: parsed
         });
       } catch (e) {
         console.error('Failed to parse original user:', e);
+        // Clear invalid impersonation state
+        localStorage.removeItem('isImpersonating');
+        localStorage.removeItem('originalToken');
+        localStorage.removeItem('originalUser');
+        localStorage.removeItem('impersonatingCompanyName');
       }
+    } else if (isImpersonating && !originalToken) {
+      // Invalid state - clear it
+      localStorage.removeItem('isImpersonating');
+      localStorage.removeItem('impersonatingCompanyName');
     }
   }, [user]);
 
@@ -4010,11 +4031,16 @@ const InvoiceGeneratorApp = () => {
             <span style={{ fontSize: '20px' }}>⚠️</span>
             <div>
               <span style={{ fontWeight: 700, color: '#92400e' }}>
-                Viewing as: {user?.firstName} {user?.lastName}
+                Impersonating: {impersonationInfo.companyName || user?.companyName}
               </span>
               <span style={{ color: '#b45309', marginLeft: '8px' }}>
-                ({user?.companyName || 'Company'})
+                as {user?.firstName} {user?.lastName} ({user?.role})
               </span>
+              {impersonationInfo.originalUser && (
+                <span style={{ color: '#78716c', marginLeft: '12px', fontSize: '12px' }}>
+                  | Logged in as: {impersonationInfo.originalUser.firstName} {impersonationInfo.originalUser.lastName}
+                </span>
+              )}
             </div>
           </div>
           <button
@@ -4148,6 +4174,7 @@ const InvoiceGeneratorApp = () => {
                 </p>
                 <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
                   {user.role === 'superadmin' ? '🔐 Super Admin' : user.role === 'admin' ? 'System Admin' : 'Operator'}
+                  {user.companyName && <span style={{ marginLeft: '4px', color: '#64748b' }}>• {user.companyName}</span>}
                 </p>
               </div>
               
@@ -6904,60 +6931,114 @@ const InvoiceGeneratorApp = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {superAdminCompanies.map((company) => (
-                      <tr key={company.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '16px 20px' }}>
-                          <div style={{ fontWeight: 700, color: '#0f172a' }}>{company.name}</div>
-                          <div style={{ fontSize: '12px', color: '#94a3b8' }}>ID: {company.id}</div>
-                        </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                          <span style={{ backgroundColor: '#eef2ff', color: '#4f46e5', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
-                            {company.user_count}
-                          </span>
-                        </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                          <span style={{ backgroundColor: '#fef3c7', color: '#d97706', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
-                            {company.consultant_count}
-                          </span>
-                        </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                          <span style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
-                            {company.client_count}
-                          </span>
-                        </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                          <span style={{ backgroundColor: '#f3e8ff', color: '#7c3aed', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
-                            {company.contract_count}
-                          </span>
-                        </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                          <span style={{ backgroundColor: '#dcfce7', color: '#16a34a', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
-                            {company.invoice_count}
-                          </span>
-                        </td>
-                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                          <button
-                            onClick={() => impersonateCompany(company.id, company.name)}
-                            style={{
-                              backgroundColor: '#4f46e5',
-                              color: 'white',
-                              padding: '8px 16px',
-                              borderRadius: '8px',
-                              border: 'none',
-                              fontWeight: 600,
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px'
-                            }}
-                          >
-                            <LogOut style={{ width: '14px', height: '14px' }} />
-                            Login As
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {superAdminCompanies.map((company) => {
+                      const isCurrentCompany = company.id === user?.companyId;
+                      
+                      return (
+                        <tr key={company.id} style={{ 
+                          borderBottom: '1px solid #f1f5f9',
+                          backgroundColor: isCurrentCompany ? '#ecfdf5' : 'white'
+                        }}>
+                          <td style={{ padding: '16px 20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div>
+                                <div style={{ fontWeight: 700, color: '#0f172a' }}>
+                                  {company.name}
+                                  {isCurrentCompany && (
+                                    <span style={{ 
+                                      marginLeft: '8px', 
+                                      backgroundColor: '#10b981', 
+                                      color: 'white', 
+                                      padding: '2px 8px', 
+                                      borderRadius: '10px', 
+                                      fontSize: '10px',
+                                      fontWeight: 700
+                                    }}>
+                                      CURRENT
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#94a3b8' }}>ID: {company.id}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                            <span style={{ backgroundColor: '#eef2ff', color: '#4f46e5', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
+                              {company.user_count}
+                            </span>
+                          </td>
+                          <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                            <span style={{ backgroundColor: '#fef3c7', color: '#d97706', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
+                              {company.consultant_count}
+                            </span>
+                          </td>
+                          <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                            <span style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
+                              {company.client_count}
+                            </span>
+                          </td>
+                          <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                            <span style={{ backgroundColor: '#f3e8ff', color: '#7c3aed', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
+                              {company.contract_count}
+                            </span>
+                          </td>
+                          <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                            <span style={{ backgroundColor: '#dcfce7', color: '#16a34a', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
+                              {company.invoice_count}
+                            </span>
+                          </td>
+                          <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                            {isCurrentCompany ? (
+                              <span style={{
+                                backgroundColor: '#10b981',
+                                color: 'white',
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                fontWeight: 600,
+                                fontSize: '12px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}>
+                                <CheckCircle style={{ width: '14px', height: '14px' }} />
+                                You're Here
+                              </span>
+                            ) : company.user_count === 0 ? (
+                              <span style={{
+                                backgroundColor: '#e2e8f0',
+                                color: '#64748b',
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                fontWeight: 600,
+                                fontSize: '12px'
+                              }}>
+                                No Users
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => impersonateCompany(company.id, company.name)}
+                                style={{
+                                  backgroundColor: '#4f46e5',
+                                  color: 'white',
+                                  padding: '8px 16px',
+                                  borderRadius: '8px',
+                                  border: 'none',
+                                  fontWeight: 600,
+                                  fontSize: '12px',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px'
+                                }}
+                              >
+                                <LogOut style={{ width: '14px', height: '14px' }} />
+                                Login As
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               )}
