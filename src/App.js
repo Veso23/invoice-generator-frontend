@@ -10,6 +10,11 @@ const apiCall = async (endpoint, options = {}) => {
   const token = localStorage.getItem('authToken');
   const viewingCompanyId = localStorage.getItem('viewingCompanyId');
   
+  // Debug log
+  if (viewingCompanyId) {
+    console.log('🔍 API Call with X-Impersonate-Company:', viewingCompanyId, 'to', endpoint);
+  }
+  
   const config = {
     headers: {
       'Content-Type': 'application/json',
@@ -2225,10 +2230,11 @@ const InvoiceGeneratorApp = () => {
 
   useEffect(() => {
     if (user) {
+      console.log('📊 Loading data for user:', user.email, ', viewingCompanyId:', viewingCompanyId);
       loadData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, viewingCompanyId]);
 
   const startEditInvoiceNumber = (invoice) => {
     setEditingInvoiceNumber(invoice.id);
@@ -3219,21 +3225,15 @@ const InvoiceGeneratorApp = () => {
     console.log('👁️ Viewing company:', companyId, companyName);
     localStorage.setItem('viewingCompanyId', companyId.toString());
     localStorage.setItem('viewingCompanyName', companyName);
-    setViewingCompanyId(companyId);
-    setViewingCompanyName(companyName);
-    showNotification(`Now viewing: ${companyName}`);
-    // Reload data for the new company
-    loadData();
+    // Reload page to ensure clean state
+    window.location.reload();
   };
 
   const exitViewingCompany = () => {
     localStorage.removeItem('viewingCompanyId');
     localStorage.removeItem('viewingCompanyName');
-    setViewingCompanyId(null);
-    setViewingCompanyName(null);
-    showNotification('Returned to your company');
-    // Reload data for own company
-    loadData();
+    // Reload page to ensure clean state
+    window.location.reload();
   };
 
   // Check if we're viewing another company on mount
@@ -3241,11 +3241,15 @@ const InvoiceGeneratorApp = () => {
     const savedCompanyId = localStorage.getItem('viewingCompanyId');
     const savedCompanyName = localStorage.getItem('viewingCompanyName');
     
+    console.log('👁️ Viewing check - savedCompanyId:', savedCompanyId, ', user.role:', user?.role);
+    
     if (savedCompanyId && user?.role === 'superadmin') {
       setViewingCompanyId(parseInt(savedCompanyId));
       setViewingCompanyName(savedCompanyName);
+      console.log('👁️ Set viewingCompanyId to:', savedCompanyId);
     } else if (savedCompanyId && user?.role !== 'superadmin') {
       // Clear if user is not superadmin anymore
+      console.log('👁️ Clearing viewing - user is not superadmin');
       localStorage.removeItem('viewingCompanyId');
       localStorage.removeItem('viewingCompanyName');
     }
