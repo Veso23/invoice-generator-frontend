@@ -3191,13 +3191,32 @@ const InvoiceGeneratorApp = () => {
   // =============================================
   
   const loadSuperAdminData = async () => {
-    if (user?.role !== 'superadmin') return;
+    // Allow if user is superadmin OR if we're impersonating (have original token)
+    const originalToken = localStorage.getItem('originalToken');
+    if (user?.role !== 'superadmin' && !originalToken) return;
     
     setSuperAdminLoading(true);
     try {
+      // When impersonating, use original token for super admin calls
+      const tokenToUse = originalToken || localStorage.getItem('authToken');
+      
+      const superAdminApiCall = async (endpoint) => {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokenToUse}`
+          }
+        });
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'API request failed');
+        }
+        return response.json();
+      };
+      
       const [companiesRes, statsRes] = await Promise.all([
-        apiCall('/superadmin/companies'),
-        apiCall('/superadmin/stats')
+        superAdminApiCall('/superadmin/companies'),
+        superAdminApiCall('/superadmin/stats')
       ]);
       setSuperAdminCompanies(companiesRes);
       setSuperAdminStats(statsRes);
@@ -3212,18 +3231,35 @@ const InvoiceGeneratorApp = () => {
   const impersonateCompany = async (companyId, companyName) => {
     console.log('🔐 Attempting to impersonate company:', companyId, companyName);
     try {
-      const result = await apiCall(`/superadmin/impersonate/${companyId}`, {
-        method: 'POST'
+      // Use original token if we're already impersonating, otherwise use current token
+      const existingOriginalToken = localStorage.getItem('originalToken');
+      const tokenToUse = existingOriginalToken || localStorage.getItem('authToken');
+      
+      // Make API call with the super admin token
+      const response = await fetch(`${API_BASE}/superadmin/impersonate/${companyId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenToUse}`
+        }
       });
       
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to impersonate');
+      }
+      
+      const result = await response.json();
       console.log('🔐 Impersonate result:', result);
       
-      // Store original token and user info (using correct keys: authToken, userData)
-      const originalToken = localStorage.getItem('authToken');
-      const originalUser = localStorage.getItem('userData');
+      // Only save original token if we're not already impersonating
+      if (!existingOriginalToken) {
+        const originalToken = localStorage.getItem('authToken');
+        const originalUser = localStorage.getItem('userData');
+        localStorage.setItem('originalToken', originalToken);
+        localStorage.setItem('originalUser', originalUser);
+      }
       
-      localStorage.setItem('originalToken', originalToken);
-      localStorage.setItem('originalUser', originalUser);
       localStorage.setItem('isImpersonating', 'true');
       localStorage.setItem('impersonatingCompanyName', companyName);
       
@@ -3295,9 +3331,10 @@ const InvoiceGeneratorApp = () => {
     }
   }, [user]);
 
-  // Load super admin data when user is superadmin
+  // Load super admin data when user is superadmin or impersonating
   useEffect(() => {
-    if (user?.role === 'superadmin' && activeTab === 'superadmin') {
+    const isImpersonating = localStorage.getItem('isImpersonating') === 'true';
+    if ((user?.role === 'superadmin' || isImpersonating) && activeTab === 'superadmin') {
       loadSuperAdminData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -4131,9 +4168,9 @@ const InvoiceGeneratorApp = () => {
                 { id: 'superadmin', label: '🔐 Super Admin', permission: 'is_superadmin' }
               ]
                 .filter(tab => {
-                  // Super admin tab only for superadmin role
+                  // Super admin tab: show if user is superadmin OR if impersonating (original user was superadmin)
                   if (tab.permission === 'is_superadmin') {
-                    return user?.role === 'superadmin';
+                    return user?.role === 'superadmin' || impersonationInfo !== null;
                   }
                   const perms = user?.permissions || (user?.role === 'admin' || user?.role === 'superadmin' ? {
                     can_view_dashboard: true, can_view_contracts: true, can_view_consultants: true,
@@ -6840,7 +6877,7 @@ const InvoiceGeneratorApp = () => {
         )}
 
         {/* Super Admin Tab */}
-        {activeTab === 'superadmin' && user?.role === 'superadmin' && (
+        {activeTab === 'superadmin' && (user?.role === 'superadmin' || impersonationInfo !== null) && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>
