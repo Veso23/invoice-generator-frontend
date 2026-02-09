@@ -1992,7 +1992,7 @@ const InvoiceGeneratorApp = () => {
   const [clients, setClients] = useState([]);
   const [contracts, setContracts] = useState([]);
   const [invoices, setInvoices] = useState([]);
-  const [generatingInvoice, setGeneratingInvoice] = useState(null);
+  const [generatingInvoice, setGeneratingInvoice] = useState({}); // Track multiple: { timesheetId: true }
   const [activeTab, setActiveTab] = useState(() => {
     return localStorage.getItem('activeTab') || 'dashboard';
   });
@@ -2028,6 +2028,10 @@ const InvoiceGeneratorApp = () => {
   const [clientCsvUploadModalOpen, setClientCsvUploadModalOpen] = useState(false);
   const [clientCsvData, setClientCsvData] = useState([]);
   const [clientCsvUploading, setClientCsvUploading] = useState(false);
+  // Contract CSV upload state
+  const [contractCsvUploadModalOpen, setContractCsvUploadModalOpen] = useState(false);
+  const [contractCsvData, setContractCsvData] = useState([]);
+  const [contractCsvUploading, setContractCsvUploading] = useState(false);
   const [searchQueries, setSearchQueries] = useState({
     consultants: '',
     clients: '',
@@ -2115,13 +2119,16 @@ const InvoiceGeneratorApp = () => {
 
   // Generate invoice with contract check
   const generateInvoiceForTimesheet = async (timesheet) => {
+    // Prevent double-click
+    if (generatingInvoice[timesheet.id]) return;
+    
     try {
-      setGeneratingInvoice(timesheet.id);
+      setGeneratingInvoice(prev => ({ ...prev, [timesheet.id]: true }));
       
       // Always check contracts - show modal if there are 2+ contracts
       const checkResult = await checkContractsForTimesheet(timesheet.id);
       if (checkResult.requiresSelection) {
-        setGeneratingInvoice(null);
+        setGeneratingInvoice(prev => ({ ...prev, [timesheet.id]: false }));
         return; // Modal will be shown
       }
       
@@ -2146,7 +2153,7 @@ const InvoiceGeneratorApp = () => {
         showNotification('Failed to generate invoice: ' + error.message, 'error');
       }
     } finally {
-      setGeneratingInvoice(null);
+      setGeneratingInvoice(prev => ({ ...prev, [timesheet.id]: false }));
     }
   };
 
@@ -2348,10 +2355,12 @@ const InvoiceGeneratorApp = () => {
             placeholder: 'Select Consultant', 
             type: 'select',
             value: item.consultant_id,
-            options: consultants.map(c => ({ 
-              value: c.id, 
-              label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
-            })) 
+            options: [...consultants]
+              .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`))
+              .map(c => ({ 
+                value: c.id, 
+                label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
+              })) 
           },
           { 
             name: 'clientId', 
@@ -2359,10 +2368,12 @@ const InvoiceGeneratorApp = () => {
             placeholder: 'Select Client', 
             type: 'select',
             value: item.client_id,
-            options: clients.map(c => ({ 
-              value: c.id, 
-              label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
-            })) 
+            options: [...clients]
+              .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`))
+              .map(c => ({ 
+                value: c.id, 
+                label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
+              })) 
           },
           { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date', value: item.from_date },
           { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date', value: item.to_date },
@@ -3006,6 +3017,169 @@ const InvoiceGeneratorApp = () => {
     }
   };
 
+  // Contract CSV Upload Functions
+  const parseContractCSV = (text) => {
+    // Clean the text - normalize line endings and remove BOM
+    const cleanText = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    
+    // Auto-detect delimiter (comma or semicolon) from header row
+    const firstLine = cleanText.split('\n')[0];
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    const semicolonCount = (firstLine.match(/;/g) || []).length;
+    const delimiter = semicolonCount > commaCount ? ';' : ',';
+    
+    const lines = cleanText.split('\n').filter(line => line.trim());
+    if (lines.length < 2) return [];
+    
+    const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase().replace(/"/g, ''));
+    
+    // Map headers to field names
+    const headerMap = {
+      'contract_number': 'contractNumber', 'contractnumber': 'contractNumber', 'contract number': 'contractNumber',
+      'consultant_email': 'consultantEmail', 'consultantemail': 'consultantEmail', 'consultant email': 'consultantEmail',
+      'client_email': 'clientEmail', 'clientemail': 'clientEmail', 'client email': 'clientEmail',
+      'from_date': 'fromDate', 'fromdate': 'fromDate', 'start_date': 'fromDate', 'startdate': 'fromDate', 'from date': 'fromDate',
+      'to_date': 'toDate', 'todate': 'toDate', 'end_date': 'toDate', 'enddate': 'toDate', 'to date': 'toDate',
+      'purchase_price': 'purchasePrice', 'purchaseprice': 'purchasePrice', 'purchase price': 'purchasePrice',
+      'sell_price': 'sellPrice', 'sellprice': 'sellPrice', 'sell price': 'sellPrice',
+      'vat_enabled': 'vatEnabled', 'vatenabled': 'vatEnabled',
+      'vat_rate': 'vatRate', 'vatrate': 'vatRate',
+      'consultant_vat_enabled': 'consultantVatEnabled', 'consultantvatenabled': 'consultantVatEnabled',
+      'consultant_vat_rate': 'consultantVatRate', 'consultantvatrate': 'consultantVatRate'
+    };
+    
+    const results = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(delimiter).map(v => v.trim().replace(/^"|"$/g, ''));
+      const row = {};
+      
+      headers.forEach((header, idx) => {
+        const fieldName = headerMap[header] || header;
+        row[fieldName] = values[idx] || '';
+      });
+      
+      // Validate required fields
+      const errors = [];
+      if (!row.contractNumber) errors.push('Missing contract number');
+      if (!row.consultantEmail) errors.push('Missing consultant email');
+      if (!row.clientEmail) errors.push('Missing client email');
+      if (!row.fromDate) errors.push('Missing start date');
+      if (!row.toDate) errors.push('Missing end date');
+      
+      // Find consultant and client by email
+      const consultant = consultants.find(c => c.email?.toLowerCase() === row.consultantEmail?.toLowerCase());
+      const client = clients.find(c => c.email?.toLowerCase() === row.clientEmail?.toLowerCase());
+      
+      if (!consultant && row.consultantEmail) errors.push(`Consultant not found: ${row.consultantEmail}`);
+      if (!client && row.clientEmail) errors.push(`Client not found: ${row.clientEmail}`);
+      
+      row.consultantId = consultant?.id;
+      row.clientId = client?.id;
+      row.consultantName = consultant ? `${consultant.first_name} ${consultant.last_name}` : row.consultantEmail;
+      row.clientName = client ? `${client.first_name} ${client.last_name}` : row.clientEmail;
+      row.isValid = errors.length === 0;
+      row.errors = errors;
+      
+      results.push(row);
+    }
+    
+    return results;
+  };
+
+  const checkContractCsvDuplicates = (csvRows) => {
+    return csvRows.map(row => {
+      if (!row.isValid) return row;
+      
+      const duplicateErrors = [];
+      
+      // Check if contract number already exists
+      const existingContract = contracts.find(c => 
+        c.contract_number?.toLowerCase() === row.contractNumber?.toLowerCase()
+      );
+      if (existingContract) {
+        duplicateErrors.push(`Contract number "${row.contractNumber}" already exists`);
+      }
+      
+      // Check for duplicates within CSV
+      csvRows.forEach(otherRow => {
+        if (otherRow === row) return;
+        if (otherRow.contractNumber?.toLowerCase() === row.contractNumber?.toLowerCase()) {
+          if (!duplicateErrors.some(e => e.includes('duplicated'))) {
+            duplicateErrors.push(`Contract number "${row.contractNumber}" duplicated in CSV`);
+          }
+        }
+      });
+      
+      if (duplicateErrors.length > 0) {
+        return { ...row, isValid: false, isDuplicate: true, errors: [...(row.errors || []), ...duplicateErrors] };
+      }
+      return row;
+    });
+  };
+
+  const handleContractCsvFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const parsed = parseContractCSV(text);
+      const checkedData = checkContractCsvDuplicates(parsed);
+      setContractCsvData(checkedData);
+    };
+    reader.readAsText(file);
+  };
+
+  const uploadContractsCsv = async () => {
+    const validRows = contractCsvData.filter(row => row.isValid);
+    if (validRows.length === 0) {
+      showNotification('No valid rows to upload', 'error');
+      return;
+    }
+    
+    setContractCsvUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
+    const errors = [];
+    
+    for (const row of validRows) {
+      try {
+        await apiCall('/contracts', {
+          method: 'POST',
+          body: JSON.stringify({
+            contractNumber: row.contractNumber,
+            consultantId: row.consultantId,
+            clientId: row.clientId,
+            fromDate: row.fromDate,
+            toDate: row.toDate,
+            purchasePrice: parseFloat(row.purchasePrice) || 0,
+            sellPrice: parseFloat(row.sellPrice) || 0,
+            vatEnabled: row.vatEnabled?.toLowerCase() === 'true' || row.vatEnabled === '1',
+            vatRate: parseFloat(row.vatRate) || 21,
+            consultantVatEnabled: row.consultantVatEnabled?.toLowerCase() === 'true' || row.consultantVatEnabled === '1',
+            consultantVatRate: parseFloat(row.consultantVatRate) || 21
+          })
+        });
+        successCount++;
+      } catch (error) {
+        errorCount++;
+        errors.push(`${row.contractNumber}: ${error.message}`);
+      }
+    }
+    
+    setContractCsvUploading(false);
+    setContractCsvUploadModalOpen(false);
+    setContractCsvData([]);
+    loadData();
+    
+    if (errorCount === 0) {
+      showNotification(`Successfully imported ${successCount} contracts!`);
+    } else {
+      showNotification(`Imported ${successCount}, failed ${errorCount}. Errors: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? '...' : ''}`, 'error');
+    }
+  };
+
   const loadCompanySettings = async () => {
     try {
       const settings = await apiCall('/company/settings');
@@ -3222,20 +3396,24 @@ const InvoiceGeneratorApp = () => {
             label: 'Consultant',
             placeholder: 'Select Consultant', 
             type: 'select', 
-            options: consultants.map(c => ({ 
-              value: c.id, 
-              label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
-            })) 
+            options: [...consultants]
+              .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`))
+              .map(c => ({ 
+                value: c.id, 
+                label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
+              })) 
           },
           { 
             name: 'clientId', 
             label: 'Client',
             placeholder: 'Select Client', 
             type: 'select', 
-            options: clients.map(c => ({ 
-              value: c.id, 
-              label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
-            })) 
+            options: [...clients]
+              .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`))
+              .map(c => ({ 
+                value: c.id, 
+                label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
+              })) 
           },
           { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date' },
           { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date' },
@@ -3366,6 +3544,138 @@ const InvoiceGeneratorApp = () => {
         title="Bulk Upload Clients"
         entityType="client"
       />
+
+      {/* Contract CSV Upload Modal */}
+      {contractCsvUploadModalOpen && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '24px'
+        }} onClick={() => { setContractCsvUploadModalOpen(false); setContractCsvData([]); }}>
+          <div style={{
+            backgroundColor: 'white', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            width: '100%', maxWidth: '800px', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column'
+          }} onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ padding: '24px 32px 20px', borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Bulk Upload Contracts</h3>
+                  <p style={{ fontSize: '14px', color: '#94a3b8', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    Import contracts via CSV.
+                    <button 
+                      onClick={() => {
+                        const template = 'contract_number,consultant_email,client_email,from_date,to_date,purchase_price,sell_price,vat_enabled,vat_rate\nCNT-2024-001,john@consultant.com,client@company.com,2024-01-01,2024-12-31,1000,1500,true,21';
+                        const blob = new Blob([template], { type: 'text/csv' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'contracts_template.csv';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      }}
+                      style={{ color: '#4f46e5', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
+                    >
+                      <Download className="h-4 w-4" /> Get Template
+                    </button>
+                  </p>
+                </div>
+                <button 
+                  onClick={() => { setContractCsvUploadModalOpen(false); setContractCsvData([]); }}
+                  style={{ padding: '8px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '8px' }}
+                >
+                  <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
+              {!contractCsvData.length ? (
+                <div style={{ border: '2px dashed #e2e8f0', borderRadius: '16px', padding: '48px', textAlign: 'center', backgroundColor: '#f8fafc' }}>
+                  <Upload className="h-12 w-12 mx-auto mb-4" style={{ color: '#94a3b8' }} />
+                  <label style={{ display: 'block', padding: '12px 24px', borderRadius: '10px', border: 'none', backgroundColor: '#4f46e5', color: 'white', fontWeight: 600, cursor: 'pointer', marginTop: '16px', width: 'fit-content', margin: '16px auto 0' }}>
+                    Choose CSV File
+                    <input type="file" accept=".csv" onChange={handleContractCsvFileUpload} style={{ display: 'none' }} />
+                  </label>
+                  <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '16px' }}>
+                    Required: contract_number, consultant_email, client_email, from_date, to_date<br/>
+                    Optional: purchase_price, sell_price, vat_enabled, vat_rate
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+                    <span style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 600, backgroundColor: '#dcfce7', color: '#166534' }}>
+                      {contractCsvData.filter(r => r.isValid).length} Valid
+                    </span>
+                    <span style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 600, backgroundColor: '#fee2e2', color: '#991b1b' }}>
+                      {contractCsvData.filter(r => !r.isValid).length} Invalid
+                    </span>
+                  </div>
+                  <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead style={{ backgroundColor: '#f8fafc', position: 'sticky', top: 0 }}>
+                        <tr>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Contract #</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Consultant</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Client</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Period</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {contractCsvData.slice(0, 30).map((row, idx) => (
+                          <tr key={idx} style={{ borderTop: '1px solid #f1f5f9', backgroundColor: row.isValid ? 'white' : '#fef2f2' }}>
+                            <td style={{ padding: '10px 12px' }}>{row.contractNumber}</td>
+                            <td style={{ padding: '10px 12px' }}>{row.consultantName}</td>
+                            <td style={{ padding: '10px 12px' }}>{row.clientName}</td>
+                            <td style={{ padding: '10px 12px' }}>{row.fromDate} - {row.toDate}</td>
+                            <td style={{ padding: '10px 12px' }}>
+                              {row.isValid ? (
+                                <span style={{ color: '#166534' }}>✓</span>
+                              ) : (
+                                <span style={{ color: '#991b1b', fontSize: '11px' }}>{row.errors?.join(', ')}</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {contractCsvData.length > 30 && (
+                    <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '14px', marginTop: '12px' }}>+ {contractCsvData.length - 30} more records</p>
+                  )}
+                </>
+              )}
+            </div>
+            
+            {/* Footer */}
+            <div style={{ padding: '20px 32px', borderTop: '1px solid #f1f5f9', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button
+                onClick={() => { setContractCsvUploadModalOpen(false); setContractCsvData([]); }}
+                style={{ padding: '10px 20px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={uploadContractsCsv}
+                disabled={contractCsvUploading || !contractCsvData.some(r => r.isValid)}
+                style={{
+                  padding: '10px 24px', borderRadius: '10px', border: 'none',
+                  backgroundColor: contractCsvData.some(r => r.isValid) ? '#4f46e5' : '#cbd5e1',
+                  color: 'white', fontWeight: 600, cursor: contractCsvData.some(r => r.isValid) ? 'pointer' : 'not-allowed',
+                  display: 'flex', alignItems: 'center', gap: '8px'
+                }}
+              >
+                {contractCsvUploading ? 'Uploading...' : `Import ${contractCsvData.filter(r => r.isValid).length} Contracts`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contract Selection Modal */}
       {contractSelectionModal.open && (
@@ -3546,7 +3856,7 @@ const InvoiceGeneratorApp = () => {
                     
                     // Now generate the invoice
                     try {
-                      setGeneratingInvoice(timesheetId);
+                      setGeneratingInvoice(prev => ({ ...prev, [timesheetId]: true }));
                       await apiCall(`/timesheets/${timesheetId}/generate-invoice`, {
                         method: 'POST'
                       });
@@ -3555,7 +3865,7 @@ const InvoiceGeneratorApp = () => {
                     } catch (error) {
                       showNotification('Failed to generate invoice: ' + error.message, 'error');
                     } finally {
-                      setGeneratingInvoice(null);
+                      setGeneratingInvoice(prev => ({ ...prev, [timesheetId]: false }));
                     }
                   }
                 }}
@@ -4467,26 +4777,48 @@ const InvoiceGeneratorApp = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Contracts</h2>
               {user.role === 'admin' && (
-                <button
-                  onClick={() => openAddModal('contract')}
-                  style={{
-                    backgroundColor: '#4f46e5',
-                    color: 'white',
-                    padding: '12px 20px',
-                    borderRadius: '12px',
-                    border: 'none',
-                    fontWeight: 700,
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
-                  }}
-                >
-                  <Plus style={{ width: '16px', height: '16px' }} />
-                  Add Contract
-                </button>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    onClick={() => setContractCsvUploadModalOpen(true)}
+                    style={{
+                      backgroundColor: '#10b981',
+                      color: 'white',
+                      padding: '12px 20px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)'
+                    }}
+                  >
+                    <Upload style={{ width: '16px', height: '16px' }} />
+                    Bulk Upload
+                  </button>
+                  <button
+                    onClick={() => openAddModal('contract')}
+                    style={{
+                      backgroundColor: '#4f46e5',
+                      color: 'white',
+                      padding: '12px 20px',
+                      borderRadius: '12px',
+                      border: 'none',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 14px rgba(79, 70, 229, 0.3)'
+                    }}
+                  >
+                    <Plus style={{ width: '16px', height: '16px' }} />
+                    Add Contract
+                  </button>
+                </div>
               )}
             </div>
 
@@ -4843,18 +5175,23 @@ const InvoiceGeneratorApp = () => {
                         const timesheet = assignedTimesheet || (unassignedTimesheets.length === 1 ? unassignedTimesheets[0] : null);
                         const hasMultipleUnassigned = !assignedTimesheet && unassignedTimesheets.length > 1;
                         
-                        // Determine row color
+                        // Determine row color based on status
                         let rowBgColor = '';
                         if (timesheet?.invoice_generated) {
-                          rowBgColor = 'bg-green-50';
-                        } else if (timesheet) {
+                          // Invoice already generated - green
                           rowBgColor = 'bg-green-50';
                         } else if (hasMultipleUnassigned) {
-                          rowBgColor = 'bg-blue-50'; // Needs selection
-                        } else if (contract.status === 'waiting') {
-                          rowBgColor = 'bg-yellow-50';
+                          // Multiple unassigned timesheets - needs selection - blue
+                          rowBgColor = 'bg-blue-50';
+                        } else if (timesheet) {
+                          // Has timesheet but not invoiced yet - light green (ready)
+                          rowBgColor = 'bg-emerald-50';
                         } else if (contract.status === 'overdue') {
+                          // No timesheet and deadline passed - red
                           rowBgColor = 'bg-red-50';
+                        } else {
+                          // No timesheet but deadline not passed - yellow (waiting)
+                          rowBgColor = 'bg-yellow-50';
                         }
                         
                         const totalDays = calculateTotalDays(timesheet);
@@ -5004,15 +5341,15 @@ const InvoiceGeneratorApp = () => {
                                 {timesheet && !timesheet.invoice_generated && (
                                   <button
                                     onClick={() => generateInvoiceForTimesheet(timesheet)}
-                                    disabled={generatingInvoice === timesheet.id}
+                                    disabled={generatingInvoice[timesheet.id]}
                                     className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
-                                      generatingInvoice === timesheet.id 
+                                      generatingInvoice[timesheet.id] 
                                         ? 'bg-green-400 cursor-not-allowed' 
                                         : 'bg-green-600 text-white'
                                     }`}
                                     title="Generate Invoice"
                                   >
-                                    {generatingInvoice === timesheet.id ? (
+                                    {generatingInvoice[timesheet.id] ? (
                                       <>
                                         <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
                                         Generating...
@@ -5260,15 +5597,15 @@ const InvoiceGeneratorApp = () => {
                                   {timesheet.month && !timesheet.invoice_generated && (
                                     <button
                                       onClick={() => generateInvoiceForTimesheet(timesheet)}
-                                      disabled={generatingInvoice === timesheet.id}
+                                      disabled={generatingInvoice[timesheet.id]}
                                       className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
-                                        generatingInvoice === timesheet.id 
+                                        generatingInvoice[timesheet.id] 
                                           ? 'bg-green-400 cursor-not-allowed' 
                                           : 'bg-green-600 text-white'
                                       }`}
                                       title="Generate Invoice"
                                     >
-                                      {generatingInvoice === timesheet.id ? (
+                                      {generatingInvoice[timesheet.id] ? (
                                         <>
                                           <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
                                           Generating...
@@ -5419,15 +5756,15 @@ const InvoiceGeneratorApp = () => {
                                   )}
                                   <button
                                     onClick={() => generateInvoiceForTimesheet(timesheet)}
-                                    disabled={generatingInvoice === timesheet.id}
+                                    disabled={generatingInvoice[timesheet.id]}
                                     className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
-                                      generatingInvoice === timesheet.id 
+                                      generatingInvoice[timesheet.id] 
                                         ? 'bg-green-400 cursor-not-allowed' 
                                         : 'bg-green-600 text-white'
                                     }`}
                                     title="Generate Invoice"
                                   >
-                                    {generatingInvoice === timesheet.id ? (
+                                    {generatingInvoice[timesheet.id] ? (
                                       <>
                                         <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
                                         Generating...
