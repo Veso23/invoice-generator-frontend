@@ -1162,16 +1162,22 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
   const duplicateCount = csvData.filter(row => row.isDuplicate).length;
 
   const isClient = entityType === 'client';
-  const entityName = isClient ? 'client' : 'consultant';
-  const entityNamePlural = isClient ? 'clients' : 'consultants';
+  const isContract = entityType === 'contract';
+  const entityName = isContract ? 'contract' : (isClient ? 'client' : 'consultant');
+  const entityNamePlural = isContract ? 'contracts' : (isClient ? 'clients' : 'consultants');
 
   const downloadTemplate = () => {
-    const headers = isClient 
-      ? 'first_name,last_name,company_name,company_address,vat,iban,swift,phone,email,client_contract_id'
-      : 'first_name,last_name,company_name,company_address,vat,iban,swift,phone,email,consultant_contract_id';
-    const example = isClient
-      ? 'Jane,Smith,Client Corp,"456 Business Ave, Town",BG987654321,BG98IBAN0987654321,SWIFT456,+0987654321,jane@client.com,CLI-001'
-      : 'John,Doe,Acme Ltd,"123 Main St, City",BG123456789,BG12IBAN1234567890,SWIFT123,+1234567890,john@acme.com,CONS-001';
+    let headers, example;
+    if (isContract) {
+      headers = 'contract_number,consultant_email,client_email,from_date,to_date,purchase_price,sell_price,consultant_vat_enabled,consultant_vat_rate,client_vat_enabled,client_vat_rate';
+      example = 'CNT-2024-001,john@consultant.com,client@company.com,2024-01-01,2024-12-31,1000,1500,false,0,true,21';
+    } else if (isClient) {
+      headers = 'first_name,last_name,company_name,company_address,vat,iban,swift,phone,email,client_contract_id';
+      example = 'Jane,Smith,Client Corp,"456 Business Ave, Town",BG987654321,BG98IBAN0987654321,SWIFT456,+0987654321,jane@client.com,CLI-001';
+    } else {
+      headers = 'first_name,last_name,company_name,company_address,vat,iban,swift,phone,email,consultant_contract_id';
+      example = 'John,Doe,Acme Ltd,"123 Main St, City",BG123456789,BG12IBAN1234567890,SWIFT123,+1234567890,john@acme.com,CONS-001';
+    }
     const template = `${headers}\n${example}`;
     const blob = new Blob([template], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -1203,7 +1209,7 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
     borderRadius: '24px',
     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
     width: '100%',
-    maxWidth: '640px',
+    maxWidth: isContract ? '900px' : '640px',
     maxHeight: '85vh',
     overflow: 'hidden',
     display: 'flex',
@@ -1402,9 +1408,20 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
                     <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                       <tr>
                         <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center', width: '48px' }}>Status</th>
-                        <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Consultant</th>
-                        <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Company</th>
-                        <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Tax ID</th>
+                        {isContract ? (
+                          <>
+                            <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Contract #</th>
+                            <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Consultant</th>
+                            <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Client</th>
+                            <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Period</th>
+                          </>
+                        ) : (
+                          <>
+                            <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>{isClient ? 'Client' : 'Consultant'}</th>
+                            <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Company</th>
+                            <th style={{ padding: '12px 16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left' }}>Tax ID</th>
+                          </>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -1422,63 +1439,86 @@ const CsvUploadModal = ({ isOpen, onClose, csvData, onFileUpload, onUpload, uplo
                               <AlertCircle style={{ width: '20px', height: '20px', color: '#f43f5e' }} />
                             )}
                           </td>
-                          <td style={{ padding: '12px 16px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                              <div style={{ 
-                                width: '36px', 
-                                height: '36px', 
-                                borderRadius: '10px',
-                                backgroundColor: row.isDuplicate ? '#fef3c7' : '#e0e7ff',
-                                color: row.isDuplicate ? '#d97706' : '#4f46e5',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: '12px',
-                                fontWeight: 800
-                              }}>
-                                {(row.firstName?.[0] || '')}{(row.lastName?.[0] || '')}
-                              </div>
-                              <div>
-                                <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '14px' }}>{row.firstName} {row.lastName}</div>
-                                <div style={{ fontSize: '12px', color: '#94a3b8' }}>{row.email || 'No email'}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td style={{ padding: '12px 16px', fontSize: '14px', color: '#475569' }}>{row.companyName || '-'}</td>
-                          <td style={{ padding: '12px 16px' }}>
-                            <code style={{ 
-                              fontSize: '12px', 
-                              fontFamily: 'monospace',
-                              color: row.isDuplicate ? '#d97706' : '#64748b',
-                              backgroundColor: row.isDuplicate ? '#fef3c7' : '#f1f5f9',
-                              padding: '4px 8px',
-                              borderRadius: '6px'
-                            }}>
-                              {row.companyVat || 'MISSING'}
-                            </code>
-                            {/* Show error badges */}
-                            {row.errors && row.errors.length > 0 && (
-                              <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                {row.errors.slice(0, 2).map((error, errIdx) => (
-                                  <span key={errIdx} style={{ 
-                                    fontSize: '10px', 
-                                    color: row.isDuplicate ? '#92400e' : '#be123c',
-                                    backgroundColor: row.isDuplicate ? '#fef3c7' : '#ffe4e6',
-                                    padding: '2px 6px',
-                                    borderRadius: '4px',
-                                    display: 'inline-block'
-                                  }}>
-                                    {error}
-                                  </span>
-                                ))}
-                                {row.errors.length > 2 && (
-                                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>
-                                    +{row.errors.length - 2} more...
-                                  </span>
+                          {isContract ? (
+                            <>
+                              <td style={{ padding: '12px 16px' }}>
+                                <code style={{ fontSize: '12px', fontFamily: 'monospace', color: '#4f46e5', backgroundColor: '#eef2ff', padding: '4px 8px', borderRadius: '6px' }}>
+                                  {row.contractNumber}
+                                </code>
+                                {row.errors && row.errors.length > 0 && (
+                                  <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    {row.errors.slice(0, 2).map((error, errIdx) => (
+                                      <span key={errIdx} style={{ fontSize: '10px', color: '#be123c', backgroundColor: '#ffe4e6', padding: '2px 6px', borderRadius: '4px' }}>
+                                        {error}
+                                      </span>
+                                    ))}
+                                  </div>
                                 )}
-                              </div>
-                            )}
-                          </td>
+                              </td>
+                              <td style={{ padding: '12px 16px', fontSize: '13px', color: '#475569' }}>{row.consultantName || row.consultantEmail}</td>
+                              <td style={{ padding: '12px 16px', fontSize: '13px', color: '#475569' }}>{row.clientName || row.clientEmail}</td>
+                              <td style={{ padding: '12px 16px', fontSize: '12px', color: '#64748b' }}>{row.fromDate} → {row.toDate}</td>
+                            </>
+                          ) : (
+                            <>
+                              <td style={{ padding: '12px 16px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  <div style={{ 
+                                    width: '36px', 
+                                    height: '36px', 
+                                    borderRadius: '10px',
+                                    backgroundColor: row.isDuplicate ? '#fef3c7' : '#e0e7ff',
+                                    color: row.isDuplicate ? '#d97706' : '#4f46e5',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '12px',
+                                    fontWeight: 800
+                                  }}>
+                                    {(row.firstName?.[0] || '')}{(row.lastName?.[0] || '')}
+                                  </div>
+                                  <div>
+                                    <div style={{ fontWeight: 700, color: '#1e293b', fontSize: '14px' }}>{row.firstName} {row.lastName}</div>
+                                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>{row.email || 'No email'}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td style={{ padding: '12px 16px', fontSize: '14px', color: '#475569' }}>{row.companyName || '-'}</td>
+                              <td style={{ padding: '12px 16px' }}>
+                                <code style={{ 
+                                  fontSize: '12px', 
+                                  fontFamily: 'monospace',
+                                  color: row.isDuplicate ? '#d97706' : '#64748b',
+                                  backgroundColor: row.isDuplicate ? '#fef3c7' : '#f1f5f9',
+                                  padding: '4px 8px',
+                                  borderRadius: '6px'
+                                }}>
+                                  {row.companyVat || 'MISSING'}
+                                </code>
+                                {row.errors && row.errors.length > 0 && (
+                                  <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    {row.errors.slice(0, 2).map((error, errIdx) => (
+                                      <span key={errIdx} style={{ 
+                                        fontSize: '10px', 
+                                        color: row.isDuplicate ? '#92400e' : '#be123c',
+                                        backgroundColor: row.isDuplicate ? '#fef3c7' : '#ffe4e6',
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        display: 'inline-block'
+                                      }}>
+                                        {error}
+                                      </span>
+                                    ))}
+                                    {row.errors.length > 2 && (
+                                      <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                                        +{row.errors.length - 2} more...
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </td>
+                            </>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -2883,43 +2923,40 @@ const InvoiceGeneratorApp = () => {
     }
     
     setCsvUploading(true);
-    let successCount = 0;
-    let errorCount = 0;
-    const errors = [];
     
-    for (const row of validRows) {
-      try {
-        await apiCall('/consultants', {
-          method: 'POST',
-          body: JSON.stringify({
-            firstName: row.firstName,
-            lastName: row.lastName,
-            companyName: row.companyName,
-            companyAddress: row.companyAddress || '',
-            companyVat: row.companyVat,
-            iban: row.iban || '',
-            swift: row.swift || '',
-            phone: row.phone || '',
-            email: row.email || '',
-            consultantContractId: row.consultantContractId || ''
-          })
-        });
-        successCount++;
-      } catch (error) {
-        errorCount++;
-        errors.push(`${row.firstName} ${row.lastName}: ${error.message}`);
+    try {
+      // Use batch endpoint for efficiency
+      const consultants = validRows.map(row => ({
+        firstName: row.firstName,
+        lastName: row.lastName,
+        companyName: row.companyName,
+        companyAddress: row.companyAddress || '',
+        companyVat: row.companyVat,
+        iban: row.iban || '',
+        swift: row.swift || '',
+        phone: row.phone || '',
+        email: row.email || '',
+        consultantContractId: row.consultantContractId || ''
+      }));
+      
+      const result = await apiCall('/consultants/batch', {
+        method: 'POST',
+        body: JSON.stringify({ consultants })
+      });
+      
+      setCsvUploading(false);
+      setCsvUploadModalOpen(false);
+      setCsvData([]);
+      loadData();
+      
+      if (result.failed === 0) {
+        showNotification(`Successfully imported ${result.success} consultants!`);
+      } else {
+        showNotification(`Imported ${result.success}, failed ${result.failed}. ${result.errors?.slice(0, 2).join('; ') || ''}`, 'error');
       }
-    }
-    
-    setCsvUploading(false);
-    setCsvUploadModalOpen(false);
-    setCsvData([]);
-    loadData();
-    
-    if (errorCount === 0) {
-      showNotification(`Successfully imported ${successCount} consultants!`);
-    } else {
-      showNotification(`Imported ${successCount}, failed ${errorCount}. Errors: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? '...' : ''}`, 'error');
+    } catch (error) {
+      setCsvUploading(false);
+      showNotification('Failed to upload: ' + error.message, 'error');
     }
   };
 
@@ -2999,43 +3036,40 @@ const InvoiceGeneratorApp = () => {
     }
     
     setClientCsvUploading(true);
-    let successCount = 0;
-    let errorCount = 0;
-    const errors = [];
     
-    for (const row of validRows) {
-      try {
-        await apiCall('/clients', {
-          method: 'POST',
-          body: JSON.stringify({
-            firstName: row.firstName,
-            lastName: row.lastName,
-            companyName: row.companyName,
-            companyAddress: row.companyAddress || '',
-            companyVat: row.companyVat,
-            iban: row.iban || '',
-            swift: row.swift || '',
-            phone: row.phone || '',
-            email: row.email || '',
-            clientContractId: row.clientContractId || ''
-          })
-        });
-        successCount++;
-      } catch (error) {
-        errorCount++;
-        errors.push(`${row.firstName} ${row.lastName}: ${error.message}`);
+    try {
+      // Use batch endpoint for efficiency
+      const clients = validRows.map(row => ({
+        firstName: row.firstName,
+        lastName: row.lastName,
+        companyName: row.companyName,
+        companyAddress: row.companyAddress || '',
+        companyVat: row.companyVat,
+        iban: row.iban || '',
+        swift: row.swift || '',
+        phone: row.phone || '',
+        email: row.email || '',
+        clientContractId: row.clientContractId || ''
+      }));
+      
+      const result = await apiCall('/clients/batch', {
+        method: 'POST',
+        body: JSON.stringify({ clients })
+      });
+      
+      setClientCsvUploading(false);
+      setClientCsvUploadModalOpen(false);
+      setClientCsvData([]);
+      loadData();
+      
+      if (result.failed === 0) {
+        showNotification(`Successfully imported ${result.success} clients!`);
+      } else {
+        showNotification(`Imported ${result.success}, failed ${result.failed}. ${result.errors?.slice(0, 2).join('; ') || ''}`, 'error');
       }
-    }
-    
-    setClientCsvUploading(false);
-    setClientCsvUploadModalOpen(false);
-    setClientCsvData([]);
-    loadData();
-    
-    if (errorCount === 0) {
-      showNotification(`Successfully imported ${successCount} clients!`);
-    } else {
-      showNotification(`Imported ${successCount}, failed ${errorCount}. Errors: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? '...' : ''}`, 'error');
+    } catch (error) {
+      setClientCsvUploading(false);
+      showNotification('Failed to upload: ' + error.message, 'error');
     }
   };
 
@@ -3165,45 +3199,42 @@ const InvoiceGeneratorApp = () => {
     }
     
     setContractCsvUploading(true);
-    let successCount = 0;
-    let errorCount = 0;
-    const errors = [];
     
-    for (const row of validRows) {
-      try {
-        await apiCall('/contracts', {
-          method: 'POST',
-          body: JSON.stringify({
-            contractNumber: row.contractNumber,
-            consultantId: row.consultantId,
-            clientId: row.clientId,
-            fromDate: row.fromDate,
-            toDate: row.toDate,
-            purchasePrice: parseFloat(row.purchasePrice) || 0,
-            sellPrice: parseFloat(row.sellPrice) || 0,
-            // Support both old field names (vat_enabled) and new (client_vat_enabled)
-            vatEnabled: (row.clientVatEnabled || row.vatEnabled)?.toLowerCase() === 'true' || (row.clientVatEnabled || row.vatEnabled) === '1',
-            vatRate: parseFloat(row.clientVatRate || row.vatRate) || 21,
-            consultantVatEnabled: row.consultantVatEnabled?.toLowerCase() === 'true' || row.consultantVatEnabled === '1',
-            consultantVatRate: parseFloat(row.consultantVatRate) || 21
-          })
-        });
-        successCount++;
-      } catch (error) {
-        errorCount++;
-        errors.push(`${row.contractNumber}: ${error.message}`);
+    try {
+      // Use batch endpoint for efficiency
+      const contracts = validRows.map(row => ({
+        contractNumber: row.contractNumber,
+        consultantId: row.consultantId,
+        clientId: row.clientId,
+        fromDate: row.fromDate,
+        toDate: row.toDate,
+        purchasePrice: parseFloat(row.purchasePrice) || 0,
+        sellPrice: parseFloat(row.sellPrice) || 0,
+        // Support both old field names (vat_enabled) and new (client_vat_enabled)
+        vatEnabled: (row.clientVatEnabled || row.vatEnabled)?.toLowerCase() === 'true' || (row.clientVatEnabled || row.vatEnabled) === '1',
+        vatRate: parseFloat(row.clientVatRate || row.vatRate) || 21,
+        consultantVatEnabled: row.consultantVatEnabled?.toLowerCase() === 'true' || row.consultantVatEnabled === '1',
+        consultantVatRate: parseFloat(row.consultantVatRate) || 21
+      }));
+      
+      const result = await apiCall('/contracts/batch', {
+        method: 'POST',
+        body: JSON.stringify({ contracts })
+      });
+      
+      setContractCsvUploading(false);
+      setContractCsvUploadModalOpen(false);
+      setContractCsvData([]);
+      loadData();
+      
+      if (result.failed === 0) {
+        showNotification(`Successfully imported ${result.success} contracts!`);
+      } else {
+        showNotification(`Imported ${result.success}, failed ${result.failed}. ${result.errors?.slice(0, 2).join('; ') || ''}`, 'error');
       }
-    }
-    
-    setContractCsvUploading(false);
-    setContractCsvUploadModalOpen(false);
-    setContractCsvData([]);
-    loadData();
-    
-    if (errorCount === 0) {
-      showNotification(`Successfully imported ${successCount} contracts!`);
-    } else {
-      showNotification(`Imported ${successCount}, failed ${errorCount}. Errors: ${errors.slice(0, 3).join('; ')}${errors.length > 3 ? '...' : ''}`, 'error');
+    } catch (error) {
+      setContractCsvUploading(false);
+      showNotification('Failed to upload: ' + error.message, 'error');
     }
   };
 
@@ -3670,136 +3701,19 @@ const InvoiceGeneratorApp = () => {
       />
 
       {/* Contract CSV Upload Modal */}
-      {contractCsvUploadModalOpen && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '24px'
-        }} onClick={() => { setContractCsvUploadModalOpen(false); setContractCsvData([]); }}>
-          <div style={{
-            backgroundColor: 'white', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            width: '100%', maxWidth: '800px', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column'
-          }} onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <div style={{ padding: '24px 32px 20px', borderBottom: '1px solid #f1f5f9', backgroundColor: '#f8fafc' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Bulk Upload Contracts</h3>
-                  <p style={{ fontSize: '14px', color: '#94a3b8', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    Import contracts via CSV.
-                    <button 
-                      onClick={() => {
-                        const template = 'contract_number,consultant_email,client_email,from_date,to_date,purchase_price,sell_price,consultant_vat_enabled,consultant_vat_rate,client_vat_enabled,client_vat_rate\nCNT-2024-001,john@consultant.com,client@company.com,2024-01-01,2024-12-31,1000,1500,false,0,true,21';
-                        const blob = new Blob([template], { type: 'text/csv' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'contracts_template.csv';
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      }}
-                      style={{ color: '#4f46e5', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', padding: 0 }}
-                    >
-                      <Download className="h-4 w-4" /> Get Template
-                    </button>
-                  </p>
-                </div>
-                <button 
-                  onClick={() => { setContractCsvUploadModalOpen(false); setContractCsvData([]); }}
-                  style={{ padding: '8px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', borderRadius: '8px' }}
-                >
-                  <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            
-            {/* Content */}
-            <div style={{ padding: '32px', overflowY: 'auto', flex: 1 }}>
-              {!contractCsvData.length ? (
-                <div style={{ border: '2px dashed #e2e8f0', borderRadius: '16px', padding: '48px', textAlign: 'center', backgroundColor: '#f8fafc' }}>
-                  <Upload className="h-12 w-12 mx-auto mb-4" style={{ color: '#94a3b8' }} />
-                  <label style={{ display: 'block', padding: '12px 24px', borderRadius: '10px', border: 'none', backgroundColor: '#4f46e5', color: 'white', fontWeight: 600, cursor: 'pointer', marginTop: '16px', width: 'fit-content', margin: '16px auto 0' }}>
-                    Choose CSV File
-                    <input type="file" accept=".csv" onChange={handleContractCsvFileUpload} style={{ display: 'none' }} />
-                  </label>
-                  <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '16px' }}>
-                    Required: contract_number, consultant_email, client_email, from_date, to_date<br/>
-                    Optional: purchase_price, sell_price, consultant_vat_enabled, consultant_vat_rate, client_vat_enabled, client_vat_rate
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                    <span style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 600, backgroundColor: '#dcfce7', color: '#166534' }}>
-                      {contractCsvData.filter(r => r.isValid).length} Valid
-                    </span>
-                    <span style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 600, backgroundColor: '#fee2e2', color: '#991b1b' }}>
-                      {contractCsvData.filter(r => !r.isValid).length} Invalid
-                    </span>
-                  </div>
-                  <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                      <thead style={{ backgroundColor: '#f8fafc', position: 'sticky', top: 0 }}>
-                        <tr>
-                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Contract #</th>
-                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Consultant</th>
-                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Client</th>
-                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Period</th>
-                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 600 }}>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {contractCsvData.slice(0, 30).map((row, idx) => (
-                          <tr key={idx} style={{ borderTop: '1px solid #f1f5f9', backgroundColor: row.isValid ? 'white' : '#fef2f2' }}>
-                            <td style={{ padding: '10px 12px' }}>{row.contractNumber}</td>
-                            <td style={{ padding: '10px 12px' }}>{row.consultantName}</td>
-                            <td style={{ padding: '10px 12px' }}>{row.clientName}</td>
-                            <td style={{ padding: '10px 12px' }}>{row.fromDate} - {row.toDate}</td>
-                            <td style={{ padding: '10px 12px' }}>
-                              {row.isValid ? (
-                                <span style={{ color: '#166534' }}>✓</span>
-                              ) : (
-                                <span style={{ color: '#991b1b', fontSize: '11px' }}>{row.errors?.join(', ')}</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {contractCsvData.length > 30 && (
-                    <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '14px', marginTop: '12px' }}>+ {contractCsvData.length - 30} more records</p>
-                  )}
-                </>
-              )}
-            </div>
-            
-            {/* Footer */}
-            <div style={{ padding: '20px 32px', borderTop: '1px solid #f1f5f9', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button
-                onClick={() => { setContractCsvUploadModalOpen(false); setContractCsvData([]); }}
-                style={{ padding: '10px 20px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#64748b', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={uploadContractsCsv}
-                disabled={contractCsvUploading || !contractCsvData.some(r => r.isValid)}
-                style={{
-                  padding: '10px 24px', borderRadius: '10px', border: 'none',
-                  backgroundColor: contractCsvData.some(r => r.isValid) ? '#4f46e5' : '#cbd5e1',
-                  color: 'white', fontWeight: 600, cursor: contractCsvData.some(r => r.isValid) ? 'pointer' : 'not-allowed',
-                  display: 'flex', alignItems: 'center', gap: '8px'
-                }}
-              >
-                {contractCsvUploading ? 'Uploading...' : `Import ${contractCsvData.filter(r => r.isValid).length} Contracts`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <CsvUploadModal
+        isOpen={contractCsvUploadModalOpen}
+        onClose={() => {
+          setContractCsvUploadModalOpen(false);
+          setContractCsvData([]);
+        }}
+        csvData={contractCsvData}
+        onFileUpload={handleContractCsvFileUpload}
+        onUpload={uploadContractsCsv}
+        uploading={contractCsvUploading}
+        title="Bulk Upload Contracts"
+        entityType="contract"
+      />
 
       {/* Contract Selection Modal */}
       {contractSelectionModal.open && (
