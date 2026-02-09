@@ -3278,6 +3278,7 @@ const InvoiceGeneratorApp = () => {
     if (user?.role === 'superadmin' && activeTab === 'superadmin') {
       loadSuperAdminData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, activeTab]);
 
   const loadCompanySettings = async () => {
