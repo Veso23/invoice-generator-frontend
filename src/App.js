@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle, AlertTriangle, Trash2, Upload, Clock } from 'lucide-react';
+import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle, AlertTriangle, Trash2, Upload, Clock, RefreshCw } from 'lucide-react';
 import './App.css';
 
 // API Configuration
@@ -2053,6 +2053,12 @@ const InvoiceGeneratorApp = () => {
     invoices: { key: null, direction: 'asc' }
   });
   
+  // Super Admin state
+  const [superAdminCompanies, setSuperAdminCompanies] = useState([]);
+  const [superAdminStats, setSuperAdminStats] = useState(null);
+  const [superAdminLoading, setSuperAdminLoading] = useState(false);
+  const [impersonationInfo, setImpersonationInfo] = useState(null);
+  
   // Contract selection for timesheets with multiple contracts
   const [contractSelectionModal, setContractSelectionModal] = useState({
     open: false,
@@ -3180,6 +3186,100 @@ const InvoiceGeneratorApp = () => {
     }
   };
 
+  // =============================================
+  // SUPER ADMIN FUNCTIONS
+  // =============================================
+  
+  const loadSuperAdminData = async () => {
+    if (user?.role !== 'superadmin') return;
+    
+    setSuperAdminLoading(true);
+    try {
+      const [companiesRes, statsRes] = await Promise.all([
+        apiCall('/superadmin/companies'),
+        apiCall('/superadmin/stats')
+      ]);
+      setSuperAdminCompanies(companiesRes);
+      setSuperAdminStats(statsRes);
+    } catch (error) {
+      console.error('Failed to load super admin data:', error);
+      showNotification('Failed to load super admin data: ' + error.message, 'error');
+    } finally {
+      setSuperAdminLoading(false);
+    }
+  };
+
+  const impersonateCompany = async (companyId, companyName) => {
+    try {
+      const result = await apiCall(`/superadmin/impersonate/${companyId}`, {
+        method: 'POST'
+      });
+      
+      // Store original token and user info
+      const originalToken = localStorage.getItem('token');
+      const originalUser = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      localStorage.setItem('originalToken', originalToken);
+      localStorage.setItem('originalUser', JSON.stringify(originalUser));
+      localStorage.setItem('isImpersonating', 'true');
+      
+      // Set new token and user
+      localStorage.setItem('token', result.token);
+      localStorage.setItem('user', JSON.stringify(result.user));
+      
+      setImpersonationInfo({
+        companyName: companyName,
+        originalUser: originalUser
+      });
+      
+      // Reload the page to reset state
+      window.location.reload();
+    } catch (error) {
+      showNotification('Failed to impersonate: ' + error.message, 'error');
+    }
+  };
+
+  const exitImpersonation = () => {
+    const originalToken = localStorage.getItem('originalToken');
+    const originalUser = localStorage.getItem('originalUser');
+    
+    if (originalToken && originalUser) {
+      localStorage.setItem('token', originalToken);
+      localStorage.setItem('user', originalUser);
+      localStorage.removeItem('originalToken');
+      localStorage.removeItem('originalUser');
+      localStorage.removeItem('isImpersonating');
+      
+      // Reload the page
+      window.location.reload();
+    }
+  };
+
+  // Check if we're impersonating on mount
+  useEffect(() => {
+    const isImpersonating = localStorage.getItem('isImpersonating') === 'true';
+    const originalUser = localStorage.getItem('originalUser');
+    
+    if (isImpersonating && originalUser) {
+      try {
+        const parsed = JSON.parse(originalUser);
+        setImpersonationInfo({
+          companyName: user?.companyName || 'Unknown Company',
+          originalUser: parsed
+        });
+      } catch (e) {
+        console.error('Failed to parse original user:', e);
+      }
+    }
+  }, [user]);
+
+  // Load super admin data when user is superadmin
+  useEffect(() => {
+    if (user?.role === 'superadmin' && activeTab === 'superadmin') {
+      loadSuperAdminData();
+    }
+  }, [user, activeTab]);
+
   const loadCompanySettings = async () => {
     try {
       const settings = await apiCall('/company/settings');
@@ -3892,6 +3992,52 @@ const InvoiceGeneratorApp = () => {
         </div>
       )}
 
+      {/* Impersonation Banner */}
+      {impersonationInfo && (
+        <div style={{
+          backgroundColor: '#fef3c7',
+          borderBottom: '2px solid #f59e0b',
+          padding: '12px 32px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          position: 'sticky',
+          top: 0,
+          zIndex: 101
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontSize: '20px' }}>⚠️</span>
+            <div>
+              <span style={{ fontWeight: 700, color: '#92400e' }}>
+                Viewing as: {user?.firstName} {user?.lastName}
+              </span>
+              <span style={{ color: '#b45309', marginLeft: '8px' }}>
+                ({user?.companyName || 'Company'})
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={exitImpersonation}
+            style={{
+              backgroundColor: '#dc2626',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: 'none',
+              fontWeight: 700,
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            <LogOut style={{ width: '14px', height: '14px' }} />
+            Exit Impersonation
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{
         backgroundColor: 'white',
@@ -3953,10 +4099,15 @@ const InvoiceGeneratorApp = () => {
                 { id: 'timesheets', label: 'Timesheets', permission: 'can_view_timesheets' },
                 { id: 'invoices', label: 'Invoices', permission: 'can_view_invoices' },
                 { id: 'history', label: 'History', permission: 'can_view_invoices' },
-                { id: 'users', label: 'Users', permission: 'can_manage_users' }
+                { id: 'users', label: 'Users', permission: 'can_manage_users' },
+                { id: 'superadmin', label: '🔐 Super Admin', permission: 'is_superadmin' }
               ]
                 .filter(tab => {
-                  const perms = user?.permissions || (user?.role === 'admin' ? {
+                  // Super admin tab only for superadmin role
+                  if (tab.permission === 'is_superadmin') {
+                    return user?.role === 'superadmin';
+                  }
+                  const perms = user?.permissions || (user?.role === 'admin' || user?.role === 'superadmin' ? {
                     can_view_dashboard: true, can_view_contracts: true, can_view_consultants: true,
                     can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, can_manage_users: true
                   } : {
@@ -3979,8 +4130,8 @@ const InvoiceGeneratorApp = () => {
                       border: 'none',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
-                      backgroundColor: activeTab === tab.id ? '#eef2ff' : 'transparent',
-                      color: activeTab === tab.id ? '#4f46e5' : '#64748b'
+                      backgroundColor: activeTab === tab.id ? (tab.id === 'superadmin' ? '#fef3c7' : '#eef2ff') : 'transparent',
+                      color: activeTab === tab.id ? (tab.id === 'superadmin' ? '#d97706' : '#4f46e5') : '#64748b'
                     }}
                   >
                     {tab.label}
@@ -3995,7 +4146,7 @@ const InvoiceGeneratorApp = () => {
                   {user.firstName} {user.lastName}
                 </p>
                 <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
-                  {user.role === 'admin' ? 'System Admin' : 'Operator'}
+                  {user.role === 'superadmin' ? '🔐 Super Admin' : user.role === 'admin' ? 'System Admin' : 'Operator'}
                 </p>
               </div>
               
@@ -6655,6 +6806,160 @@ const InvoiceGeneratorApp = () => {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Super Admin Tab */}
+        {activeTab === 'superadmin' && user?.role === 'superadmin' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>
+                🔐 Super Admin Panel
+              </h2>
+              <button
+                onClick={loadSuperAdminData}
+                style={{
+                  backgroundColor: '#f59e0b',
+                  color: 'white',
+                  padding: '12px 20px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                <RefreshCw style={{ width: '16px', height: '16px' }} />
+                Refresh
+              </button>
+            </div>
+
+            {/* Stats Cards */}
+            {superAdminStats && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                gap: '16px'
+              }}>
+                {[
+                  { label: 'Companies', value: superAdminStats.total_companies, color: '#4f46e5' },
+                  { label: 'Users', value: superAdminStats.total_users, color: '#10b981' },
+                  { label: 'Consultants', value: superAdminStats.total_consultants, color: '#f59e0b' },
+                  { label: 'Clients', value: superAdminStats.total_clients, color: '#ef4444' },
+                  { label: 'Contracts', value: superAdminStats.total_contracts, color: '#8b5cf6' },
+                  { label: 'Invoices', value: superAdminStats.total_invoices, color: '#06b6d4' },
+                  { label: 'Timesheets', value: superAdminStats.total_timesheets, color: '#ec4899' }
+                ].map((stat, idx) => (
+                  <div key={idx} style={{
+                    backgroundColor: 'white',
+                    borderRadius: '16px',
+                    padding: '20px',
+                    border: '1px solid #e2e8f0',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ fontSize: '32px', fontWeight: 900, color: stat.color }}>{stat.value}</div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Companies List */}
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '20px',
+              border: '1px solid #e2e8f0',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                padding: '20px 24px',
+                borderBottom: '1px solid #f1f5f9',
+                backgroundColor: '#fef3c7'
+              }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#92400e', margin: 0 }}>
+                  All Companies ({superAdminCompanies.length})
+                </h3>
+              </div>
+              
+              {superAdminLoading ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+                  Loading companies...
+                </div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead style={{ backgroundColor: '#fef3c7' }}>
+                    <tr>
+                      <th style={{ padding: '14px 20px', textAlign: 'left', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Company</th>
+                      <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Users</th>
+                      <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Consultants</th>
+                      <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Clients</th>
+                      <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Contracts</th>
+                      <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Invoices</th>
+                      <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {superAdminCompanies.map((company) => (
+                      <tr key={company.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '16px 20px' }}>
+                          <div style={{ fontWeight: 700, color: '#0f172a' }}>{company.name}</div>
+                          <div style={{ fontSize: '12px', color: '#94a3b8' }}>ID: {company.id}</div>
+                        </td>
+                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                          <span style={{ backgroundColor: '#eef2ff', color: '#4f46e5', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
+                            {company.user_count}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                          <span style={{ backgroundColor: '#fef3c7', color: '#d97706', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
+                            {company.consultant_count}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                          <span style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
+                            {company.client_count}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                          <span style={{ backgroundColor: '#f3e8ff', color: '#7c3aed', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
+                            {company.contract_count}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                          <span style={{ backgroundColor: '#dcfce7', color: '#16a34a', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
+                            {company.invoice_count}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                          <button
+                            onClick={() => impersonateCompany(company.id, company.name)}
+                            style={{
+                              backgroundColor: '#4f46e5',
+                              color: 'white',
+                              padding: '8px 16px',
+                              borderRadius: '8px',
+                              border: 'none',
+                              fontWeight: 600,
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <LogOut style={{ width: '14px', height: '14px' }} />
+                            Login As
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}
