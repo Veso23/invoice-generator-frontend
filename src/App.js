@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle, AlertTriangle, Trash2, Upload, Clock, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, CheckCircle, AlertCircle, AlertTriangle, Trash2, Upload, Clock, RefreshCw, Settings, User, X, ChevronDown } from 'lucide-react';
 import './App.css';
 
 // API Configuration
@@ -501,7 +501,16 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
     if (isOpen) {
       const initialData = {};
       fields.forEach(field => {
-        initialData[field.name] = field.value !== undefined ? field.value : (field.type === 'checkbox' ? false : '');
+        let value = field.value;
+        // Format date fields to YYYY-MM-DD for HTML date input
+        if (field.type === 'date' && value) {
+          // Handle both ISO strings and date objects
+          const date = new Date(value);
+          if (!isNaN(date.getTime())) {
+            value = date.toISOString().split('T')[0];
+          }
+        }
+        initialData[field.name] = value !== undefined ? value : (field.type === 'checkbox' ? false : '');
       });
       setFormData(initialData);
       setFieldErrors({});
@@ -2014,6 +2023,7 @@ const InvoiceGeneratorApp = () => {
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [timesheetStatus, setTimesheetStatus] = useState(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
   const [deadlineModalOpen, setDeadlineModalOpen] = useState(false);
   const [users, setUsers] = useState([]);
   const [editingMonth, setEditingMonth] = useState(null);
@@ -3054,8 +3064,12 @@ const InvoiceGeneratorApp = () => {
       'to_date': 'toDate', 'todate': 'toDate', 'end_date': 'toDate', 'enddate': 'toDate', 'to date': 'toDate',
       'purchase_price': 'purchasePrice', 'purchaseprice': 'purchasePrice', 'purchase price': 'purchasePrice',
       'sell_price': 'sellPrice', 'sellprice': 'sellPrice', 'sell price': 'sellPrice',
+      // Legacy names (single vat_enabled means client)
       'vat_enabled': 'vatEnabled', 'vatenabled': 'vatEnabled',
       'vat_rate': 'vatRate', 'vatrate': 'vatRate',
+      // New explicit names
+      'client_vat_enabled': 'clientVatEnabled', 'clientvatenabled': 'clientVatEnabled',
+      'client_vat_rate': 'clientVatRate', 'clientvatrate': 'clientVatRate',
       'consultant_vat_enabled': 'consultantVatEnabled', 'consultantvatenabled': 'consultantVatEnabled',
       'consultant_vat_rate': 'consultantVatRate', 'consultantvatrate': 'consultantVatRate'
     };
@@ -3167,8 +3181,9 @@ const InvoiceGeneratorApp = () => {
             toDate: row.toDate,
             purchasePrice: parseFloat(row.purchasePrice) || 0,
             sellPrice: parseFloat(row.sellPrice) || 0,
-            vatEnabled: row.vatEnabled?.toLowerCase() === 'true' || row.vatEnabled === '1',
-            vatRate: parseFloat(row.vatRate) || 21,
+            // Support both old field names (vat_enabled) and new (client_vat_enabled)
+            vatEnabled: (row.clientVatEnabled || row.vatEnabled)?.toLowerCase() === 'true' || (row.clientVatEnabled || row.vatEnabled) === '1',
+            vatRate: parseFloat(row.clientVatRate || row.vatRate) || 21,
             consultantVatEnabled: row.consultantVatEnabled?.toLowerCase() === 'true' || row.consultantVatEnabled === '1',
             consultantVatRate: parseFloat(row.consultantVatRate) || 21
           })
@@ -3271,6 +3286,23 @@ const InvoiceGeneratorApp = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, activeTab]);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    if (userMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [userMenuOpen]);
 
   const loadCompanySettings = async () => {
     try {
@@ -3657,7 +3689,7 @@ const InvoiceGeneratorApp = () => {
                     Import contracts via CSV.
                     <button 
                       onClick={() => {
-                        const template = 'contract_number,consultant_email,client_email,from_date,to_date,purchase_price,sell_price,vat_enabled,vat_rate\nCNT-2024-001,john@consultant.com,client@company.com,2024-01-01,2024-12-31,1000,1500,true,21';
+                        const template = 'contract_number,consultant_email,client_email,from_date,to_date,purchase_price,sell_price,consultant_vat_enabled,consultant_vat_rate,client_vat_enabled,client_vat_rate\nCNT-2024-001,john@consultant.com,client@company.com,2024-01-01,2024-12-31,1000,1500,false,0,true,21';
                         const blob = new Blob([template], { type: 'text/csv' });
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement('a');
@@ -3694,7 +3726,7 @@ const InvoiceGeneratorApp = () => {
                   </label>
                   <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '16px' }}>
                     Required: contract_number, consultant_email, client_email, from_date, to_date<br/>
-                    Optional: purchase_price, sell_price, vat_enabled, vat_rate
+                    Optional: purchase_price, sell_price, consultant_vat_enabled, consultant_vat_rate, client_vat_enabled, client_vat_rate
                   </p>
                 </div>
               ) : (
@@ -4143,15 +4175,15 @@ const InvoiceGeneratorApp = () => {
                 </p>
               </div>
               
-              <div style={{ position: 'relative' }}>
+              <div style={{ position: 'relative' }} ref={userMenuRef}>
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   style={{
                     width: '44px',
                     height: '44px',
                     borderRadius: '14px',
-                    backgroundColor: '#fef2f2',
-                    color: '#ef4444',
+                    backgroundColor: userMenuOpen ? '#eef2ff' : '#f8fafc',
+                    color: userMenuOpen ? '#4f46e5' : '#64748b',
                     border: 'none',
                     cursor: 'pointer',
                     display: 'flex',
@@ -4160,7 +4192,7 @@ const InvoiceGeneratorApp = () => {
                     transition: 'all 0.2s'
                   }}
                 >
-                  <LogOut style={{ width: '20px', height: '20px' }} />
+                  <Settings style={{ width: '20px', height: '20px' }} />
                 </button>
                 
                 {userMenuOpen && (
