@@ -8,10 +8,13 @@ const API_BASE_URL = 'https://invoice-generator-api-dak7.onrender.com/api';
 // API Helper Functions
 const apiCall = async (endpoint, options = {}) => {
   const token = localStorage.getItem('authToken');
+  const viewingCompanyId = localStorage.getItem('viewingCompanyId');
+  
   const config = {
     headers: {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
+      ...(viewingCompanyId && { 'X-Impersonate-Company': viewingCompanyId }),
       ...options.headers,
     },
     ...options,
@@ -85,6 +88,8 @@ const useAuth = () => {
   const logout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
+    localStorage.removeItem('viewingCompanyId');
+    localStorage.removeItem('viewingCompanyName');
     setUser(null);
   };
 
@@ -2057,7 +2062,8 @@ const InvoiceGeneratorApp = () => {
   const [superAdminCompanies, setSuperAdminCompanies] = useState([]);
   const [superAdminStats, setSuperAdminStats] = useState(null);
   const [superAdminLoading, setSuperAdminLoading] = useState(false);
-  const [impersonationInfo, setImpersonationInfo] = useState(null);
+  const [viewingCompanyId, setViewingCompanyId] = useState(null);
+  const [viewingCompanyName, setViewingCompanyName] = useState(null);
   
   // Contract selection for timesheets with multiple contracts
   const [contractSelectionModal, setContractSelectionModal] = useState({
@@ -3191,32 +3197,13 @@ const InvoiceGeneratorApp = () => {
   // =============================================
   
   const loadSuperAdminData = async () => {
-    // Allow if user is superadmin OR if we're impersonating (have original token)
-    const originalToken = localStorage.getItem('originalToken');
-    if (user?.role !== 'superadmin' && !originalToken) return;
+    if (user?.role !== 'superadmin') return;
     
     setSuperAdminLoading(true);
     try {
-      // When impersonating, use original token for super admin calls
-      const tokenToUse = originalToken || localStorage.getItem('authToken');
-      
-      const superAdminApiCall = async (endpoint) => {
-        const response = await fetch(`${API_BASE}${endpoint}`, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tokenToUse}`
-          }
-        });
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'API request failed');
-        }
-        return response.json();
-      };
-      
       const [companiesRes, statsRes] = await Promise.all([
-        superAdminApiCall('/superadmin/companies'),
-        superAdminApiCall('/superadmin/stats')
+        apiCall('/superadmin/companies'),
+        apiCall('/superadmin/stats')
       ]);
       setSuperAdminCompanies(companiesRes);
       setSuperAdminStats(statsRes);
@@ -3228,113 +3215,45 @@ const InvoiceGeneratorApp = () => {
     }
   };
 
-  const impersonateCompany = async (companyId, companyName) => {
-    console.log('🔐 Attempting to impersonate company:', companyId, companyName);
-    try {
-      // Use original token if we're already impersonating, otherwise use current token
-      const existingOriginalToken = localStorage.getItem('originalToken');
-      const tokenToUse = existingOriginalToken || localStorage.getItem('authToken');
-      
-      // Make API call with the super admin token
-      const response = await fetch(`${API_BASE}/superadmin/impersonate/${companyId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokenToUse}`
-        }
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to impersonate');
-      }
-      
-      const result = await response.json();
-      console.log('🔐 Impersonate result:', result);
-      
-      // Only save original token if we're not already impersonating
-      if (!existingOriginalToken) {
-        const originalToken = localStorage.getItem('authToken');
-        const originalUser = localStorage.getItem('userData');
-        localStorage.setItem('originalToken', originalToken);
-        localStorage.setItem('originalUser', originalUser);
-      }
-      
-      localStorage.setItem('isImpersonating', 'true');
-      localStorage.setItem('impersonatingCompanyName', companyName);
-      
-      // Set new token and user (using correct keys!)
-      localStorage.setItem('authToken', result.token);
-      localStorage.setItem('userData', JSON.stringify(result.user));
-      
-      showNotification(`Logged in as ${result.user.firstName} ${result.user.lastName} (${companyName})`);
-      
-      // Reload the page to reset state after short delay
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-    } catch (error) {
-      console.error('🔐 Impersonate error:', error);
-      showNotification('Failed to impersonate: ' + error.message, 'error');
-    }
+  const viewCompany = (companyId, companyName) => {
+    console.log('👁️ Viewing company:', companyId, companyName);
+    localStorage.setItem('viewingCompanyId', companyId.toString());
+    localStorage.setItem('viewingCompanyName', companyName);
+    setViewingCompanyId(companyId);
+    setViewingCompanyName(companyName);
+    showNotification(`Now viewing: ${companyName}`);
+    // Reload data for the new company
+    loadData();
   };
 
-  const exitImpersonation = () => {
-    const originalToken = localStorage.getItem('originalToken');
-    const originalUser = localStorage.getItem('originalUser');
-    
-    if (originalToken && originalUser) {
-      // Restore original credentials (using correct keys!)
-      localStorage.setItem('authToken', originalToken);
-      localStorage.setItem('userData', originalUser);
-      localStorage.removeItem('originalToken');
-      localStorage.removeItem('originalUser');
-      localStorage.removeItem('isImpersonating');
-      localStorage.removeItem('impersonatingCompanyName');
-      
-      showNotification('Exited impersonation mode');
-      
-      // Reload the page
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-    }
+  const exitViewingCompany = () => {
+    localStorage.removeItem('viewingCompanyId');
+    localStorage.removeItem('viewingCompanyName');
+    setViewingCompanyId(null);
+    setViewingCompanyName(null);
+    showNotification('Returned to your company');
+    // Reload data for own company
+    loadData();
   };
 
-  // Check if we're impersonating on mount
+  // Check if we're viewing another company on mount
   useEffect(() => {
-    const isImpersonating = localStorage.getItem('isImpersonating') === 'true';
-    const originalToken = localStorage.getItem('originalToken');
-    const companyName = localStorage.getItem('impersonatingCompanyName');
+    const savedCompanyId = localStorage.getItem('viewingCompanyId');
+    const savedCompanyName = localStorage.getItem('viewingCompanyName');
     
-    // Only set impersonation info if we have BOTH the flag AND the original token
-    if (isImpersonating && originalToken) {
-      const originalUser = localStorage.getItem('originalUser');
-      try {
-        const parsed = originalUser ? JSON.parse(originalUser) : null;
-        setImpersonationInfo({
-          companyName: companyName || user?.companyName || 'Unknown Company',
-          originalUser: parsed
-        });
-      } catch (e) {
-        console.error('Failed to parse original user:', e);
-        // Clear invalid impersonation state
-        localStorage.removeItem('isImpersonating');
-        localStorage.removeItem('originalToken');
-        localStorage.removeItem('originalUser');
-        localStorage.removeItem('impersonatingCompanyName');
-      }
-    } else if (isImpersonating && !originalToken) {
-      // Invalid state - clear it
-      localStorage.removeItem('isImpersonating');
-      localStorage.removeItem('impersonatingCompanyName');
+    if (savedCompanyId && user?.role === 'superadmin') {
+      setViewingCompanyId(parseInt(savedCompanyId));
+      setViewingCompanyName(savedCompanyName);
+    } else if (savedCompanyId && user?.role !== 'superadmin') {
+      // Clear if user is not superadmin anymore
+      localStorage.removeItem('viewingCompanyId');
+      localStorage.removeItem('viewingCompanyName');
     }
   }, [user]);
 
-  // Load super admin data when user is superadmin or impersonating
+  // Load super admin data when user is superadmin
   useEffect(() => {
-    const isImpersonating = localStorage.getItem('isImpersonating') === 'true';
-    if ((user?.role === 'superadmin' || isImpersonating) && activeTab === 'superadmin') {
+    if (user?.role === 'superadmin' && activeTab === 'superadmin') {
       loadSuperAdminData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -4052,11 +3971,11 @@ const InvoiceGeneratorApp = () => {
         </div>
       )}
 
-      {/* Impersonation Banner */}
-      {impersonationInfo && (
+      {/* Viewing Company Banner */}
+      {viewingCompanyId && user?.role === 'superadmin' && (
         <div style={{
-          backgroundColor: '#fef3c7',
-          borderBottom: '2px solid #f59e0b',
+          backgroundColor: '#dbeafe',
+          borderBottom: '2px solid #3b82f6',
           padding: '12px 32px',
           display: 'flex',
           alignItems: 'center',
@@ -4066,25 +3985,20 @@ const InvoiceGeneratorApp = () => {
           zIndex: 101
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '20px' }}>⚠️</span>
+            <span style={{ fontSize: '20px' }}>👁️</span>
             <div>
-              <span style={{ fontWeight: 700, color: '#92400e' }}>
-                Impersonating: {impersonationInfo.companyName || user?.companyName}
+              <span style={{ fontWeight: 700, color: '#1e40af' }}>
+                Viewing: {viewingCompanyName}
               </span>
-              <span style={{ color: '#b45309', marginLeft: '8px' }}>
-                as {user?.firstName} {user?.lastName} ({user?.role})
+              <span style={{ color: '#3b82f6', marginLeft: '8px', fontSize: '13px' }}>
+                (You are still {user?.firstName} {user?.lastName} - Super Admin)
               </span>
-              {impersonationInfo.originalUser && (
-                <span style={{ color: '#78716c', marginLeft: '12px', fontSize: '12px' }}>
-                  | Logged in as: {impersonationInfo.originalUser.firstName} {impersonationInfo.originalUser.lastName}
-                </span>
-              )}
             </div>
           </div>
           <button
-            onClick={exitImpersonation}
+            onClick={exitViewingCompany}
             style={{
-              backgroundColor: '#dc2626',
+              backgroundColor: '#3b82f6',
               color: 'white',
               padding: '8px 16px',
               borderRadius: '8px',
@@ -4097,8 +4011,8 @@ const InvoiceGeneratorApp = () => {
               gap: '8px'
             }}
           >
-            <LogOut style={{ width: '14px', height: '14px' }} />
-            Exit Impersonation
+            <Eye style={{ width: '14px', height: '14px' }} />
+            Back to My Company
           </button>
         </div>
       )}
@@ -4170,7 +4084,7 @@ const InvoiceGeneratorApp = () => {
                 .filter(tab => {
                   // Super admin tab: show if user is superadmin OR if impersonating (original user was superadmin)
                   if (tab.permission === 'is_superadmin') {
-                    return user?.role === 'superadmin' || impersonationInfo !== null;
+                    return user?.role === 'superadmin';
                   }
                   const perms = user?.permissions || (user?.role === 'admin' || user?.role === 'superadmin' ? {
                     can_view_dashboard: true, can_view_contracts: true, can_view_consultants: true,
@@ -6877,7 +6791,7 @@ const InvoiceGeneratorApp = () => {
         )}
 
         {/* Super Admin Tab */}
-        {activeTab === 'superadmin' && (user?.role === 'superadmin' || impersonationInfo !== null) && (
+        {activeTab === 'superadmin' && user?.role === 'superadmin' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>
@@ -6970,19 +6884,21 @@ const InvoiceGeneratorApp = () => {
                   </thead>
                   <tbody>
                     {superAdminCompanies.map((company) => {
-                      const isCurrentCompany = company.id === user?.companyId;
+                      const isOwnCompany = company.id === user?.companyId;
+                      const isViewingThis = company.id === viewingCompanyId;
+                      const isCurrentlyViewing = isViewingThis || (isOwnCompany && !viewingCompanyId);
                       
                       return (
                         <tr key={company.id} style={{ 
                           borderBottom: '1px solid #f1f5f9',
-                          backgroundColor: isCurrentCompany ? '#ecfdf5' : 'white'
+                          backgroundColor: isCurrentlyViewing ? '#dbeafe' : isOwnCompany ? '#ecfdf5' : 'white'
                         }}>
                           <td style={{ padding: '16px 20px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                               <div>
                                 <div style={{ fontWeight: 700, color: '#0f172a' }}>
                                   {company.name}
-                                  {isCurrentCompany && (
+                                  {isOwnCompany && (
                                     <span style={{ 
                                       marginLeft: '8px', 
                                       backgroundColor: '#10b981', 
@@ -6992,7 +6908,20 @@ const InvoiceGeneratorApp = () => {
                                       fontSize: '10px',
                                       fontWeight: 700
                                     }}>
-                                      CURRENT
+                                      MY COMPANY
+                                    </span>
+                                  )}
+                                  {isViewingThis && (
+                                    <span style={{ 
+                                      marginLeft: '8px', 
+                                      backgroundColor: '#3b82f6', 
+                                      color: 'white', 
+                                      padding: '2px 8px', 
+                                      borderRadius: '10px', 
+                                      fontSize: '10px',
+                                      fontWeight: 700
+                                    }}>
+                                      VIEWING
                                     </span>
                                   )}
                                 </div>
@@ -7026,9 +6955,9 @@ const InvoiceGeneratorApp = () => {
                             </span>
                           </td>
                           <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                            {isCurrentCompany ? (
+                            {isCurrentlyViewing ? (
                               <span style={{
-                                backgroundColor: '#10b981',
+                                backgroundColor: '#3b82f6',
                                 color: 'white',
                                 padding: '8px 16px',
                                 borderRadius: '8px',
@@ -7038,23 +6967,12 @@ const InvoiceGeneratorApp = () => {
                                 alignItems: 'center',
                                 gap: '6px'
                               }}>
-                                <CheckCircle style={{ width: '14px', height: '14px' }} />
-                                You're Here
-                              </span>
-                            ) : company.user_count === 0 ? (
-                              <span style={{
-                                backgroundColor: '#e2e8f0',
-                                color: '#64748b',
-                                padding: '8px 16px',
-                                borderRadius: '8px',
-                                fontWeight: 600,
-                                fontSize: '12px'
-                              }}>
-                                No Users
+                                <Eye style={{ width: '14px', height: '14px' }} />
+                                Viewing
                               </span>
                             ) : (
                               <button
-                                onClick={() => impersonateCompany(company.id, company.name)}
+                                onClick={() => viewCompany(company.id, company.name)}
                                 style={{
                                   backgroundColor: '#4f46e5',
                                   color: 'white',
@@ -7069,8 +6987,8 @@ const InvoiceGeneratorApp = () => {
                                   gap: '6px'
                                 }}
                               >
-                                <LogOut style={{ width: '14px', height: '14px' }} />
-                                Login As
+                                <Eye style={{ width: '14px', height: '14px' }} />
+                                View
                               </button>
                             )}
                           </td>
