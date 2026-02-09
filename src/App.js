@@ -2212,7 +2212,7 @@ const InvoiceGeneratorApp = () => {
       await loadCompanySettings().catch(err => console.error('Settings load failed:', err));
       await loadTimesheetStatus().catch(err => console.error('Timesheet status load failed:', err));
       
-      if (user.role === 'admin') {
+      if (user.role === 'admin' || user.role === 'superadmin') {
         await loadUsers().catch(err => console.error('Users load failed:', err));
       }
       
@@ -4203,7 +4203,7 @@ const InvoiceGeneratorApp = () => {
                       Change Password
                     </button>
                     
-                    {user.role === 'admin' && (
+                    {(user.role === 'admin' || user.role === 'superadmin') && (
                       <button
                         onClick={() => {
                           setSettingsModalOpen(true);
@@ -4527,7 +4527,7 @@ const InvoiceGeneratorApp = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Consultants</h2>
-              {user.role === 'admin' && (
+              {(user.role === 'admin' || user.role === 'superadmin') && (
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button
                     onClick={() => setCsvUploadModalOpen(true)}
@@ -4619,7 +4619,7 @@ const InvoiceGeneratorApp = () => {
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Banking</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Created</th>
-                      {user.role === 'admin' && <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operations</th>}
+                      {(user.role === 'admin' || user.role === 'superadmin') && <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operations</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -4674,7 +4674,7 @@ const InvoiceGeneratorApp = () => {
                           <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{consultant.swift || '-'}</div>
                         </td>
                         <td style={{ padding: '16px 20px', fontSize: '13px', color: '#64748b' }}>{formatDate(consultant.created_at)}</td>
-                        {user.role === 'admin' && (
+                        {(user.role === 'admin' || user.role === 'superadmin') && (
                           <td style={{ padding: '16px 20px', textAlign: 'center' }}>
                             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                               <button 
@@ -4724,7 +4724,7 @@ const InvoiceGeneratorApp = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Clients</h2>
-              {user.role === 'admin' && (
+              {(user.role === 'admin' || user.role === 'superadmin') && (
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button
                     onClick={() => setClientCsvUploadModalOpen(true)}
@@ -4815,7 +4815,7 @@ const InvoiceGeneratorApp = () => {
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Banking</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Created</th>
-                      {user.role === 'admin' && <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operations</th>}
+                      {(user.role === 'admin' || user.role === 'superadmin') && <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operations</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -4870,7 +4870,7 @@ const InvoiceGeneratorApp = () => {
                           <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px' }}>{client.swift || '-'}</div>
                         </td>
                         <td style={{ padding: '16px 20px', fontSize: '13px', color: '#64748b' }}>{formatDate(client.created_at)}</td>
-                        {user.role === 'admin' && (
+                        {(user.role === 'admin' || user.role === 'superadmin') && (
                           <td style={{ padding: '16px 20px', textAlign: 'center' }}>
                             <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                               <button 
@@ -4920,7 +4920,7 @@ const InvoiceGeneratorApp = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Contracts</h2>
-              {user.role === 'admin' && (
+              {(user.role === 'admin' || user.role === 'superadmin') && (
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button
                     onClick={() => setContractCsvUploadModalOpen(true)}
@@ -5008,7 +5008,7 @@ const InvoiceGeneratorApp = () => {
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Period</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Pricing</th>
                       <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-                      {user.role === 'admin' && <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operations</th>}
+                      {(user.role === 'admin' || user.role === 'superadmin') && <th style={{ textAlign: 'center', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Operations</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -5074,7 +5074,7 @@ const InvoiceGeneratorApp = () => {
                               {isActive ? 'Active' : 'Inactive'}
                             </span>
                           </td>
-                          {user.role === 'admin' && (
+                          {(user.role === 'admin' || user.role === 'superadmin') && (
                             <td style={{ padding: '16px 20px', textAlign: 'center' }}>
                               <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                                 <button 
@@ -6629,7 +6629,7 @@ const InvoiceGeneratorApp = () => {
         )}
 
         {/* Users Management Tab (Admin Only) */}
-        {activeTab === 'users' && user.role === 'admin' && (
+        {activeTab === 'users' && (user.role === 'admin' || user.role === 'superadmin') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>User Management</h2>
