@@ -3222,9 +3222,11 @@ const InvoiceGeneratorApp = () => {
   };
 
   const viewCompany = (companyId, companyName) => {
-    console.log('👁️ Viewing company:', companyId, companyName);
+    console.log('👁️ viewCompany CLICKED! companyId:', companyId, 'companyName:', companyName);
+    alert('View clicked for: ' + companyName); // Debug alert
     localStorage.setItem('viewingCompanyId', companyId.toString());
     localStorage.setItem('viewingCompanyName', companyName);
+    console.log('👁️ Saved to localStorage:', localStorage.getItem('viewingCompanyId'));
     // Reload page to ensure clean state
     window.location.reload();
   };
@@ -3238,17 +3240,23 @@ const InvoiceGeneratorApp = () => {
 
   // Check if we're viewing another company on mount
   useEffect(() => {
+    // Don't do anything until user is loaded
+    if (!user) {
+      console.log('👁️ Viewing check - user not loaded yet, skipping');
+      return;
+    }
+    
     const savedCompanyId = localStorage.getItem('viewingCompanyId');
     const savedCompanyName = localStorage.getItem('viewingCompanyName');
     
     console.log('👁️ Viewing check - savedCompanyId:', savedCompanyId, ', user.role:', user?.role);
     
-    if (savedCompanyId && user?.role === 'superadmin') {
+    if (savedCompanyId && user.role === 'superadmin') {
       setViewingCompanyId(parseInt(savedCompanyId));
       setViewingCompanyName(savedCompanyName);
       console.log('👁️ Set viewingCompanyId to:', savedCompanyId);
-    } else if (savedCompanyId && user?.role !== 'superadmin') {
-      // Clear if user is not superadmin anymore
+    } else if (savedCompanyId && user.role !== 'superadmin') {
+      // Clear if user is not superadmin
       console.log('👁️ Clearing viewing - user is not superadmin');
       localStorage.removeItem('viewingCompanyId');
       localStorage.removeItem('viewingCompanyName');
