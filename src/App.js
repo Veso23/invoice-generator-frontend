@@ -10,11 +10,6 @@ const apiCall = async (endpoint, options = {}) => {
   const token = localStorage.getItem('authToken');
   const viewingCompanyId = localStorage.getItem('viewingCompanyId');
   
-  // Debug log
-  if (viewingCompanyId) {
-    console.log('🔍 API Call with X-Impersonate-Company:', viewingCompanyId, 'to', endpoint);
-  }
-  
   const config = {
     headers: {
       'Content-Type': 'application/json',
@@ -2230,7 +2225,6 @@ const InvoiceGeneratorApp = () => {
 
   useEffect(() => {
     if (user) {
-      console.log('📊 Loading data for user:', user.email, ', viewingCompanyId:', viewingCompanyId);
       loadData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3202,14 +3196,30 @@ const InvoiceGeneratorApp = () => {
   // SUPER ADMIN FUNCTIONS
   // =============================================
   
+  // Special API call for super admin endpoints - never sends X-Impersonate-Company
+  const superAdminApiCall = async (endpoint) => {
+    const token = localStorage.getItem('authToken');
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'API request failed');
+    }
+    return response.json();
+  };
+  
   const loadSuperAdminData = async () => {
     if (user?.role !== 'superadmin') return;
     
     setSuperAdminLoading(true);
     try {
       const [companiesRes, statsRes] = await Promise.all([
-        apiCall('/superadmin/companies'),
-        apiCall('/superadmin/stats')
+        superAdminApiCall('/superadmin/companies'),
+        superAdminApiCall('/superadmin/stats')
       ]);
       setSuperAdminCompanies(companiesRes);
       setSuperAdminStats(statsRes);
@@ -3222,11 +3232,9 @@ const InvoiceGeneratorApp = () => {
   };
 
   const viewCompany = (companyId, companyName) => {
-    console.log('👁️ viewCompany CLICKED! companyId:', companyId, 'companyName:', companyName);
-    alert('View clicked for: ' + companyName); // Debug alert
+    console.log('👁️ viewCompany - switching to:', companyId, companyName);
     localStorage.setItem('viewingCompanyId', companyId.toString());
     localStorage.setItem('viewingCompanyName', companyName);
-    console.log('👁️ Saved to localStorage:', localStorage.getItem('viewingCompanyId'));
     // Reload page to ensure clean state
     window.location.reload();
   };
@@ -3241,23 +3249,16 @@ const InvoiceGeneratorApp = () => {
   // Check if we're viewing another company on mount
   useEffect(() => {
     // Don't do anything until user is loaded
-    if (!user) {
-      console.log('👁️ Viewing check - user not loaded yet, skipping');
-      return;
-    }
+    if (!user) return;
     
     const savedCompanyId = localStorage.getItem('viewingCompanyId');
     const savedCompanyName = localStorage.getItem('viewingCompanyName');
     
-    console.log('👁️ Viewing check - savedCompanyId:', savedCompanyId, ', user.role:', user?.role);
-    
     if (savedCompanyId && user.role === 'superadmin') {
       setViewingCompanyId(parseInt(savedCompanyId));
       setViewingCompanyName(savedCompanyName);
-      console.log('👁️ Set viewingCompanyId to:', savedCompanyId);
     } else if (savedCompanyId && user.role !== 'superadmin') {
       // Clear if user is not superadmin
-      console.log('👁️ Clearing viewing - user is not superadmin');
       localStorage.removeItem('viewingCompanyId');
       localStorage.removeItem('viewingCompanyName');
     }
