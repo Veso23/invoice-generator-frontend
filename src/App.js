@@ -1632,7 +1632,8 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
     smtp_password: '',
     smtp_from_email: '',
     smtp_from_name: '',
-    smtp_secure: true
+    smtp_secure: true,
+    invoice_template: 'classic'
   });
 
   useEffect(() => {
@@ -1656,7 +1657,8 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
         smtp_from_email: settings.smtp_from_email || '',
         smtp_from_name: settings.smtp_from_name || '',
         smtp_secure: settings.smtp_secure !== false,
-        timesheet_email: settings.timesheet_email || ''
+        timesheet_email: settings.timesheet_email || '',
+        invoice_template: settings.invoice_template || 'classic'
       });
     }
   }, [isOpen, settings]);
@@ -1875,6 +1877,204 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
             {/* Invoice Settings Tab */}
             {activeSettingsTab === 'invoice' && (
               <div>
+                {/* Invoice Template Selection */}
+                <div style={{ marginBottom: '32px' }}>
+                  <h4 style={sectionTitleStyle}>Invoice Template</h4>
+                  <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '16px' }}>
+                    Choose a design for your generated PDF invoices
+                  </p>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                    {/* Classic Template */}
+                    <div 
+                      onClick={() => setFormData({ ...formData, invoice_template: 'classic' })}
+                      style={{
+                        padding: '16px',
+                        border: formData.invoice_template === 'classic' ? '2px solid #4f46e5' : '2px solid #e2e8f0',
+                        borderRadius: '16px',
+                        cursor: 'pointer',
+                        backgroundColor: formData.invoice_template === 'classic' ? '#eef2ff' : 'white',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <div style={{ 
+                        height: '100px', 
+                        backgroundColor: '#f8fafc', 
+                        borderRadius: '8px', 
+                        marginBottom: '12px',
+                        padding: '12px',
+                        border: '1px solid #e2e8f0'
+                      }}>
+                        {/* Classic preview */}
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>COMPANY NAME</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <div style={{ width: '40%', height: '20px', backgroundColor: '#e2e8f0', borderRadius: '4px' }}></div>
+                          <div style={{ width: '40%', height: '20px', backgroundColor: '#e2e8f0', borderRadius: '4px' }}></div>
+                        </div>
+                        <div style={{ textAlign: 'center', fontSize: '8px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>INVOICE</div>
+                        <div style={{ height: '2px', backgroundColor: '#e2e8f0', marginBottom: '6px' }}></div>
+                        <div style={{ height: '15px', backgroundColor: '#e2e8f0', borderRadius: '4px' }}></div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                          width: '20px', height: '20px', borderRadius: '50%',
+                          border: formData.invoice_template === 'classic' ? '6px solid #4f46e5' : '2px solid #cbd5e1',
+                          backgroundColor: 'white'
+                        }}></div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Classic</div>
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>Simple & Clean</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Modern Template */}
+                    <div 
+                      onClick={() => setFormData({ ...formData, invoice_template: 'modern' })}
+                      style={{
+                        padding: '16px',
+                        border: formData.invoice_template === 'modern' ? '2px solid #4f46e5' : '2px solid #e2e8f0',
+                        borderRadius: '16px',
+                        cursor: 'pointer',
+                        backgroundColor: formData.invoice_template === 'modern' ? '#eef2ff' : 'white',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <div style={{ 
+                        height: '100px', 
+                        backgroundColor: '#f8fafc', 
+                        borderRadius: '8px', 
+                        marginBottom: '12px',
+                        overflow: 'hidden',
+                        border: '1px solid #e2e8f0'
+                      }}>
+                        {/* Modern preview - blue header */}
+                        <div style={{ height: '28px', backgroundColor: '#1e40af', display: 'flex', alignItems: 'center', padding: '0 12px' }}>
+                          <div style={{ fontSize: '9px', fontWeight: 700, color: 'white' }}>COMPANY</div>
+                          <div style={{ marginLeft: 'auto', backgroundColor: '#3b82f6', padding: '2px 8px', borderRadius: '4px', fontSize: '7px', color: 'white' }}>INVOICE</div>
+                        </div>
+                        <div style={{ padding: '8px 12px' }}>
+                          <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                            <div style={{ flex: 1, height: '25px', backgroundColor: '#f1f5f9', borderRadius: '4px' }}></div>
+                            <div style={{ flex: 1, height: '25px', backgroundColor: '#f1f5f9', borderRadius: '4px' }}></div>
+                          </div>
+                          <div style={{ height: '20px', backgroundColor: '#1e40af', borderRadius: '4px', marginBottom: '4px' }}></div>
+                          <div style={{ height: '15px', backgroundColor: '#e2e8f0', borderRadius: '4px' }}></div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                          width: '20px', height: '20px', borderRadius: '50%',
+                          border: formData.invoice_template === 'modern' ? '6px solid #4f46e5' : '2px solid #cbd5e1',
+                          backgroundColor: 'white'
+                        }}></div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Modern</div>
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>Bold Blue Header</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Minimal Template */}
+                    <div 
+                      onClick={() => setFormData({ ...formData, invoice_template: 'minimal' })}
+                      style={{
+                        padding: '16px',
+                        border: formData.invoice_template === 'minimal' ? '2px solid #4f46e5' : '2px solid #e2e8f0',
+                        borderRadius: '16px',
+                        cursor: 'pointer',
+                        backgroundColor: formData.invoice_template === 'minimal' ? '#eef2ff' : 'white',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <div style={{ 
+                        height: '100px', 
+                        backgroundColor: 'white', 
+                        borderRadius: '8px', 
+                        marginBottom: '12px',
+                        padding: '12px',
+                        border: '1px solid #e2e8f0'
+                      }}>
+                        {/* Minimal preview */}
+                        <div style={{ height: '3px', backgroundColor: '#0f172a', marginBottom: '8px', width: '100%' }}></div>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Company</div>
+                        <div style={{ fontSize: '8px', color: '#64748b', marginBottom: '8px' }}>Invoice #INV-001</div>
+                        <div style={{ height: '1px', backgroundColor: '#e2e8f0', marginBottom: '8px' }}></div>
+                        <div style={{ display: 'flex', gap: '16px', marginBottom: '8px' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '7px', color: '#94a3b8', marginBottom: '2px' }}>BILLED TO</div>
+                            <div style={{ height: '15px', backgroundColor: '#f1f5f9', borderRadius: '2px' }}></div>
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '7px', color: '#94a3b8', marginBottom: '2px' }}>FROM</div>
+                            <div style={{ height: '15px', backgroundColor: '#f1f5f9', borderRadius: '2px' }}></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                          width: '20px', height: '20px', borderRadius: '50%',
+                          border: formData.invoice_template === 'minimal' ? '6px solid #4f46e5' : '2px solid #cbd5e1',
+                          backgroundColor: 'white'
+                        }}></div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Minimal</div>
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>Ultra Clean</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Professional Template */}
+                    <div 
+                      onClick={() => setFormData({ ...formData, invoice_template: 'professional' })}
+                      style={{
+                        padding: '16px',
+                        border: formData.invoice_template === 'professional' ? '2px solid #4f46e5' : '2px solid #e2e8f0',
+                        borderRadius: '16px',
+                        cursor: 'pointer',
+                        backgroundColor: formData.invoice_template === 'professional' ? '#eef2ff' : 'white',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <div style={{ 
+                        height: '100px', 
+                        backgroundColor: '#f8fafc', 
+                        borderRadius: '8px', 
+                        marginBottom: '12px',
+                        overflow: 'hidden',
+                        border: '1px solid #e2e8f0',
+                        display: 'flex'
+                      }}>
+                        {/* Professional preview - green sidebar */}
+                        <div style={{ width: '6px', backgroundColor: '#059669' }}></div>
+                        <div style={{ flex: 1, padding: '10px' }}>
+                          <div style={{ fontSize: '10px', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>Company Name</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                            <div style={{ width: '50%', height: '20px', backgroundColor: '#e2e8f0', borderRadius: '4px' }}></div>
+                            <div style={{ backgroundColor: '#f0fdf4', padding: '4px 8px', borderRadius: '4px' }}>
+                              <div style={{ fontSize: '7px', fontWeight: 700, color: '#059669' }}>INVOICE</div>
+                            </div>
+                          </div>
+                          <div style={{ height: '20px', backgroundColor: '#059669', borderRadius: '4px', marginBottom: '4px' }}></div>
+                          <div style={{ height: '12px', backgroundColor: '#e2e8f0', borderRadius: '4px' }}></div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{
+                          width: '20px', height: '20px', borderRadius: '50%',
+                          border: formData.invoice_template === 'professional' ? '6px solid #4f46e5' : '2px solid #cbd5e1',
+                          backgroundColor: 'white'
+                        }}></div>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Professional</div>
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>Green Accent</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Other Invoice Settings */}
+                <h4 style={sectionTitleStyle}>Invoice Defaults</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
                     <label style={labelStyle}>Timesheet Deadline (Day of Month)</label>
