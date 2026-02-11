@@ -418,6 +418,49 @@ const LoadingSpinner = ({ message = "Loading..." }) => (
   </div>
 );
 
+// Loading Overlay Component - doesn't move content
+const LoadingOverlay = ({ show, message = "Loading..." }) => {
+  if (!show) return null;
+  return (
+    <div style={{
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(255, 255, 255, 0.9)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 50,
+      borderRadius: '16px'
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        backgroundColor: 'white',
+        padding: '20px 32px',
+        borderRadius: '12px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+        border: '1px solid #e2e8f0'
+      }}>
+        <div style={{
+          width: '24px',
+          height: '24px',
+          border: '3px solid #e2e8f0',
+          borderTopColor: '#4f46e5',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }} />
+        <span style={{ color: '#475569', fontWeight: 600, fontSize: '15px' }}>
+          {message}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 // Notification Component
 const Notification = ({ notification, onClose }) => {
   useEffect(() => {
@@ -3478,6 +3521,15 @@ const InvoiceGeneratorApp = () => {
   };
 
   const viewCompany = (companyId, companyName) => {
+    // If clicking on own company, clear viewing state
+    if (companyId === user?.companyId) {
+      console.log('👁️ viewCompany - switching to own company, clearing viewing state');
+      localStorage.removeItem('viewingCompanyId');
+      localStorage.removeItem('viewingCompanyName');
+      window.location.reload();
+      return;
+    }
+    
     console.log('👁️ viewCompany - switching to:', companyId, companyName);
     localStorage.setItem('viewingCompanyId', companyId.toString());
     localStorage.setItem('viewingCompanyName', companyName);
@@ -3809,6 +3861,13 @@ const InvoiceGeneratorApp = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* CSS Animation for loading spinner */}
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+
       {/* Notification */}
       <Notification 
         notification={notification} 
@@ -4130,8 +4189,8 @@ const InvoiceGeneratorApp = () => {
         </div>
       )}
 
-      {/* Viewing Company Banner */}
-      {viewingCompanyId && user?.role === 'superadmin' && (
+      {/* Viewing Company Banner - only show when viewing ANOTHER company */}
+      {viewingCompanyId && user?.role === 'superadmin' && viewingCompanyId !== user?.companyId && (
         <div style={{
           backgroundColor: '#dbeafe',
           borderBottom: '2px solid #3b82f6',
@@ -4411,12 +4470,9 @@ const InvoiceGeneratorApp = () => {
         </div>
       </div>
 
-      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px' }}>
-        {dataLoading && (
-          <div className="bg-white rounded-lg border mb-6">
-            <LoadingSpinner message="Loading data..." />
-          </div>
-        )}
+      <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px', position: 'relative', minHeight: '400px' }}>
+        {/* Loading Overlay */}
+        <LoadingOverlay show={dataLoading} message="Loading data..." />
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
