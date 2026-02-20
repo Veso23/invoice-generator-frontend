@@ -534,6 +534,69 @@ const Notification = ({ notification, onClose }) => {
   );
 };
 
+// Confirm Dialog Modal
+const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel = 'Delete', confirmColor = '#ef4444', icon = null }) => {
+  if (!isOpen) return null;
+  return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      backgroundColor: 'rgba(15, 23, 42, 0.6)',
+      backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 9999, padding: '24px'
+    }} onClick={onClose}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '24px',
+        padding: '32px',
+        width: '100%',
+        maxWidth: '420px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+      }} onClick={e => e.stopPropagation()}>
+        {/* Icon */}
+        <div style={{
+          width: '52px', height: '52px', borderRadius: '16px',
+          backgroundColor: confirmColor === '#ef4444' ? '#fef2f2' : '#fffbeb',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginBottom: '20px'
+        }}>
+          {icon || (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={confirmColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+            </svg>
+          )}
+        </div>
+        {/* Title */}
+        <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', margin: '0 0 8px 0' }}>{title}</h3>
+        {/* Message */}
+        <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 28px 0', lineHeight: 1.6 }}>{message}</p>
+        {/* Buttons */}
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, padding: '13px 20px',
+              backgroundColor: 'white', color: '#475569',
+              border: '1px solid #e2e8f0', borderRadius: '12px',
+              fontSize: '14px', fontWeight: 700, cursor: 'pointer'
+            }}
+          >Cancel</button>
+          <button
+            onClick={() => { onConfirm(); onClose(); }}
+            style={{
+              flex: 1, padding: '13px 20px',
+              backgroundColor: confirmColor, color: 'white',
+              border: 'none', borderRadius: '12px',
+              fontSize: '14px', fontWeight: 700, cursor: 'pointer',
+              boxShadow: `0 4px 14px ${confirmColor}55`
+            }}
+          >{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Simple Form Modal Component
 const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonText = 'Add' }) => {
   const [formData, setFormData] = useState({});
@@ -2432,6 +2495,7 @@ const InvoiceGeneratorApp = () => {
   const [pendingTimesheetSelection, setPendingTimesheetSelection] = useState({});
   const [activeTimesheetTab, setActiveTimesheetTab] = useState('current');
   const [csvUploadModalOpen, setCsvUploadModalOpen] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, confirmLabel: 'Delete', confirmColor: '#ef4444' });
   const [csvData, setCsvData] = useState([]);
   const [csvUploading, setCsvUploading] = useState(false);
   // Client CSV upload state
@@ -2892,15 +2956,23 @@ const InvoiceGeneratorApp = () => {
   };
 
 
-  const deleteTimesheet = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this timesheet? This action cannot be undone.")) return;
-    try {
-      await apiCall(`/timesheets/${id}`, { method: "DELETE" });
-      showNotification("Timesheet deleted successfully!");
-      loadData();
-    } catch (error) {
-      showNotification("Failed to delete timesheet: " + error.message, "error");
-    }
+  const deleteTimesheet = (id) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Timesheet',
+      message: 'Are you sure you want to delete this timesheet? This action cannot be undone.',
+      confirmLabel: 'Delete',
+      confirmColor: '#ef4444',
+      onConfirm: async () => {
+        try {
+          await apiCall(`/timesheets/${id}`, { method: "DELETE" });
+          showNotification("Timesheet deleted successfully!");
+          loadData();
+        } catch (error) {
+          showNotification("Failed to delete timesheet: " + error.message, "error");
+        }
+      }
+    });
   };
 
   const deleteContract = async (id) => {
@@ -4118,6 +4190,16 @@ const InvoiceGeneratorApp = () => {
         uploading={contractCsvUploading}
         title="Bulk Upload Contracts"
         entityType="contract"
+      />
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmLabel={confirmModal.confirmLabel}
+        confirmColor={confirmModal.confirmColor}
       />
 
       {/* Contract Selection Modal */}
@@ -6108,60 +6190,93 @@ const InvoiceGeneratorApp = () => {
 
                               {/* Actions */}
                               <td className="p-4">
-                                <div className="flex gap-2">
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                  {/* View PDF */}
                                   {timesheet.timesheet_file_url && (
                                     <button
-                                      onClick={() => {
-                                        const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
-                                        window.open(fixedUrl, '_blank');
-                                      }}
-                                      className="text-blue-600 hover:text-blue-800 p-1 transition"
+                                      onClick={() => window.open(fixTimesheetUrl(timesheet.timesheet_file_url), '_blank')}
                                       title="View Timesheet PDF"
+                                      style={{
+                                        width: '34px', height: '34px',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        borderRadius: '10px',
+                                        border: '1px solid #e2e8f0',
+                                        backgroundColor: 'white',
+                                        color: '#4f46e5',
+                                        cursor: 'pointer'
+                                      }}
                                     >
-                                      <Eye className="h-4 w-4" />
+                                      <Eye style={{ width: '15px', height: '15px' }} />
                                     </button>
                                   )}
+                                  {/* Unflag */}
                                   {timesheet.flagged_for_review && (
                                     <button
                                       onClick={() => unflagForReview(timesheet.id)}
-                                      className="px-2 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200 transition flex items-center gap-1"
                                       title="Remove flag and return to normal queue"
+                                      style={{
+                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                        padding: '7px 13px',
+                                        borderRadius: '10px',
+                                        border: 'none',
+                                        backgroundColor: '#ecfdf5',
+                                        color: '#059669',
+                                        fontSize: '12px', fontWeight: 700,
+                                        cursor: 'pointer'
+                                      }}
                                     >
-                                      <CheckCircle className="h-3 w-3" />
+                                      <CheckCircle style={{ width: '13px', height: '13px' }} />
                                       Unflag
                                     </button>
                                   )}
+                                  {/* Invoice */}
                                   {timesheet.month && !timesheet.invoice_generated && (
                                     <button
                                       onClick={() => generateInvoiceForTimesheet(timesheet)}
                                       disabled={generatingInvoice[timesheet.id]}
-                                      className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
-                                        generatingInvoice[timesheet.id] 
-                                          ? 'bg-green-400 cursor-not-allowed' 
-                                          : 'bg-green-600 text-white'
-                                      }`}
                                       title="Generate Invoice"
+                                      style={{
+                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                        padding: '7px 13px',
+                                        borderRadius: '10px',
+                                        border: 'none',
+                                        backgroundColor: generatingInvoice[timesheet.id] ? '#a5b4fc' : '#4f46e5',
+                                        color: 'white',
+                                        fontSize: '12px', fontWeight: 700,
+                                        cursor: generatingInvoice[timesheet.id] ? 'not-allowed' : 'pointer',
+                                        boxShadow: generatingInvoice[timesheet.id] ? 'none' : '0 4px 12px rgba(79,70,229,0.3)'
+                                      }}
                                     >
                                       {generatingInvoice[timesheet.id] ? (
                                         <>
-                                          <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
+                                          <div style={{ width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                                           Generating...
                                         </>
                                       ) : (
                                         <>
-                                          <FileText className="h-3 w-3" />
+                                          <FileText style={{ width: '13px', height: '13px' }} />
                                           Invoice
                                         </>
                                       )}
                                     </button>
                                   )}
+                                  {/* Delete */}
                                   {(user.role === 'admin' || user.role === 'superadmin') && timesheet.flagged_for_review && !timesheet.invoice_generated && (
                                     <button
                                       onClick={() => deleteTimesheet(timesheet.id)}
-                                      className="px-2 py-1 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200 transition flex items-center gap-1"
                                       title="Delete this timesheet"
+                                      style={{
+                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                        padding: '7px 13px',
+                                        borderRadius: '10px',
+                                        border: '1px solid #fecaca',
+                                        backgroundColor: 'white',
+                                        color: '#ef4444',
+                                        fontSize: '12px', fontWeight: 700,
+                                        cursor: 'pointer'
+                                      }}
                                     >
-                                      <Trash2 className="h-3 w-3" />
+                                      <Trash2 style={{ width: '13px', height: '13px' }} />
                                       Delete
                                     </button>
                                   )}
