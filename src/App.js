@@ -2240,9 +2240,10 @@ const DeadlineModal = ({ isOpen, onClose, currentDeadline, onSubmit }) => {
 };
 
 // Pagination Component
-const PaginationBar = ({ currentPage, totalPages, totalItems, itemsPerPage, onPageChange }) => {
-  if (totalPages <= 1) return null;
-  const from = (currentPage - 1) * itemsPerPage + 1;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+
+const PaginationBar = ({ currentPage, totalPages, totalItems, itemsPerPage, onPageChange, onPageSizeChange }) => {
+  const from = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const to = Math.min(currentPage * itemsPerPage, totalItems);
 
   const pages = [];
@@ -2259,62 +2260,93 @@ const PaginationBar = ({ currentPage, totalPages, totalItems, itemsPerPage, onPa
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '16px 24px',
+      padding: '14px 24px',
       borderTop: '1px solid #f1f5f9',
-      backgroundColor: '#fafafa'
+      backgroundColor: '#fafafa',
+      flexWrap: 'wrap',
+      gap: '12px'
     }}>
-      <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
-        Showing {from}–{to} of {totalItems} results
-      </span>
-      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-        <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          style={{
-            padding: '8px 14px',
-            borderRadius: '10px',
-            border: '1px solid #e2e8f0',
-            backgroundColor: 'white',
-            color: currentPage === 1 ? '#cbd5e1' : '#475569',
-            cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-            fontSize: '13px',
-            fontWeight: 600
-          }}
-        >‹ Prev</button>
-        {pages.map((p, idx) => (
-          p === '...'
-            ? <span key={`ellipsis-${idx}`} style={{ padding: '0 4px', color: '#94a3b8', fontSize: '13px' }}>…</span>
-            : <button
-                key={p}
-                onClick={() => onPageChange(p)}
+      {/* Left: info + rows-per-page */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+          {totalItems === 0 ? 'No results' : `Showing ${from}–${to} of ${totalItems} results`}
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>Rows per page:</span>
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {PAGE_SIZE_OPTIONS.map(size => (
+              <button
+                key={size}
+                onClick={() => { onPageSizeChange(size); onPageChange(1); }}
                 style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  border: p === currentPage ? 'none' : '1px solid #e2e8f0',
-                  backgroundColor: p === currentPage ? '#4f46e5' : 'white',
-                  color: p === currentPage ? 'white' : '#475569',
+                  padding: '5px 10px',
+                  borderRadius: '8px',
+                  border: size === itemsPerPage ? 'none' : '1px solid #e2e8f0',
+                  backgroundColor: size === itemsPerPage ? '#4f46e5' : 'white',
+                  color: size === itemsPerPage ? 'white' : '#64748b',
                   cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 700
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  transition: 'all 0.15s'
                 }}
-              >{p}</button>
-        ))}
-        <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          style={{
-            padding: '8px 14px',
-            borderRadius: '10px',
-            border: '1px solid #e2e8f0',
-            backgroundColor: 'white',
-            color: currentPage === totalPages ? '#cbd5e1' : '#475569',
-            cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-            fontSize: '13px',
-            fontWeight: 600
-          }}
-        >Next ›</button>
+              >{size}</button>
+            ))}
+          </div>
+        </div>
       </div>
+
+      {/* Right: page navigation */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '10px',
+              border: '1px solid #e2e8f0',
+              backgroundColor: 'white',
+              color: currentPage === 1 ? '#cbd5e1' : '#475569',
+              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              fontSize: '13px',
+              fontWeight: 600
+            }}
+          >‹ Prev</button>
+          {pages.map((p, idx) => (
+            p === '...'
+              ? <span key={`ellipsis-${idx}`} style={{ padding: '0 4px', color: '#94a3b8', fontSize: '13px' }}>…</span>
+              : <button
+                  key={p}
+                  onClick={() => onPageChange(p)}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    border: p === currentPage ? 'none' : '1px solid #e2e8f0',
+                    backgroundColor: p === currentPage ? '#4f46e5' : 'white',
+                    color: p === currentPage ? 'white' : '#475569',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 700
+                  }}
+                >{p}</button>
+          ))}
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '10px',
+              border: '1px solid #e2e8f0',
+              backgroundColor: 'white',
+              color: currentPage === totalPages ? '#cbd5e1' : '#475569',
+              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              fontSize: '13px',
+              fontWeight: 600
+            }}
+          >Next ›</button>
+        </div>
+      )}
     </div>
   );
 };
@@ -2410,7 +2442,12 @@ const InvoiceGeneratorApp = () => {
   const [contractCsvUploadModalOpen, setContractCsvUploadModalOpen] = useState(false);
   const [contractCsvData, setContractCsvData] = useState([]);
   const [contractCsvUploading, setContractCsvUploading] = useState(false);
-  const ITEMS_PER_PAGE = 10;
+  const [pageSizes, setPageSizes] = useState({
+    consultants: 10,
+    clients: 10,
+    contracts: 10,
+    invoices: 10
+  });
   const [searchQueries, setSearchQueries] = useState({
     consultants: '',
     clients: '',
@@ -2906,7 +2943,8 @@ const InvoiceGeneratorApp = () => {
 
   const paginateItems = (items, tab) => {
     const page = currentPages[tab] || 1;
-    return items.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+    const size = pageSizes[tab] || 10;
+    return items.slice((page - 1) * size, page * size);
   };
 
   const downloadPDF = async (invoice) => {
@@ -5015,14 +5053,16 @@ const InvoiceGeneratorApp = () => {
               </div>
               {(() => {
                 const filtered = filterAndSort(consultants, 'consultants');
-                const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+                const size = pageSizes.consultants;
+                const totalPages = Math.ceil(filtered.length / size);
                 return (
                   <PaginationBar
                     currentPage={currentPages.consultants}
                     totalPages={totalPages}
                     totalItems={filtered.length}
-                    itemsPerPage={ITEMS_PER_PAGE}
+                    itemsPerPage={size}
                     onPageChange={(p) => setCurrentPages(prev => ({ ...prev, consultants: p }))}
+                    onPageSizeChange={(s) => { setPageSizes(prev => ({ ...prev, consultants: s })); setCurrentPages(prev => ({ ...prev, consultants: 1 })); }}
                   />
                 );
               })()}
@@ -5224,14 +5264,16 @@ const InvoiceGeneratorApp = () => {
               </div>
               {(() => {
                 const filtered = filterAndSort(clients, 'clients');
-                const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+                const size = pageSizes.clients;
+                const totalPages = Math.ceil(filtered.length / size);
                 return (
                   <PaginationBar
                     currentPage={currentPages.clients}
                     totalPages={totalPages}
                     totalItems={filtered.length}
-                    itemsPerPage={ITEMS_PER_PAGE}
+                    itemsPerPage={size}
                     onPageChange={(p) => setCurrentPages(prev => ({ ...prev, clients: p }))}
+                    onPageSizeChange={(s) => { setPageSizes(prev => ({ ...prev, clients: s })); setCurrentPages(prev => ({ ...prev, clients: 1 })); }}
                   />
                 );
               })()}
@@ -5442,14 +5484,16 @@ const InvoiceGeneratorApp = () => {
               </div>
               {(() => {
                 const filtered = filterAndSort(contracts, 'contracts');
-                const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+                const size = pageSizes.contracts;
+                const totalPages = Math.ceil(filtered.length / size);
                 return (
                   <PaginationBar
                     currentPage={currentPages.contracts}
                     totalPages={totalPages}
                     totalItems={filtered.length}
-                    itemsPerPage={ITEMS_PER_PAGE}
+                    itemsPerPage={size}
                     onPageChange={(p) => setCurrentPages(prev => ({ ...prev, contracts: p }))}
+                    onPageSizeChange={(s) => { setPageSizes(prev => ({ ...prev, contracts: s })); setCurrentPages(prev => ({ ...prev, contracts: 1 })); }}
                   />
                 );
               })()}
@@ -6581,14 +6625,16 @@ const InvoiceGeneratorApp = () => {
                 </div>
                 {(() => {
                   const filtered = filterAndSort(invoices, 'invoices');
-                  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+                  const size = pageSizes.invoices;
+                  const totalPages = Math.ceil(filtered.length / size);
                   return (
                     <PaginationBar
                       currentPage={currentPages.invoices}
                       totalPages={totalPages}
                       totalItems={filtered.length}
-                      itemsPerPage={ITEMS_PER_PAGE}
+                      itemsPerPage={size}
                       onPageChange={(p) => setCurrentPages(prev => ({ ...prev, invoices: p }))}
+                      onPageSizeChange={(s) => { setPageSizes(prev => ({ ...prev, invoices: s })); setCurrentPages(prev => ({ ...prev, invoices: 1 })); }}
                     />
                   );
                 })()}
