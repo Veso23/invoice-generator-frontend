@@ -5944,50 +5944,46 @@ const InvoiceGeneratorApp = () => {
                               )}
                             </td>
                             <td className="p-4">
-                              <div className="flex gap-2 justify-center">
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                {/* View PDF */}
                                 {timesheet?.timesheet_file_url && (
                                   <button
-                                    onClick={() => {
-                                      const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
-                                      window.open(fixedUrl, '_blank');
-                                    }}
-                                    className="text-blue-600 hover:text-blue-800 p-1 transition"
+                                    onClick={() => window.open(fixTimesheetUrl(timesheet.timesheet_file_url), '_blank')}
                                     title="View Timesheet PDF"
+                                    style={{ width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#4f46e5', cursor: 'pointer' }}
                                   >
-                                    <Eye className="h-4 w-4" />
+                                    <Eye style={{ width: '15px', height: '15px' }} />
                                   </button>
                                 )}
+                                {/* Invoice */}
                                 {timesheet && !timesheet.invoice_generated && (
                                   <button
                                     onClick={() => generateInvoiceForTimesheet(timesheet)}
                                     disabled={generatingInvoice[timesheet.id]}
-                                    className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
-                                      generatingInvoice[timesheet.id] 
-                                        ? 'bg-green-400 cursor-not-allowed' 
-                                        : 'bg-green-600 text-white'
-                                    }`}
                                     title="Generate Invoice"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '10px', border: 'none', backgroundColor: generatingInvoice[timesheet.id] ? '#a5b4fc' : '#4f46e5', color: 'white', fontSize: '12px', fontWeight: 700, cursor: generatingInvoice[timesheet.id] ? 'not-allowed' : 'pointer', boxShadow: generatingInvoice[timesheet.id] ? 'none' : '0 4px 12px rgba(79,70,229,0.3)' }}
                                   >
                                     {generatingInvoice[timesheet.id] ? (
                                       <>
-                                        <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
+                                        <div style={{ width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                                         Generating...
                                       </>
                                     ) : (
                                       <>
-                                        <FileText className="h-3 w-3" />
+                                        <FileText style={{ width: '13px', height: '13px' }} />
                                         Invoice
                                       </>
                                     )}
                                   </button>
                                 )}
+                                {/* Flag */}
                                 {timesheet && !timesheet.invoice_generated && !timesheet.flagged_for_review && (
                                   <button
                                     onClick={() => flagForReview(timesheet.id)}
-                                    className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition flex items-center gap-1"
                                     title="Flag for admin review"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '10px', border: '1px solid #fde68a', backgroundColor: '#fffbeb', color: '#d97706', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
                                   >
-                                    <AlertCircle className="h-3 w-3" />
+                                    <AlertCircle style={{ width: '13px', height: '13px' }} />
                                     Flag
                                   </button>
                                 )}
@@ -6403,48 +6399,44 @@ const InvoiceGeneratorApp = () => {
                                 )}
                               </td>
                               <td className="p-4">
-                                <div className="flex gap-2">
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                  {/* View PDF */}
                                   {timesheet.timesheet_file_url && (
                                     <button
-                                      onClick={() => {
-                                        const fixedUrl = fixTimesheetUrl(timesheet.timesheet_file_url);
-                                        window.open(fixedUrl, '_blank');
-                                      }}
-                                      className="text-blue-600 hover:text-blue-800 p-1 transition"
+                                      onClick={() => window.open(fixTimesheetUrl(timesheet.timesheet_file_url), '_blank')}
                                       title="View Timesheet PDF"
+                                      style={{ width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#4f46e5', cursor: 'pointer' }}
                                     >
-                                      <Eye className="h-4 w-4" />
+                                      <Eye style={{ width: '15px', height: '15px' }} />
                                     </button>
                                   )}
+                                  {/* Invoice */}
                                   <button
                                     onClick={() => generateInvoiceForTimesheet(timesheet)}
                                     disabled={generatingInvoice[timesheet.id]}
-                                    className={`px-2 py-1 text-xs rounded hover:bg-green-700 transition flex items-center gap-1 ${
-                                      generatingInvoice[timesheet.id] 
-                                        ? 'bg-green-400 cursor-not-allowed' 
-                                        : 'bg-green-600 text-white'
-                                    }`}
                                     title="Generate Invoice"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '10px', border: 'none', backgroundColor: generatingInvoice[timesheet.id] ? '#a5b4fc' : '#4f46e5', color: 'white', fontSize: '12px', fontWeight: 700, cursor: generatingInvoice[timesheet.id] ? 'not-allowed' : 'pointer', boxShadow: generatingInvoice[timesheet.id] ? 'none' : '0 4px 12px rgba(79,70,229,0.3)' }}
                                   >
                                     {generatingInvoice[timesheet.id] ? (
                                       <>
-                                        <div className="animate-spin h-3 w-3 border-2 border-white border-t-transparent rounded-full"></div>
+                                        <div style={{ width: '12px', height: '12px', border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                                         Generating...
                                       </>
                                     ) : (
                                       <>
-                                        <FileText className="h-3 w-3" />
+                                        <FileText style={{ width: '13px', height: '13px' }} />
                                         Invoice
                                       </>
                                     )}
                                   </button>
+                                  {/* Flag */}
                                   {!timesheet.flagged_for_review && (
                                     <button
                                       onClick={() => flagForReview(timesheet.id)}
-                                      className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition flex items-center gap-1"
                                       title="Flag for admin review"
+                                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '10px', border: '1px solid #fde68a', backgroundColor: '#fffbeb', color: '#d97706', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
                                     >
-                                      <AlertCircle className="h-3 w-3" />
+                                      <AlertCircle style={{ width: '13px', height: '13px' }} />
                                       Flag
                                     </button>
                                   )}
@@ -6533,8 +6525,13 @@ const InvoiceGeneratorApp = () => {
                               <td className="p-4">
                                 {(user?.role === 'admin' || user?.permissions?.can_delete_timesheets) ? (
                                   <button
-                                    onClick={async () => {
-                                      if (window.confirm('Delete this record? The sender will need to resend their email correctly.')) {
+                                    onClick={() => setConfirmModal({
+                                      isOpen: true,
+                                      title: 'Delete Record',
+                                      message: 'Delete this record? The sender will need to resend their email correctly.',
+                                      confirmLabel: 'Delete',
+                                      confirmColor: '#ef4444',
+                                      onConfirm: async () => {
                                         try {
                                           const authToken = localStorage.getItem('authToken');
                                           const response = await fetch(`${API_BASE_URL}/timesheets/${timesheet.id}`, {
@@ -6551,11 +6548,12 @@ const InvoiceGeneratorApp = () => {
                                           showNotification('Failed to delete', 'error');
                                         }
                                       }
-                                    }}
-                                    className="text-red-600 hover:text-red-800 p-1 transition"
+                                    })}
                                     title="Delete this record"
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '10px', border: '1px solid #fecaca', backgroundColor: 'white', color: '#ef4444', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 style={{ width: '13px', height: '13px' }} />
+                                    Delete
                                   </button>
                                 ) : (
                                   <span className="text-xs text-gray-400 italic">Admin only</span>
