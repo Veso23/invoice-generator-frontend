@@ -2891,6 +2891,18 @@ const InvoiceGeneratorApp = () => {
     }
   };
 
+
+  const deleteTimesheet = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this timesheet? This action cannot be undone.")) return;
+    try {
+      await apiCall(`/timesheets/${id}`, { method: "DELETE" });
+      showNotification("Timesheet deleted successfully!");
+      loadData();
+    } catch (error) {
+      showNotification("Failed to delete timesheet: " + error.message, "error");
+    }
+  };
+
   const deleteContract = async (id) => {
     if (!window.confirm('Are you sure you want to delete this contract? This action cannot be undone.')) return;
     
@@ -6141,6 +6153,16 @@ const InvoiceGeneratorApp = () => {
                                           Invoice
                                         </>
                                       )}
+                                    </button>
+                                  )}
+                                  {(user.role === 'admin' || user.role === 'superadmin') && timesheet.flagged_for_review && !timesheet.invoice_generated && (
+                                    <button
+                                      onClick={() => deleteTimesheet(timesheet.id)}
+                                      className="px-2 py-1 text-xs rounded bg-red-100 text-red-700 hover:bg-red-200 transition flex items-center gap-1"
+                                      title="Delete this timesheet"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                      Delete
                                     </button>
                                   )}
                                 </div>
