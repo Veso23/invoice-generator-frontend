@@ -2239,6 +2239,86 @@ const DeadlineModal = ({ isOpen, onClose, currentDeadline, onSubmit }) => {
   );
 };
 
+// Pagination Component
+const PaginationBar = ({ currentPage, totalPages, totalItems, itemsPerPage, onPageChange }) => {
+  if (totalPages <= 1) return null;
+  const from = (currentPage - 1) * itemsPerPage + 1;
+  const to = Math.min(currentPage * itemsPerPage, totalItems);
+
+  const pages = [];
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+      pages.push(i);
+    } else if (pages[pages.length - 1] !== '...') {
+      pages.push('...');
+    }
+  }
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '16px 24px',
+      borderTop: '1px solid #f1f5f9',
+      backgroundColor: '#fafafa'
+    }}>
+      <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+        Showing {from}–{to} of {totalItems} results
+      </span>
+      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          style={{
+            padding: '8px 14px',
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0',
+            backgroundColor: 'white',
+            color: currentPage === 1 ? '#cbd5e1' : '#475569',
+            cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+            fontSize: '13px',
+            fontWeight: 600
+          }}
+        >‹ Prev</button>
+        {pages.map((p, idx) => (
+          p === '...'
+            ? <span key={`ellipsis-${idx}`} style={{ padding: '0 4px', color: '#94a3b8', fontSize: '13px' }}>…</span>
+            : <button
+                key={p}
+                onClick={() => onPageChange(p)}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  border: p === currentPage ? 'none' : '1px solid #e2e8f0',
+                  backgroundColor: p === currentPage ? '#4f46e5' : 'white',
+                  color: p === currentPage ? 'white' : '#475569',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 700
+                }}
+              >{p}</button>
+        ))}
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          style={{
+            padding: '8px 14px',
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0',
+            backgroundColor: 'white',
+            color: currentPage === totalPages ? '#cbd5e1' : '#475569',
+            cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+            fontSize: '13px',
+            fontWeight: 600
+          }}
+        >Next ›</button>
+      </div>
+    </div>
+  );
+};
+
 // Main Application
 const InvoiceGeneratorApp = () => {
   const { user, login, register, logout, loading } = useAuth();
@@ -2330,12 +2410,19 @@ const InvoiceGeneratorApp = () => {
   const [contractCsvUploadModalOpen, setContractCsvUploadModalOpen] = useState(false);
   const [contractCsvData, setContractCsvData] = useState([]);
   const [contractCsvUploading, setContractCsvUploading] = useState(false);
+  const ITEMS_PER_PAGE = 10;
   const [searchQueries, setSearchQueries] = useState({
     consultants: '',
     clients: '',
     contracts: '',
     invoices: '',
     history: ''
+  });
+  const [currentPages, setCurrentPages] = useState({
+    consultants: 1,
+    clients: 1,
+    contracts: 1,
+    invoices: 1
   });
   const [timesheetHistory, setTimesheetHistory] = useState([]);
   const [historyFilters, setHistoryFilters] = useState({
@@ -2783,6 +2870,7 @@ const InvoiceGeneratorApp = () => {
 
   const handleSearch = (tab, query) => {
     setSearchQueries({ ...searchQueries, [tab]: query });
+    setCurrentPages(prev => ({ ...prev, [tab]: 1 }));
   };
 
   const handleSort = (tab, key) => {
@@ -2791,12 +2879,15 @@ const InvoiceGeneratorApp = () => {
   };
 
   const filterAndSort = (data, tab) => {
-    const query = searchQueries[tab].toLowerCase();
+    const query = searchQueries[tab].toLowerCase().trim();
     
     let filtered = data.filter(item => {
-      return Object.values(item).some(val => 
-        String(val).toLowerCase().includes(query)
-      );
+      if (!query) return true;
+      // Join all field values into one searchable string
+      const itemText = Object.values(item).map(val => String(val || '')).join(' ').toLowerCase();
+      // Split query by whitespace - ALL words must be found somewhere in the item
+      const words = query.split(/\s+/).filter(Boolean);
+      return words.every(word => itemText.includes(word));
     });
     
     if (sortConfig[tab].key) {
@@ -2811,6 +2902,11 @@ const InvoiceGeneratorApp = () => {
     }
     
     return filtered;
+  };
+
+  const paginateItems = (items, tab) => {
+    const page = currentPages[tab] || 1;
+    return items.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
   };
 
   const downloadPDF = async (invoice) => {
@@ -4825,7 +4921,7 @@ const InvoiceGeneratorApp = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filterAndSort(consultants, 'consultants').map((consultant) => (
+                    {paginateItems(filterAndSort(consultants, 'consultants'), 'consultants').map((consultant) => (
                       <tr key={consultant.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
                         <td style={{ padding: '16px 20px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -4917,6 +5013,19 @@ const InvoiceGeneratorApp = () => {
                   </tbody>
                 </table>
               </div>
+              {(() => {
+                const filtered = filterAndSort(consultants, 'consultants');
+                const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+                return (
+                  <PaginationBar
+                    currentPage={currentPages.consultants}
+                    totalPages={totalPages}
+                    totalItems={filtered.length}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    onPageChange={(p) => setCurrentPages(prev => ({ ...prev, consultants: p }))}
+                  />
+                );
+              })()}
             </div>
           </div>
         )}
@@ -5021,7 +5130,7 @@ const InvoiceGeneratorApp = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filterAndSort(clients, 'clients').map((client) => (
+                    {paginateItems(filterAndSort(clients, 'clients'), 'clients').map((client) => (
                       <tr key={client.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
                         <td style={{ padding: '16px 20px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -5113,6 +5222,19 @@ const InvoiceGeneratorApp = () => {
                   </tbody>
                 </table>
               </div>
+              {(() => {
+                const filtered = filterAndSort(clients, 'clients');
+                const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+                return (
+                  <PaginationBar
+                    currentPage={currentPages.clients}
+                    totalPages={totalPages}
+                    totalItems={filtered.length}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    onPageChange={(p) => setCurrentPages(prev => ({ ...prev, clients: p }))}
+                  />
+                );
+              })()}
             </div>
           </div>
         )}
@@ -5214,7 +5336,7 @@ const InvoiceGeneratorApp = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {filterAndSort(contracts, 'contracts').map((contract) => {
+                    {paginateItems(filterAndSort(contracts, 'contracts'), 'contracts').map((contract) => {
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
                       const startDate = new Date(contract.from_date);
@@ -5318,6 +5440,19 @@ const InvoiceGeneratorApp = () => {
                   </tbody>
                 </table>
               </div>
+              {(() => {
+                const filtered = filterAndSort(contracts, 'contracts');
+                const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+                return (
+                  <PaginationBar
+                    currentPage={currentPages.contracts}
+                    totalPages={totalPages}
+                    totalItems={filtered.length}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    onPageChange={(p) => setCurrentPages(prev => ({ ...prev, contracts: p }))}
+                  />
+                );
+              })()}
             </div>
           </div>
         )}
@@ -6343,7 +6478,7 @@ const InvoiceGeneratorApp = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {filterAndSort(invoices, 'invoices').map((invoice) => {
+                      {paginateItems(filterAndSort(invoices, 'invoices'), 'invoices').map((invoice) => {
                         const subtotal = parseFloat(invoice.subtotal);
                         const vatRate = parseFloat(invoice.vat_rate);
                         const vatEnabled = invoice.vat_enabled !== false;
@@ -6444,6 +6579,19 @@ const InvoiceGeneratorApp = () => {
                     </tbody>
                   </table>
                 </div>
+                {(() => {
+                  const filtered = filterAndSort(invoices, 'invoices');
+                  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+                  return (
+                    <PaginationBar
+                      currentPage={currentPages.invoices}
+                      totalPages={totalPages}
+                      totalItems={filtered.length}
+                      itemsPerPage={ITEMS_PER_PAGE}
+                      onPageChange={(p) => setCurrentPages(prev => ({ ...prev, invoices: p }))}
+                    />
+                  );
+                })()}
               </div>
             )}
           </div>
