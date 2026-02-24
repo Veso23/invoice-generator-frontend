@@ -2569,6 +2569,21 @@ const InvoiceGeneratorApp = () => {
   const [editingInvoiceNumber, setEditingInvoiceNumber] = useState(null);
   const [editInvoiceNumberValue, setEditInvoiceNumberValue] = useState('');
   const [editingDueDate, setEditingDueDate] = useState(null); // invoice id being edited
+
+  // Dismissed contract alert banners — stored in localStorage as a set of contract ID "fingerprints"
+  const [dismissedContractAlerts, setDismissedContractAlerts] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('dismissedContractAlerts') || '[]')); }
+    catch { return new Set(); }
+  });
+
+  const dismissContractAlert = (key) => {
+    setDismissedContractAlerts(prev => {
+      const next = new Set(prev);
+      next.add(key);
+      try { localStorage.setItem('dismissedContractAlerts', JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
   const [companySettings, setCompanySettings] = useState(null);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [timesheetStatus, setTimesheetStatus] = useState(null);
@@ -5114,26 +5129,33 @@ const InvoiceGeneratorApp = () => {
                 return new Date(c.to_date) < today;
               });
 
-              if (expiringContracts.length === 0 && expiredContracts.length === 0) return null;
+              // Dismiss keys: "expiring-<id>" or "expired-<fingerprint>"
+              // For expired we use a fingerprint of sorted IDs so new ones re-appear
+              const expiringVisible = expiringContracts.filter(c => !dismissedContractAlerts.has(`expiring-${c.id}`));
+              const expiredFingerprint = `expired-${expiredContracts.map(c => c.id).sort().join(',')}`;
+              const expiredVisible = expiredContracts.length > 0 && !dismissedContractAlerts.has(expiredFingerprint);
+
+              if (expiringVisible.length === 0 && !expiredVisible) return null;
 
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {/* Expiring soon */}
-                  {expiringContracts.length > 0 && (
+
+                  {/* Expiring soon — each contract individually dismissible */}
+                  {expiringVisible.length > 0 && (
                     <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '16px', padding: '20px 24px' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
                         <span style={{ fontSize: '22px', marginTop: '2px' }}>⚠️</span>
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                             <span style={{ fontSize: '14px', fontWeight: 800, color: '#92400e' }}>
-                              {expiringContracts.length} contract{expiringContracts.length > 1 ? 's' : ''} expiring within {alertDays} days
+                              {expiringVisible.length} contract{expiringVisible.length > 1 ? 's' : ''} expiring within {alertDays} days
                             </span>
                             <button onClick={() => setActiveTab('contracts')} style={{ fontSize: '12px', fontWeight: 700, color: '#d97706', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-                              View all contracts →
+                              View all →
                             </button>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            {expiringContracts.slice(0, 5).map(c => {
+                            {expiringVisible.slice(0, 5).map(c => {
                               const expiry = new Date(c.to_date);
                               const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
                               const cons = consultants.find(x => x.id === c.consultant_id);
@@ -5151,11 +5173,16 @@ const InvoiceGeneratorApp = () => {
                                   <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: 'auto' }}>
                                     {c.contract_number} · expires {expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
                                   </span>
+                                  <button
+                                    onClick={() => dismissContractAlert(`expiring-${c.id}`)}
+                                    style={{ marginLeft: '4px', background: 'none', border: 'none', cursor: 'pointer', color: '#d97706', fontSize: '16px', lineHeight: 1, padding: '0 4px', borderRadius: '4px' }}
+                                    title="Dismiss this alert"
+                                  >×</button>
                                 </div>
                               );
                             })}
-                            {expiringContracts.length > 5 && (
-                              <p style={{ fontSize: '12px', color: '#92400e', margin: '4px 0 0', textAlign: 'center' }}>+{expiringContracts.length - 5} more</p>
+                            {expiringVisible.length > 5 && (
+                              <p style={{ fontSize: '12px', color: '#92400e', margin: '4px 0 0', textAlign: 'center' }}>+{expiringVisible.length - 5} more</p>
                             )}
                           </div>
                         </div>
@@ -5163,8 +5190,8 @@ const InvoiceGeneratorApp = () => {
                     </div>
                   )}
 
-                  {/* Already expired */}
-                  {expiredContracts.length > 0 && (
+                  {/* Already expired — dismiss whole banner */}
+                  {expiredVisible && (
                     <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '16px', padding: '16px 24px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span style={{ fontSize: '20px' }}>🔴</span>
@@ -5174,6 +5201,11 @@ const InvoiceGeneratorApp = () => {
                         <button onClick={() => setActiveTab('contracts')} style={{ fontSize: '12px', fontWeight: 700, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
                           View →
                         </button>
+                        <button
+                          onClick={() => dismissContractAlert(expiredFingerprint)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', fontSize: '20px', lineHeight: 1, padding: '0 4px' }}
+                          title="Dismiss"
+                        >×</button>
                       </div>
                     </div>
                   )}
