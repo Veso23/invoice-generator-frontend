@@ -2563,6 +2563,7 @@ const InvoiceGeneratorApp = () => {
   const [bulkGenerating, setBulkGenerating] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState([]);
   const [bulkInvoiceAction, setBulkInvoiceAction] = useState(false);
+  const [chartDrillMonth, setChartDrillMonth] = useState(null); // null = overview, 'Jan 2026' = drill
   const [csvData, setCsvData] = useState([]);
   const [csvUploading, setCsvUploading] = useState(false);
   // Client CSV upload state
@@ -6031,14 +6032,14 @@ const InvoiceGeneratorApp = () => {
                               const eligible = (timesheetStatus?.contracts || [])
                                 .map(contract => {
                                   const tsId = contract.timesheet_id ? Number(contract.timesheet_id) : null;
-                                  if (!tsId || contract.invoice_generated) return null;
+                                  if (!tsId || contract.invoice_generated || !contract.has_timesheet) return null;
                                   return tsId;
                                 }).filter(Boolean);
                               setSelectedTimesheets(e.target.checked ? eligible : []);
                             }}
                             checked={selectedTimesheets.length > 0 && (timesheetStatus?.contracts || []).every(contract => {
                               const tsId = contract.timesheet_id ? Number(contract.timesheet_id) : null;
-                              if (!tsId || contract.invoice_generated) return true; // skip non-eligible
+                              if (!tsId || contract.invoice_generated || !contract.has_timesheet) return true; // skip non-eligible
                               return selectedTimesheets.includes(tsId);
                             })}
                           />
@@ -6079,7 +6080,8 @@ const InvoiceGeneratorApp = () => {
                         // Use contract.timesheet_id directly for checkbox (more reliable than timesheet matching)
                         const tsId = contract.timesheet_id ? Number(contract.timesheet_id) : (timesheet ? Number(timesheet.id) : null);
                         const isInvoiced = contract.invoice_generated || timesheet?.invoice_generated || false;
-                        const canSelect = tsId !== null && !isInvoiced;
+                        // Only selectable if timesheet is actually received AND not yet invoiced
+                        const canSelect = tsId !== null && !isInvoiced && contract.has_timesheet === true;
                         
                         // Determine row color based on status
                         let rowBgColor = '';
@@ -7175,18 +7177,23 @@ const InvoiceGeneratorApp = () => {
                 if (!ts.client_invoice_total && !ts.consultant_invoice_total) return;
                 const d = new Date(ts.created_at);
                 const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-                if (!monthlyMap[key]) monthlyMap[key] = { label: `${MONTHS[d.getMonth()]} ${d.getFullYear()}`, revenue: 0, cost: 0, profit: 0 };
+                const label = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+                if (!monthlyMap[key]) monthlyMap[key] = { label, key, revenue: 0, cost: 0, profit: 0 };
                 monthlyMap[key].revenue += parseFloat(ts.client_invoice_total || 0);
                 monthlyMap[key].cost += parseFloat(ts.consultant_invoice_total || 0);
                 monthlyMap[key].profit += parseFloat(ts.client_invoice_total || 0) - parseFloat(ts.consultant_invoice_total || 0);
               });
               const monthly = Object.entries(monthlyMap).sort(([a],[b]) => a.localeCompare(b)).slice(-12).map(([,v]) => v);
-              const singleMonth = monthly.length <= 1;
 
-              // Top consultants by revenue
+              // Top consultants — filter by drillMonth if set
               const consultantMap = {};
               timesheetHistory.forEach(ts => {
                 if (!ts.client_invoice_total) return;
+                if (chartDrillMonth) {
+                  const d = new Date(ts.created_at);
+                  const label = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+                  if (label !== chartDrillMonth) return;
+                }
                 const name = `${ts.consultant_first_name || ''} ${ts.consultant_last_name || ''}`.trim() || ts.sender_email || 'Unknown';
                 consultantMap[name] = (consultantMap[name] || 0) + parseFloat(ts.client_invoice_total || 0);
               });
@@ -7197,22 +7204,34 @@ const InvoiceGeneratorApp = () => {
               const maxCons = Math.max(...topConsultants.map(([,v]) => v), 1);
               const COLORS = ['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
 
+              // Drill month data
+              const drillData = chartDrillMonth ? monthly.find(m => m.label === chartDrillMonth) : null;
+              const showDrill = !!(chartDrillMonth && drillData);
+
               return (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                  {/* Monthly Revenue / Metrics Chart */}
+                  {/* Left chart: bar overview OR drill breakdown */}
                   {monthly.length > 0 && (
                     <div style={{ backgroundColor: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '28px' }}>
-                      <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
-                        {singleMonth ? `${monthly[0]?.label} — Breakdown` : 'Monthly Revenue'}
-                      </h3>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                          {showDrill ? `${drillData.label} — Breakdown` : 'Monthly Revenue'}
+                        </h3>
+                        {showDrill && (
+                          <button onClick={() => setChartDrillMonth(null)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#64748b', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                            ← All months
+                          </button>
+                        )}
+                      </div>
                       <p style={{ margin: '0 0 24px', fontSize: '13px', color: '#94a3b8' }}>
-                        {singleMonth ? 'Revenue, cost and profit for this month' : 'Client invoices – last 12 months'}
+                        {showDrill ? 'Revenue, cost and profit' : monthly.length === 1 ? 'Revenue, cost and profit for this month' : 'Click a bar to drill into that month'}
                       </p>
 
-                      {singleMonth ? (
-                        // Single month: show Revenue / Cost / Profit as horizontal metric bars
+                      {(showDrill || monthly.length === 1) ? (
+                        // Drill view: horizontal metric bars
                         (() => {
-                          const m = monthly[0];
+                          const m = showDrill ? drillData : monthly[0];
                           const maxVal = Math.max(m.revenue, m.cost, 1);
                           const metrics = [
                             { label: 'Revenue', value: m.revenue, color: '#4f46e5' },
@@ -7236,27 +7255,37 @@ const InvoiceGeneratorApp = () => {
                               ))}
                               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: '12px' }}>
                                 <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 700 }}>Margin</span>
-                                <span style={{ fontSize: '13px', fontWeight: 800, color: monthly[0].profit >= 0 ? '#10b981' : '#ef4444' }}>
-                                  {monthly[0].revenue > 0 ? `${((monthly[0].profit / monthly[0].revenue) * 100).toFixed(1)}%` : '—'}
+                                <span style={{ fontSize: '13px', fontWeight: 800, color: m.profit >= 0 ? '#10b981' : '#ef4444' }}>
+                                  {m.revenue > 0 ? `${((m.profit / m.revenue) * 100).toFixed(1)}%` : '—'}
                                 </span>
                               </div>
                             </div>
                           );
                         })()
                       ) : (
-                        // Multiple months: vertical bar chart
+                        // Overview: vertical bar chart — click to drill
                         <>
                           <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '160px' }}>
                             {monthly.map((m, i) => {
                               const maxRevenue = Math.max(...monthly.map(x => x.revenue), 1);
+                              const isActive = chartDrillMonth === m.label;
                               return (
-                                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end' }}>
+                                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end', cursor: 'pointer' }}
+                                  onClick={() => setChartDrillMonth(m.label)}
+                                  title={`Click to drill into ${m.label}`}>
                                   <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700 }}>
                                     {m.revenue >= 1000 ? `€${(m.revenue/1000).toFixed(1)}k` : `€${Math.round(m.revenue)}`}
                                   </div>
-                                  <div title={`Revenue: €${m.revenue.toFixed(2)}\nCost: €${m.cost.toFixed(2)}\nProfit: €${m.profit.toFixed(2)}`}
-                                    style={{ width: '100%', borderRadius: '6px 6px 0 0', backgroundColor: '#4f46e5', height: `${Math.max(4, (m.revenue / maxRevenue) * 120)}px`, transition: 'height 0.3s', cursor: 'pointer' }} />
-                                  <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 600, textAlign: 'center', lineHeight: 1.2 }}>{m.label.split(' ')[0]}</div>
+                                  <div style={{
+                                    width: '100%', borderRadius: '6px 6px 0 0',
+                                    backgroundColor: isActive ? '#6366f1' : '#4f46e5',
+                                    height: `${Math.max(4, (m.revenue / maxRevenue) * 120)}px`,
+                                    transition: 'all 0.2s',
+                                    outline: isActive ? '2px solid #6366f1' : 'none',
+                                    outlineOffset: '2px',
+                                    opacity: chartDrillMonth && !isActive ? 0.4 : 1
+                                  }} />
+                                  <div style={{ fontSize: '9px', color: isActive ? '#4f46e5' : '#64748b', fontWeight: isActive ? 800 : 600, textAlign: 'center', lineHeight: 1.2 }}>{m.label.split(' ')[0]}</div>
                                 </div>
                               );
                             })}
@@ -7268,17 +7297,20 @@ const InvoiceGeneratorApp = () => {
                                 <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{l}</span>
                               </div>
                             ))}
+                            <span style={{ marginLeft: 'auto', fontSize: '11px', color: '#94a3b8' }}>Click bar to drill</span>
                           </div>
                         </>
                       )}
                     </div>
                   )}
 
-                  {/* Top Consultants */}
+                  {/* Right chart: Top Consultants (filtered by drillMonth if set) */}
                   {topConsultants.length > 0 && (
                     <div style={{ backgroundColor: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '28px' }}>
                       <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>Top Consultants</h3>
-                      <p style={{ margin: '0 0 24px', fontSize: '13px', color: '#94a3b8' }}>By total invoiced revenue</p>
+                      <p style={{ margin: '0 0 24px', fontSize: '13px', color: '#94a3b8' }}>
+                        {chartDrillMonth ? `Revenue in ${chartDrillMonth}` : 'By total invoiced revenue'}
+                      </p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                         {topConsultants.map(([name, val], i) => (
                           <div key={name}>
@@ -7297,6 +7329,7 @@ const InvoiceGeneratorApp = () => {
                 </div>
               );
             })()}
+
 
             {/* Filters and Search */}
             <div style={{
