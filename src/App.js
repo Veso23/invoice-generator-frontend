@@ -1800,7 +1800,8 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
     smtp_from_email: '',
     smtp_from_name: '',
     smtp_secure: true,
-    invoice_template: 'classic'
+    invoice_template: 'classic',
+    contract_renewal_alert_days: 30
   });
 
   useEffect(() => {
@@ -1825,7 +1826,8 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
         smtp_from_name: settings.smtp_from_name || '',
         smtp_secure: settings.smtp_secure !== false,
         timesheet_email: settings.timesheet_email || '',
-        invoice_template: settings.invoice_template || 'classic'
+        invoice_template: settings.invoice_template || 'classic',
+        contract_renewal_alert_days: settings.contract_renewal_alert_days != null ? parseInt(settings.contract_renewal_alert_days) : 30
       });
     }
   }, [isOpen, settings]);
@@ -2257,6 +2259,19 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                     <label style={labelStyle}>Default VAT Rate (%)</label>
                     <input type="number" step="0.01" min="0" max="100" value={formData.default_vat_rate} onChange={(e) => setFormData({ ...formData, default_vat_rate: parseFloat(e.target.value) })} style={inputStyle} />
                     <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Default VAT percentage applied to new invoices</p>
+                  </div>
+                </div>
+
+                <h4 style={sectionTitleStyle}>Contract Renewal Alerts</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={labelStyle}>Alert me when contract expires within (days)</label>
+                    <select value={formData.contract_renewal_alert_days} onChange={(e) => setFormData({ ...formData, contract_renewal_alert_days: parseInt(e.target.value) })} style={{ ...inputStyle, cursor: 'pointer', backgroundColor: 'white' }}>
+                      {[7, 14, 30, 45, 60, 90].map(d => (
+                        <option key={d} value={d}>{d} days</option>
+                      ))}
+                    </select>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Show alert banner on Dashboard when a contract is expiring soon</p>
                   </div>
                 </div>
               </div>
@@ -5064,6 +5079,91 @@ const InvoiceGeneratorApp = () => {
                 )}
               </div>
             </div>
+
+            {/* Contract Renewal Alerts */}
+            {(() => {
+              const alertDays = companySettings?.contract_renewal_alert_days ?? 30;
+              const today = new Date();
+              const alertDate = new Date(today);
+              alertDate.setDate(alertDate.getDate() + alertDays);
+
+              const expiringContracts = contracts.filter(c => {
+                if (c.deleted_at) return false;
+                const expiry = new Date(c.to_date);
+                return expiry >= today && expiry <= alertDate;
+              }).sort((a, b) => new Date(a.to_date) - new Date(b.to_date));
+
+              const expiredContracts = contracts.filter(c => {
+                if (c.deleted_at) return false;
+                return new Date(c.to_date) < today;
+              });
+
+              if (expiringContracts.length === 0 && expiredContracts.length === 0) return null;
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {/* Expiring soon */}
+                  {expiringContracts.length > 0 && (
+                    <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '16px', padding: '20px 24px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+                        <span style={{ fontSize: '22px', marginTop: '2px' }}>⚠️</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                            <span style={{ fontSize: '14px', fontWeight: 800, color: '#92400e' }}>
+                              {expiringContracts.length} contract{expiringContracts.length > 1 ? 's' : ''} expiring within {alertDays} days
+                            </span>
+                            <button onClick={() => setActiveTab('contracts')} style={{ fontSize: '12px', fontWeight: 700, color: '#d97706', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                              View all contracts →
+                            </button>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {expiringContracts.slice(0, 5).map(c => {
+                              const expiry = new Date(c.to_date);
+                              const daysLeft = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
+                              const cons = consultants.find(x => x.id === c.consultant_id);
+                              const client = clients.find(x => x.id === c.client_id);
+                              const consName = cons ? `${cons.first_name} ${cons.last_name}` : '—';
+                              const clientName = client?.company_name || (client ? `${client.first_name} ${client.last_name}` : '—');
+                              return (
+                                <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', backgroundColor: 'white', borderRadius: '10px', border: '1px solid #fde68a' }}>
+                                  <span style={{ padding: '2px 8px', borderRadius: '99px', fontSize: '11px', fontWeight: 800, backgroundColor: daysLeft <= 7 ? '#fee2e2' : '#fef9c3', color: daysLeft <= 7 ? '#dc2626' : '#92400e' }}>
+                                    {daysLeft}d left
+                                  </span>
+                                  <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{consName}</span>
+                                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>→</span>
+                                  <span style={{ fontSize: '13px', color: '#475569' }}>{clientName}</span>
+                                  <span style={{ fontSize: '11px', color: '#94a3b8', marginLeft: 'auto' }}>
+                                    {c.contract_number} · expires {expiry.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                            {expiringContracts.length > 5 && (
+                              <p style={{ fontSize: '12px', color: '#92400e', margin: '4px 0 0', textAlign: 'center' }}>+{expiringContracts.length - 5} more</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Already expired */}
+                  {expiredContracts.length > 0 && (
+                    <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '16px', padding: '16px 24px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <span style={{ fontSize: '20px' }}>🔴</span>
+                        <span style={{ fontSize: '14px', fontWeight: 700, color: '#991b1b', flex: 1 }}>
+                          {expiredContracts.length} contract{expiredContracts.length > 1 ? 's' : ''} already expired
+                        </span>
+                        <button onClick={() => setActiveTab('contracts')} style={{ fontSize: '12px', fontWeight: 700, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                          View →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Financial Overview */}
             <div style={{
