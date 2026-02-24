@@ -1801,7 +1801,8 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
     smtp_from_name: '',
     smtp_secure: true,
     invoice_template: 'classic',
-    contract_renewal_alert_days: 30
+    contract_renewal_alert_days: 30,
+    payment_terms_days: 30
   });
 
   useEffect(() => {
@@ -1827,7 +1828,8 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
         smtp_secure: settings.smtp_secure !== false,
         timesheet_email: settings.timesheet_email || '',
         invoice_template: settings.invoice_template || 'classic',
-        contract_renewal_alert_days: settings.contract_renewal_alert_days != null ? parseInt(settings.contract_renewal_alert_days) : 30
+        contract_renewal_alert_days: settings.contract_renewal_alert_days != null ? parseInt(settings.contract_renewal_alert_days) : 30,
+        payment_terms_days: settings.payment_terms_days != null ? parseInt(settings.payment_terms_days) : 30
       });
     }
   }, [isOpen, settings]);
@@ -2262,6 +2264,19 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                   </div>
                 </div>
 
+                <h4 style={sectionTitleStyle}>Payment Terms</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '8px' }}>
+                  <div>
+                    <label style={labelStyle}>Default Payment Terms (days)</label>
+                    <select value={formData.payment_terms_days} onChange={(e) => setFormData({ ...formData, payment_terms_days: parseInt(e.target.value) })} style={{ ...inputStyle, cursor: 'pointer', backgroundColor: 'white' }}>
+                      {[7, 14, 21, 30, 45, 60, 90].map(d => (
+                        <option key={d} value={d}>Net {d} — due {d} days after sending</option>
+                      ))}
+                    </select>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Due date is set automatically when you send an invoice email</p>
+                  </div>
+                </div>
+
                 <h4 style={sectionTitleStyle}>Contract Renewal Alerts</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
@@ -2553,6 +2568,7 @@ const InvoiceGeneratorApp = () => {
   const [editDaysValue, setEditDaysValue] = useState('');
   const [editingInvoiceNumber, setEditingInvoiceNumber] = useState(null);
   const [editInvoiceNumberValue, setEditInvoiceNumberValue] = useState('');
+  const [editingDueDate, setEditingDueDate] = useState(null); // invoice id being edited
   const [companySettings, setCompanySettings] = useState(null);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [timesheetStatus, setTimesheetStatus] = useState(null);
@@ -7201,6 +7217,7 @@ const InvoiceGeneratorApp = () => {
                           Total {sortConfig.invoices.key === 'total_amount' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
                         </th>
                         <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Due Date</th>
                         <th style={{ textAlign: 'center', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
                       </tr>
                     </thead>
@@ -7294,11 +7311,6 @@ const InvoiceGeneratorApp = () => {
                                     <span style={{ padding: '4px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 700, backgroundColor: cfg.bg, color: cfg.color }}>
                                       {cfg.label}
                                     </span>
-                                    {invoice.due_date && s !== 'paid' && (
-                                      <span style={{ fontSize: '10px', color: s === 'overdue' ? '#dc2626' : '#94a3b8', fontWeight: 600 }}>
-                                        Due {new Date(invoice.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                                      </span>
-                                    )}
                                     {invoice.paid_at && s === 'paid' && (
                                       <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 600 }}>
                                         {new Date(invoice.paid_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -7307,6 +7319,48 @@ const InvoiceGeneratorApp = () => {
                                   </div>
                                 );
                               })()}
+                            </td>
+                            {/* Due Date — inline editable */}
+                            <td style={{ padding: '16px' }} onClick={(e) => e.stopPropagation()}>
+                              {invoice.status !== 'paid' ? (
+                                editingDueDate === invoice.id ? (
+                                  <input
+                                    type="date"
+                                    defaultValue={invoice.due_date ? invoice.due_date.split('T')[0] : ''}
+                                    autoFocus
+                                    style={{ border: '1px solid #3b82f6', borderRadius: '8px', padding: '6px 10px', fontSize: '13px', outline: 'none', color: '#0f172a' }}
+                                    onChange={async (e) => {
+                                      if (!e.target.value) return;
+                                      try {
+                                        await apiCall(`/invoices/${invoice.id}/status`, {
+                                          method: 'PATCH',
+                                          body: JSON.stringify({ status: invoice.status, due_date: e.target.value })
+                                        });
+                                        setEditingDueDate(null);
+                                        loadData();
+                                      } catch (err) {
+                                        showNotification('Failed to update due date', 'error');
+                                      }
+                                    }}
+                                    onBlur={() => setEditingDueDate(null)}
+                                    onKeyDown={(e) => { if (e.key === 'Escape') setEditingDueDate(null); }}
+                                  />
+                                ) : (
+                                  <div
+                                    onClick={() => setEditingDueDate(invoice.id)}
+                                    style={{ cursor: 'pointer', padding: '6px 10px', borderRadius: '8px', border: '1px dashed #e2e8f0', display: 'inline-flex', alignItems: 'center', gap: '6px', color: invoice.due_date ? (invoice.status === 'overdue' ? '#dc2626' : '#475569') : '#94a3b8', fontSize: '13px', fontWeight: invoice.due_date ? 600 : 400 }}
+                                    title="Click to set due date"
+                                  >
+                                    {invoice.due_date
+                                      ? new Date(invoice.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                                      : 'Set due date'
+                                    }
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                  </div>
+                                )
+                              ) : (
+                                <span style={{ fontSize: '13px', color: '#94a3b8' }}>—</span>
+                              )}
                             </td>
                             <td style={{ padding: '16px' }}>
                               <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}>
