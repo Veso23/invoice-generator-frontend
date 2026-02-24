@@ -5083,7 +5083,7 @@ const InvoiceGeneratorApp = () => {
               <div style={{ display: 'flex', gap: '12px' }}>
                   <button
                     onClick={() => exportToCSV(
-                      filteredConsultants.map(c => ({
+                      filterAndSort(consultants, 'consultants').map(c => ({
                         'First Name': c.first_name, 'Last Name': c.last_name,
                         'Email': c.email, 'Phone': c.phone || '',
                         'Company': c.company_name || '', 'VAT': c.company_vat || '',
@@ -5336,7 +5336,7 @@ const InvoiceGeneratorApp = () => {
               <div style={{ display: 'flex', gap: '12px' }}>
                   <button
                     onClick={() => exportToCSV(
-                      filteredClients.map(c => ({
+                      filterAndSort(clients, 'clients').map(c => ({
                         'First Name': c.first_name, 'Last Name': c.last_name,
                         'Email': c.email || '', 'Phone': c.phone || '',
                         'Company': c.company_name || '', 'VAT': c.company_vat || '',
@@ -5563,7 +5563,7 @@ const InvoiceGeneratorApp = () => {
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button
                   onClick={() => exportToCSV(
-                    filteredContracts.map(c => {
+                    filterAndSort(contracts, 'contracts').map(c => {
                       const cons = consultants.find(x => x.id === c.consultant_id);
                       const cli = clients.find(x => x.id === c.client_id);
                       return {
@@ -6846,7 +6846,7 @@ const InvoiceGeneratorApp = () => {
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Generated Invoices</h2>
               <button
                 onClick={() => exportToCSV(
-                  filteredInvoices.map(inv => ({
+                  filterAndSort(invoices, 'invoices').map(inv => ({
                     'Invoice Number': inv.invoice_number || '',
                     'Type': inv.invoice_type || '',
                     'Date': inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString('en-GB') : '',
