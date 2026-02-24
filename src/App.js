@@ -534,6 +534,67 @@ const Notification = ({ notification, onClose }) => {
   );
 };
 
+// PDF Preview Modal
+const PDFPreviewModal = ({ isOpen, onClose, url, title }) => {
+  if (!isOpen || !url) return null;
+  return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      backgroundColor: 'rgba(15, 23, 42, 0.75)',
+      backdropFilter: 'blur(6px)',
+      display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      zIndex: 9999, padding: '24px'
+    }} onClick={onClose}>
+      <div style={{
+        width: '100%', maxWidth: '960px',
+        display: 'flex', flexDirection: 'column',
+        maxHeight: '92vh',
+        borderRadius: '20px', overflow: 'hidden',
+        boxShadow: '0 32px 64px rgba(0,0,0,0.4)'
+      }} onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '16px 24px',
+          backgroundColor: 'white',
+          borderBottom: '1px solid #f1f5f9'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              </svg>
+            </div>
+            <span style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>{title || 'Document Preview'}</span>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', fontSize: '13px', fontWeight: 700, textDecoration: 'none', cursor: 'pointer' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Open in new tab
+            </a>
+            <button
+              onClick={onClose}
+              style={{ width: '36px', height: '36px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 700 }}
+            >×</button>
+          </div>
+        </div>
+        {/* PDF iframe */}
+        <iframe
+          src={url}
+          style={{ flex: 1, border: 'none', backgroundColor: '#525659', minHeight: '70vh' }}
+          title={title || 'PDF Preview'}
+        />
+      </div>
+    </div>
+  );
+};
+
 // Confirm Dialog Modal
 const ConfirmModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel = 'Delete', confirmColor = '#ef4444', icon = null }) => {
   if (!isOpen) return null;
@@ -2496,6 +2557,10 @@ const InvoiceGeneratorApp = () => {
   const [activeTimesheetTab, setActiveTimesheetTab] = useState('current');
   const [csvUploadModalOpen, setCsvUploadModalOpen] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, confirmLabel: 'Delete', confirmColor: '#ef4444' });
+  const [pdfPreview, setPdfPreview] = useState({ isOpen: false, url: null, title: '' });
+  const openPDF = (url, title) => setPdfPreview({ isOpen: true, url, title: title || 'Document Preview' });
+  const [selectedTimesheets, setSelectedTimesheets] = useState(new Set());
+  const [bulkGenerating, setBulkGenerating] = useState(false);
   const [csvData, setCsvData] = useState([]);
   const [csvUploading, setCsvUploading] = useState(false);
   // Client CSV upload state
@@ -2780,7 +2845,7 @@ const InvoiceGeneratorApp = () => {
       
       if (matchingTimesheet && matchingTimesheet.timesheet_file_url) {
         const fixedUrl = fixTimesheetUrl(matchingTimesheet.timesheet_file_url);
-        window.open(fixedUrl, '_blank');
+        openPDF(fixedUrl, `Timesheet – ${consultant.first_name} ${consultant.last_name} – ${month}`);
       } else if (matchingTimesheet) {
         showNotification('No PDF file available for this timesheet', 'error');
       } else {
@@ -2975,6 +3040,59 @@ const InvoiceGeneratorApp = () => {
     });
   };
 
+  const bulkGenerateInvoices = async (timesheetIds) => {
+    if (!timesheetIds || timesheetIds.length === 0) return;
+    setBulkGenerating(true);
+    let success = 0, failed = 0;
+    for (const id of timesheetIds) {
+      try {
+        await apiCall(`/timesheets/${id}/generate-invoice`, { method: 'POST' });
+        success++;
+      } catch {
+        failed++;
+      }
+    }
+    setBulkGenerating(false);
+    setSelectedTimesheets(new Set());
+    loadData();
+    if (failed === 0) {
+      showNotification(`✅ Generated ${success} invoice${success > 1 ? 's' : ''} successfully!`);
+    } else {
+      showNotification(`Generated ${success}, failed ${failed}`, 'error');
+    }
+  };
+
+  const exportToCSV = (rows, filename) => {
+    if (!rows || rows.length === 0) return;
+    const headers = Object.keys(rows[0]);
+    const csv = [
+      headers.join(','),
+      ...rows.map(row => headers.map(h => {
+        const val = row[h] === null || row[h] === undefined ? '' : String(row[h]);
+        return val.includes(',') || val.includes('"') || val.includes('\n')
+          ? `"${val.replace(/"/g, '""')}"` : val;
+      }).join(','))
+    ].join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const toggleReminder = async (consultantId, currentValue) => {
+    try {
+      await apiCall(`/consultants/${consultantId}/reminder-toggle`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reminder_enabled: !currentValue })
+      });
+      showNotification(`Reminders ${!currentValue ? 'enabled' : 'disabled'} for this consultant`);
+      loadData();
+    } catch (error) {
+      showNotification('Failed to update reminder setting: ' + error.message, 'error');
+    }
+  };
+
   const deleteContract = async (id) => {
     if (!window.confirm('Are you sure you want to delete this contract? This action cannot be undone.')) return;
     
@@ -3035,14 +3153,12 @@ const InvoiceGeneratorApp = () => {
     try {
       if (!invoice.pdf_url) {
         const pdfUrl = await generatePDF(invoice.id);
-        if (pdfUrl) {
-          window.open(pdfUrl, '_blank');
-        }
+        if (pdfUrl) openPDF(pdfUrl, `Invoice ${invoice.invoice_number}`);
       } else {
-        window.open(invoice.pdf_url, '_blank');
+        openPDF(invoice.pdf_url, `Invoice ${invoice.invoice_number}`);
       }
     } catch (error) {
-      showNotification('Failed to download PDF: ' + error.message, 'error');
+      showNotification('Failed to load PDF: ' + error.message, 'error');
     }
   };
 
@@ -4202,6 +4318,13 @@ const InvoiceGeneratorApp = () => {
         confirmColor={confirmModal.confirmColor}
       />
 
+      <PDFPreviewModal
+        isOpen={pdfPreview.isOpen}
+        onClose={() => setPdfPreview({ isOpen: false, url: null, title: '' })}
+        url={pdfPreview.url}
+        title={pdfPreview.title}
+      />
+
       {/* Contract Selection Modal */}
       {contractSelectionModal.open && (
         <div style={{
@@ -4957,6 +5080,27 @@ const InvoiceGeneratorApp = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Consultants</h2>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    onClick={() => exportToCSV(
+                      filteredConsultants.map(c => ({{
+                        'First Name': c.first_name, 'Last Name': c.last_name,
+                        'Email': c.email, 'Phone': c.phone || '',
+                        'Company': c.company_name || '', 'VAT': c.company_vat || '',
+                        'IBAN': c.iban || '', 'Address': c.company_address || ''
+                      }})), `consultants_${new Date().toISOString().split('T')[0]}.csv`
+                    )}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '12px 20px', borderRadius: '12px',
+                      border: '1px solid #e2e8f0', backgroundColor: 'white',
+                      color: '#475569', fontWeight: 700, fontSize: '13px', cursor: 'pointer'
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Export CSV
+                  </button>
+              </div>
               {(user.role === 'admin' || user.role === 'superadmin') && (
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button
@@ -5106,7 +5250,27 @@ const InvoiceGeneratorApp = () => {
                         <td style={{ padding: '16px 20px', fontSize: '13px', color: '#64748b' }}>{formatDate(consultant.created_at)}</td>
                         {(user.role === 'admin' || user.role === 'superadmin') && (
                           <td style={{ padding: '16px 20px', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
+                              {/* Reminder toggle */}
+                              <button
+                                onClick={() => toggleReminder(consultant.id, consultant.reminder_enabled !== false)}
+                                title={consultant.reminder_enabled !== false ? 'Reminders ON — click to disable' : 'Reminders OFF — click to enable'}
+                                style={{
+                                  padding: '8px',
+                                  borderRadius: '10px',
+                                  border: `1px solid ${consultant.reminder_enabled !== false ? '#bbf7d0' : '#e2e8f0'}`,
+                                  backgroundColor: consultant.reminder_enabled !== false ? '#f0fdf4' : '#f8fafc',
+                                  color: consultant.reminder_enabled !== false ? '#16a34a' : '#94a3b8',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s'
+                                }}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                  {consultant.reminder_enabled === false && <line x1="1" y1="1" x2="23" y2="23"/>}
+                                </svg>
+                              </button>
                               <button 
                                 onClick={() => editItem('consultant', consultant)} 
                                 style={{
@@ -5169,6 +5333,22 @@ const InvoiceGeneratorApp = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Clients</h2>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    onClick={() => exportToCSV(
+                      filteredClients.map(c => ({
+                        'First Name': c.first_name, 'Last Name': c.last_name,
+                        'Email': c.email || '', 'Phone': c.phone || '',
+                        'Company': c.company_name || '', 'VAT': c.company_vat || '',
+                        'Address': c.company_address || ''
+                      })), `clients_${new Date().toISOString().split('T')[0]}.csv`
+                    )}
+                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Export CSV
+                  </button>
+              </div>
               {(user.role === 'admin' || user.role === 'superadmin') && (
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button
@@ -5380,6 +5560,29 @@ const InvoiceGeneratorApp = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Contracts</h2>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => exportToCSV(
+                    filteredContracts.map(c => {
+                      const cons = consultants.find(x => x.id === c.consultant_id);
+                      const cli = clients.find(x => x.id === c.client_id);
+                      return {
+                        'Contract Number': c.contract_number || '',
+                        'Consultant': cons ? `${cons.first_name} ${cons.last_name}` : '',
+                        'Client': cli ? (cli.company_name || `${cli.first_name} ${cli.last_name}`) : '',
+                        'From': c.from_date ? new Date(c.from_date).toLocaleDateString('en-GB') : '',
+                        'To': c.to_date ? new Date(c.to_date).toLocaleDateString('en-GB') : '',
+                        'Purchase Price': c.purchase_price || '',
+                        'Sell Price': c.sell_price || ''
+                      };
+                    }), `contracts_${new Date().toISOString().split('T')[0]}.csv`
+                  )}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Export CSV
+                </button>
+              </div>
               {(user.role === 'admin' || user.role === 'superadmin') && (
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button
@@ -5758,9 +5961,61 @@ const InvoiceGeneratorApp = () => {
               {/* CURRENT MONTH TAB CONTENT */}
               {activeTimesheetTab === 'current' && (
                 <div style={{ overflowX: 'auto' }}>
+                  {/* Bulk Action Bar */}
+                  {selectedTimesheets.size > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 20px', backgroundColor: '#4f46e5', borderRadius: '12px', margin: '0 0 12px 0' }}>
+                      <span style={{ color: 'white', fontWeight: 700, fontSize: '14px' }}>
+                        {selectedTimesheets.size} timesheet{selectedTimesheets.size > 1 ? 's' : ''} selected
+                      </span>
+                      <button
+                        onClick={() => {
+                          setConfirmModal({
+                            isOpen: true,
+                            title: `Generate ${selectedTimesheets.size} Invoice${selectedTimesheets.size > 1 ? 's' : ''}`,
+                            message: `This will generate invoices for ${selectedTimesheets.size} selected timesheet${selectedTimesheets.size > 1 ? 's' : ''}. Are you sure?`,
+                            confirmLabel: 'Generate All',
+                            confirmColor: '#059669',
+                            onConfirm: () => bulkGenerateInvoices([...selectedTimesheets])
+                          });
+                        }}
+                        disabled={bulkGenerating}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 18px', borderRadius: '10px', border: 'none', backgroundColor: 'white', color: '#4f46e5', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        {bulkGenerating ? 'Generating...' : `⚡ Generate All`}
+                      </button>
+                      <button onClick={() => setSelectedTimesheets(new Set())} style={{ color: 'rgba(255,255,255,0.7)', background: 'none', border: 'none', fontSize: '13px', cursor: 'pointer', marginLeft: 'auto' }}>
+                        Clear selection
+                      </button>
+                    </div>
+                  )}
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                        <th style={{ padding: '16px 12px 16px 20px', width: '36px' }}>
+                          <input type="checkbox"
+                            style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#4f46e5' }}
+                            onChange={e => {
+                              const eligible = (timesheetStatus?.contracts || [])
+                                .map(contract => {
+                                  const ts = timesheets.find(t =>
+                                    !t.flagged_for_review && !t.invoice_generated &&
+                                    (t.contract_id === contract.contract_id || t.sender_email?.toLowerCase() === contract.consultant_email?.toLowerCase()) &&
+                                    t.month?.toLowerCase() === contract.checking_month?.toLowerCase()
+                                  );
+                                  return ts?.id;
+                                }).filter(Boolean);
+                              setSelectedTimesheets(e.target.checked ? new Set(eligible) : new Set());
+                            }}
+                            checked={selectedTimesheets.size > 0 && (timesheetStatus?.contracts || []).every(contract => {
+                              const ts = timesheets.find(t =>
+                                !t.flagged_for_review && !t.invoice_generated &&
+                                (t.contract_id === contract.contract_id || t.sender_email?.toLowerCase() === contract.consultant_email?.toLowerCase()) &&
+                                t.month?.toLowerCase() === contract.checking_month?.toLowerCase()
+                              );
+                              return !ts || selectedTimesheets.has(ts.id);
+                            })}
+                          />
+                        </th>
                         <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Consultant</th>
                         <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contract → Client</th>
                         <th style={{ textAlign: 'left', padding: '16px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Period</th>
@@ -5821,6 +6076,19 @@ const InvoiceGeneratorApp = () => {
                         
                         return (
                           <tr key={contract.contract_id} className={`border-b hover:opacity-80 transition ${rowBgColor}`}>
+                            <td style={{ padding: '12px 12px 12px 20px', verticalAlign: 'middle' }}>
+                              {timesheet && !timesheet.invoice_generated && (
+                                <input type="checkbox"
+                                  style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#4f46e5' }}
+                                  checked={selectedTimesheets.has(timesheet.id)}
+                                  onChange={e => {
+                                    const next = new Set(selectedTimesheets);
+                                    e.target.checked ? next.add(timesheet.id) : next.delete(timesheet.id);
+                                    setSelectedTimesheets(next);
+                                  }}
+                                />
+                              )}
+                            </td>
                             <td className="p-4">
                               <div className="font-medium">{contract.consultant_name}</div>
                               <div className="text-xs text-gray-500">{contract.consultant_company}</div>
@@ -5948,7 +6216,7 @@ const InvoiceGeneratorApp = () => {
                                 {/* View PDF */}
                                 {timesheet?.timesheet_file_url && (
                                   <button
-                                    onClick={() => window.open(fixTimesheetUrl(timesheet.timesheet_file_url), '_blank')}
+                                    onClick={() => openPDF(fixTimesheetUrl(timesheet.timesheet_file_url), `Timesheet – ${timesheet.person_name || timesheet.sender_email}`)}
                                     title="View Timesheet PDF"
                                     style={{ width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#4f46e5', cursor: 'pointer' }}
                                   >
@@ -6190,7 +6458,7 @@ const InvoiceGeneratorApp = () => {
                                   {/* View PDF */}
                                   {timesheet.timesheet_file_url && (
                                     <button
-                                      onClick={() => window.open(fixTimesheetUrl(timesheet.timesheet_file_url), '_blank')}
+                                      onClick={() => openPDF(fixTimesheetUrl(timesheet.timesheet_file_url), `Timesheet – ${timesheet.person_name || timesheet.sender_email}`)}
                                       title="View Timesheet PDF"
                                       style={{
                                         width: '34px', height: '34px',
@@ -6403,7 +6671,7 @@ const InvoiceGeneratorApp = () => {
                                   {/* View PDF */}
                                   {timesheet.timesheet_file_url && (
                                     <button
-                                      onClick={() => window.open(fixTimesheetUrl(timesheet.timesheet_file_url), '_blank')}
+                                      onClick={() => openPDF(fixTimesheetUrl(timesheet.timesheet_file_url), `Timesheet – ${timesheet.person_name || timesheet.sender_email}`)}
                                       title="View Timesheet PDF"
                                       style={{ width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#4f46e5', cursor: 'pointer' }}
                                     >
@@ -6576,6 +6844,26 @@ const InvoiceGeneratorApp = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Generated Invoices</h2>
+              <button
+                onClick={() => exportToCSV(
+                  filteredInvoices.map(inv => ({
+                    'Invoice Number': inv.invoice_number || '',
+                    'Type': inv.invoice_type || '',
+                    'Date': inv.invoice_date ? new Date(inv.invoice_date).toLocaleDateString('en-GB') : '',
+                    'Period From': inv.period_from ? new Date(inv.period_from).toLocaleDateString('en-GB') : '',
+                    'Period To': inv.period_to ? new Date(inv.period_to).toLocaleDateString('en-GB') : '',
+                    'Consultant': `${inv.consultant_first_name || ''} ${inv.consultant_last_name || ''}`.trim(),
+                    'Client': inv.client_company_name || `${inv.client_first_name || ''} ${inv.client_last_name || ''}`.trim(),
+                    'Subtotal': inv.subtotal || '',
+                    'VAT': inv.vat_amount || '',
+                    'Total': inv.total_amount || ''
+                  })), `invoices_${new Date().toISOString().split('T')[0]}.csv`
+                )}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export CSV
+              </button>
               <span style={{ 
                 fontSize: '13px', 
                 color: '#64748b',
@@ -6785,6 +7073,92 @@ const InvoiceGeneratorApp = () => {
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Timesheet & Invoice History</h2>
               <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>{timesheetHistory.length} total records</span>
             </div>
+
+            {/* Charts Section */}
+            {(() => {
+              // Build monthly revenue data from invoice history
+              const monthlyMap = {};
+              const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+              timesheetHistory.forEach(ts => {
+                if (!ts.client_invoice_total && !ts.consultant_invoice_total) return;
+                const d = new Date(ts.created_at);
+                const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                if (!monthlyMap[key]) monthlyMap[key] = { label: `${MONTHS[d.getMonth()]} ${d.getFullYear()}`, revenue: 0, cost: 0, profit: 0 };
+                monthlyMap[key].revenue += parseFloat(ts.client_invoice_total || 0);
+                monthlyMap[key].cost += parseFloat(ts.consultant_invoice_total || 0);
+                monthlyMap[key].profit += parseFloat(ts.client_invoice_total || 0) - parseFloat(ts.consultant_invoice_total || 0);
+              });
+              const monthly = Object.entries(monthlyMap).sort(([a],[b]) => a.localeCompare(b)).slice(-12).map(([,v]) => v);
+
+              // Top consultants by revenue
+              const consultantMap = {};
+              timesheetHistory.forEach(ts => {
+                if (!ts.client_invoice_total) return;
+                const name = `${ts.consultant_first_name || ''} ${ts.consultant_last_name || ''}`.trim() || ts.sender_email || 'Unknown';
+                consultantMap[name] = (consultantMap[name] || 0) + parseFloat(ts.client_invoice_total || 0);
+              });
+              const topConsultants = Object.entries(consultantMap).sort(([,a],[,b]) => b-a).slice(0,6);
+
+              if (monthly.length === 0 && topConsultants.length === 0) return null;
+
+              const maxRevenue = Math.max(...monthly.map(m => m.revenue), 1);
+              const maxCons = Math.max(...topConsultants.map(([,v]) => v), 1);
+              const COLORS = ['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
+
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  {/* Revenue Bar Chart */}
+                  {monthly.length > 0 && (
+                    <div style={{ backgroundColor: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '28px' }}>
+                      <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>Monthly Revenue</h3>
+                      <p style={{ margin: '0 0 24px', fontSize: '13px', color: '#94a3b8' }}>Client invoices – last 12 months</p>
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '160px' }}>
+                        {monthly.map((m, i) => (
+                          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end' }}>
+                            <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700 }}>
+                              {m.revenue >= 1000 ? `€${(m.revenue/1000).toFixed(1)}k` : `€${Math.round(m.revenue)}`}
+                            </div>
+                            <div title={`Revenue: €${m.revenue.toFixed(2)}\nCost: €${m.cost.toFixed(2)}\nProfit: €${m.profit.toFixed(2)}`}
+                              style={{ width: '100%', borderRadius: '6px 6px 0 0', backgroundColor: '#4f46e5', height: `${Math.max(4, (m.revenue / maxRevenue) * 120)}px`, transition: 'height 0.3s', cursor: 'pointer' }} />
+                            <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 600, textAlign: 'center', lineHeight: 1.2 }}>{m.label.split(' ')[0]}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Legend */}
+                      <div style={{ display: 'flex', gap: '16px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+                        {[['#4f46e5','Revenue'], ['#10b981','Profit']].map(([c,l]) => (
+                          <div key={l} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div style={{ width: '10px', height: '10px', borderRadius: '3px', backgroundColor: c }} />
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{l}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Top Consultants */}
+                  {topConsultants.length > 0 && (
+                    <div style={{ backgroundColor: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '28px' }}>
+                      <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>Top Consultants</h3>
+                      <p style={{ margin: '0 0 24px', fontSize: '13px', color: '#94a3b8' }}>By total invoiced revenue</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        {topConsultants.map(([name, val], i) => (
+                          <div key={name}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{name}</span>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: COLORS[i % COLORS.length] }}>€{val.toLocaleString('en-EU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                            <div style={{ height: '8px', backgroundColor: '#f1f5f9', borderRadius: '99px', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${(val / maxCons) * 100}%`, backgroundColor: COLORS[i % COLORS.length], borderRadius: '99px', transition: 'width 0.4s' }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Filters and Search */}
             <div style={{
@@ -7073,7 +7447,7 @@ const InvoiceGeneratorApp = () => {
                                 <button
                                   onClick={() => {
                                     const fixedUrl = fixTimesheetUrl(ts.timesheet_file_url);
-                                    window.open(fixedUrl, '_blank');
+                                    openPDF(fixedUrl, `Timesheet – ${ts.consultant_first_name || ''} ${ts.consultant_last_name || ''}`.trim());
                                   }}
                                   style={{ color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
                                   title="View Timesheet PDF"
