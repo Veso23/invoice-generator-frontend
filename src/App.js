@@ -7194,7 +7194,6 @@ const InvoiceGeneratorApp = () => {
 
               if (monthly.length === 0 && topConsultants.length === 0) return null;
 
-              const maxRevenue = Math.max(...monthly.map(m => m.revenue), 1);
               const maxCons = Math.max(...topConsultants.map(([,v]) => v), 1);
               const COLORS = ['#4f46e5','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4'];
 
