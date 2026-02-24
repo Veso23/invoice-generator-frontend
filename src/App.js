@@ -3077,6 +3077,35 @@ const InvoiceGeneratorApp = () => {
     showNotification(failed === 0 ? `✅ Generated ${success} PDF${success > 1 ? 's' : ''}!` : `Generated ${success}, failed ${failed}`, failed > 0 ? 'error' : 'success');
   };
 
+  const markInvoiceStatus = async (invoiceId, status) => {
+    try {
+      await apiCall(`/invoices/${invoiceId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      });
+      showNotification(
+        status === 'paid' ? '✅ Marked as Paid!' :
+        status === 'overdue' ? '⚠️ Marked as Overdue' :
+        `Status updated to ${status}`
+      );
+      loadData();
+    } catch (error) {
+      showNotification('Failed to update status: ' + error.message, 'error');
+    }
+  };
+
+  const bulkMarkPaid = async (invoiceIds) => {
+    setBulkInvoiceAction(true);
+    let success = 0;
+    for (const id of invoiceIds) {
+      try { await apiCall(`/invoices/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'paid' }) }); success++; } catch {}
+    }
+    setBulkInvoiceAction(false);
+    setSelectedInvoices([]);
+    loadData();
+    showNotification(`✅ ${success} invoice${success > 1 ? 's' : ''} marked as paid!`);
+  };
+
   const bulkSendEmails = async (invoiceIds) => {
     setBulkInvoiceAction(true);
     let success = 0, failed = 0, skipped = 0;
@@ -5036,7 +5065,7 @@ const InvoiceGeneratorApp = () => {
               </div>
             </div>
 
-            {/* Monthly Revenue Overview */}
+            {/* Financial Overview */}
             <div style={{
               backgroundColor: 'white',
               borderRadius: '24px',
@@ -5044,21 +5073,10 @@ const InvoiceGeneratorApp = () => {
               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
               overflow: 'hidden'
             }}>
-              <div style={{ 
-                padding: '24px 32px', 
-                borderBottom: '1px solid #f1f5f9'
-              }}>
-                <h2 style={{ 
-                  fontSize: '20px', 
-                  fontWeight: 800, 
-                  color: '#0f172a',
-                  margin: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}>
+              <div style={{ padding: '24px 32px', borderBottom: '1px solid #f1f5f9' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <span style={{ fontSize: '24px' }}>💰</span>
-                  Pipeline Value
+                  Financial Overview
                 </h2>
               </div>
               <div style={{ padding: '32px' }}>
@@ -5066,45 +5084,88 @@ const InvoiceGeneratorApp = () => {
                   const now = new Date();
                   const currentMonth = now.getMonth();
                   const currentYear = now.getFullYear();
-                  
+
                   const currentMonthInvoices = invoices.filter(inv => {
                     const invDate = new Date(inv.invoice_date);
-                    return invDate.getMonth() === currentMonth && 
-                           invDate.getFullYear() === currentYear;
+                    return invDate.getMonth() === currentMonth && invDate.getFullYear() === currentYear;
                   });
-                  
-                  const consultantRevenue = currentMonthInvoices
-                    .filter(inv => inv.invoice_type === 'consultant')
-                    .reduce((sum, inv) => sum + parseFloat(inv.total_amount), 0);
-                    
-                  const clientRevenue = currentMonthInvoices
-                    .filter(inv => inv.invoice_type === 'client')
-                    .reduce((sum, inv) => sum + parseFloat(inv.total_amount), 0);
-                    
-                  const profit = clientRevenue - consultantRevenue;
-                  
+
+                  const clientRevenue = currentMonthInvoices.filter(i => i.invoice_type === 'client').reduce((s, i) => s + parseFloat(i.total_amount), 0);
+                  const consultantCost = currentMonthInvoices.filter(i => i.invoice_type === 'consultant').reduce((s, i) => s + parseFloat(i.total_amount), 0);
+                  const profit = clientRevenue - consultantCost;
+
+                  // Outstanding = client invoices sent/overdue but not paid
+                  const outstandingInvoices = invoices.filter(i => i.invoice_type === 'client' && (i.status === 'sent' || i.status === 'overdue'));
+                  const outstandingAmount = outstandingInvoices.reduce((s, i) => s + parseFloat(i.total_amount), 0);
+
+                  // Overdue = client invoices past due_date and not paid
+                  const overdueInvoices = invoices.filter(i => i.invoice_type === 'client' && i.status === 'overdue');
+                  const overdueAmount = overdueInvoices.reduce((s, i) => s + parseFloat(i.total_amount), 0);
+
                   return (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '32px' }}>
-                      <div style={{ textAlign: 'center' }}>
-                        <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Client Invoices</p>
-                        <p style={{ fontSize: '36px', fontWeight: 900, color: '#4f46e5', margin: 0 }}>{formatCurrency(clientRevenue)}</p>
-                        <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>{currentMonthInvoices.filter(i => i.invoice_type === 'client').length} invoices</p>
-                      </div>
-                      
-                      <div style={{ textAlign: 'center' }}>
-                        <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Consultant Costs</p>
-                        <p style={{ fontSize: '36px', fontWeight: 900, color: '#f59e0b', margin: 0 }}>{formatCurrency(consultantRevenue)}</p>
-                        <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>{currentMonthInvoices.filter(i => i.invoice_type === 'consultant').length} invoices</p>
-                      </div>
-                      
-                      <div style={{ textAlign: 'center' }}>
-                        <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '12px' }}>Net Profit</p>
-                        <p style={{ fontSize: '36px', fontWeight: 900, color: profit >= 0 ? '#10b981' : '#ef4444', margin: 0 }}>
-                          {formatCurrency(profit)}
-                        </p>
-                        <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+                      {/* This month row */}
+                      <div>
+                        <p style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '16px' }}>
                           {now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                         </p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                          <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '16px' }}>
+                            <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>Client Invoices</p>
+                            <p style={{ fontSize: '28px', fontWeight: 900, color: '#4f46e5', margin: 0 }}>{formatCurrency(clientRevenue)}</p>
+                            <p style={{ fontSize: '12px', color: '#64748b', marginTop: '6px' }}>{currentMonthInvoices.filter(i => i.invoice_type === 'client').length} invoices</p>
+                          </div>
+                          <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '16px' }}>
+                            <p style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>Consultant Costs</p>
+                            <p style={{ fontSize: '28px', fontWeight: 900, color: '#f59e0b', margin: 0 }}>{formatCurrency(consultantCost)}</p>
+                            <p style={{ fontSize: '12px', color: '#64748b', marginTop: '6px' }}>{currentMonthInvoices.filter(i => i.invoice_type === 'consultant').length} invoices</p>
+                          </div>
+                          <div style={{ textAlign: 'center', padding: '20px', backgroundColor: profit >= 0 ? '#f0fdf4' : '#fef2f2', borderRadius: '16px', border: `1px solid ${profit >= 0 ? '#bbf7d0' : '#fecaca'}` }}>
+                            <p style={{ fontSize: '11px', fontWeight: 700, color: profit >= 0 ? '#059669' : '#dc2626', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '10px' }}>Net Profit</p>
+                            <p style={{ fontSize: '28px', fontWeight: 900, color: profit >= 0 ? '#10b981' : '#ef4444', margin: 0 }}>{formatCurrency(profit)}</p>
+                            <p style={{ fontSize: '12px', color: '#64748b', marginTop: '6px' }}>
+                              {clientRevenue > 0 ? `${((profit / clientRevenue) * 100).toFixed(1)}% margin` : '—'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Divider */}
+                      <div style={{ height: '1px', backgroundColor: '#f1f5f9' }} />
+
+                      {/* Outstanding & Overdue row */}
+                      <div>
+                        <p style={{ fontSize: '11px', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '16px' }}>Receivables</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                          {/* Outstanding */}
+                          <div style={{ padding: '20px', backgroundColor: outstandingAmount > 0 ? '#eff6ff' : '#f8fafc', borderRadius: '16px', border: `1px solid ${outstandingAmount > 0 ? '#bfdbfe' : '#e2e8f0'}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 800, color: outstandingAmount > 0 ? '#1d4ed8' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Outstanding</span>
+                              <span style={{ padding: '2px 8px', borderRadius: '99px', fontSize: '11px', fontWeight: 700, backgroundColor: outstandingAmount > 0 ? '#dbeafe' : '#f1f5f9', color: outstandingAmount > 0 ? '#1d4ed8' : '#64748b' }}>
+                                {outstandingInvoices.length} invoice{outstandingInvoices.length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                            <p style={{ fontSize: '28px', fontWeight: 900, color: outstandingAmount > 0 ? '#1d4ed8' : '#94a3b8', margin: 0 }}>{formatCurrency(outstandingAmount)}</p>
+                            <p style={{ fontSize: '12px', color: '#64748b', marginTop: '6px' }}>Sent, awaiting payment</p>
+                          </div>
+
+                          {/* Overdue */}
+                          <div style={{ padding: '20px', backgroundColor: overdueAmount > 0 ? '#fff5f5' : '#f8fafc', borderRadius: '16px', border: `1px solid ${overdueAmount > 0 ? '#fecaca' : '#e2e8f0'}`, cursor: overdueInvoices.length > 0 ? 'pointer' : 'default' }}
+                            onClick={() => { if (overdueInvoices.length > 0) setActiveTab('invoices'); }}
+                            title={overdueInvoices.length > 0 ? 'Click to view overdue invoices' : ''}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                              <span style={{ fontSize: '11px', fontWeight: 800, color: overdueAmount > 0 ? '#dc2626' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Overdue</span>
+                              <span style={{ padding: '2px 8px', borderRadius: '99px', fontSize: '11px', fontWeight: 700, backgroundColor: overdueAmount > 0 ? '#fee2e2' : '#f1f5f9', color: overdueAmount > 0 ? '#dc2626' : '#64748b' }}>
+                                {overdueInvoices.length} invoice{overdueInvoices.length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                            <p style={{ fontSize: '28px', fontWeight: 900, color: overdueAmount > 0 ? '#dc2626' : '#94a3b8', margin: 0 }}>{formatCurrency(overdueAmount)}</p>
+                            <p style={{ fontSize: '12px', color: overdueAmount > 0 ? '#dc2626' : '#64748b', marginTop: '6px' }}>
+                              {overdueInvoices.length > 0 ? '⚠ Click to view →' : 'No overdue invoices'}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
@@ -6964,6 +7025,21 @@ const InvoiceGeneratorApp = () => {
                       disabled={bulkInvoiceAction}
                       onClick={() => setConfirmModal({
                         isOpen: true,
+                        title: `Mark ${selectedInvoices.length} as Paid`,
+                        message: `Mark ${selectedInvoices.length} invoice${selectedInvoices.length > 1 ? 's' : ''} as paid?`,
+                        confirmLabel: 'Mark All Paid',
+                        confirmColor: '#16a34a',
+                        onConfirm: () => bulkMarkPaid(selectedInvoices)
+                      })}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.4)', backgroundColor: 'transparent', color: 'white', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      {bulkInvoiceAction ? 'Working...' : 'Mark Paid'}
+                    </button>
+                    <button
+                      disabled={bulkInvoiceAction}
+                      onClick={() => setConfirmModal({
+                        isOpen: true,
                         title: `Generate ${selectedInvoices.length} PDF${selectedInvoices.length > 1 ? 's' : ''}`,
                         message: `Generate PDFs for ${selectedInvoices.length} selected invoice${selectedInvoices.length > 1 ? 's' : ''}?`,
                         confirmLabel: 'Generate All',
@@ -7037,7 +7113,7 @@ const InvoiceGeneratorApp = () => {
                         const total = subtotal + vatAmount;
                         
                         return (
-                          <tr key={invoice.id} style={{ borderBottom: '1px solid #e2e8f0' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
+                          <tr key={invoice.id} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: invoice.status === 'overdue' ? '#fff5f5' : invoice.status === 'paid' ? '#f0fdf4' : 'white' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = invoice.status === 'overdue' ? '#fee2e2' : invoice.status === 'paid' ? '#dcfce7' : '#f9fafb'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = invoice.status === 'overdue' ? '#fff5f5' : invoice.status === 'paid' ? '#f0fdf4' : 'white'}>
                             <td style={{ padding: '12px 12px 12px 20px', verticalAlign: 'middle' }}>
                               <input type="checkbox"
                                 style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#4f46e5' }}
@@ -7105,33 +7181,75 @@ const InvoiceGeneratorApp = () => {
                             </td>
                             <td style={{ padding: '16px', fontWeight: 700, color: '#0f172a' }}>{formatCurrency(total)}</td>
                             <td style={{ padding: '16px' }}>
-                              <span style={{
-                                padding: '4px 8px',
-                                borderRadius: '9999px',
-                                fontSize: '12px',
-                                fontWeight: 500,
-                                backgroundColor: invoice.status === 'draft' ? '#fef9c3' : invoice.status === 'sent' ? '#dbeafe' : invoice.status === 'paid' ? '#dcfce7' : '#f3f4f6',
-                                color: invoice.status === 'draft' ? '#854d0e' : invoice.status === 'sent' ? '#1e40af' : invoice.status === 'paid' ? '#166534' : '#374151'
-                              }}>
-                                {invoice.status}
-                              </span>
+                              {(() => {
+                                const s = invoice.status;
+                                const cfg = {
+                                  draft:   { bg: '#fef9c3', color: '#854d0e', label: 'Draft' },
+                                  sent:    { bg: '#dbeafe', color: '#1e40af', label: 'Sent' },
+                                  paid:    { bg: '#dcfce7', color: '#166534', label: '✓ Paid' },
+                                  overdue: { bg: '#fee2e2', color: '#991b1b', label: '⚠ Overdue' },
+                                }[s] || { bg: '#f3f4f6', color: '#374151', label: s };
+                                return (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                    <span style={{ padding: '4px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 700, backgroundColor: cfg.bg, color: cfg.color }}>
+                                      {cfg.label}
+                                    </span>
+                                    {invoice.due_date && s !== 'paid' && (
+                                      <span style={{ fontSize: '10px', color: s === 'overdue' ? '#dc2626' : '#94a3b8', fontWeight: 600 }}>
+                                        Due {new Date(invoice.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                      </span>
+                                    )}
+                                    {invoice.paid_at && s === 'paid' && (
+                                      <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 600 }}>
+                                        {new Date(invoice.paid_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </td>
                             <td style={{ padding: '16px' }}>
-                              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                                <button onClick={() => viewTimesheet(invoice)} style={{ color: '#2563eb', padding: '4px', transition: 'color 0.2s' }} title="View Timesheet">
-                                  <Eye style={{ width: '16px', height: '16px' }} />
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}>
+                                <button onClick={() => viewTimesheet(invoice)} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#2563eb', cursor: 'pointer' }} title="View Timesheet">
+                                  <Eye style={{ width: '15px', height: '15px' }} />
                                 </button>
-                                <button onClick={() => downloadPDF(invoice)} style={{ color: '#16a34a', padding: '4px', transition: 'color 0.2s' }} title={invoice.pdf_url ? "Download PDF" : "Generate & Download PDF"} disabled={dataLoading}>
-                                  <Download style={{ width: '16px', height: '16px' }} />
+                                <button onClick={() => downloadPDF(invoice)} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#16a34a', cursor: 'pointer' }} title={invoice.pdf_url ? "View PDF" : "Generate & View PDF"} disabled={dataLoading}>
+                                  <Download style={{ width: '15px', height: '15px' }} />
                                 </button>
                                 <button
                                   onClick={() => sendInvoiceEmail(invoice)}
-                                  style={{ color: invoice.email_sent ? '#16a34a' : '#9333ea', padding: '4px', transition: 'color 0.2s' }}
+                                  style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: invoice.email_sent ? '#16a34a' : '#9333ea', cursor: 'pointer' }}
                                   title={invoice.email_sent ? `Sent to ${invoice.email_sent_to}` : "Send Invoice Email"}
                                   disabled={dataLoading}
                                 >
-                                  {invoice.email_sent ? <CheckCircle style={{ width: '16px', height: '16px' }} /> : <Send style={{ width: '16px', height: '16px' }} />}
+                                  {invoice.email_sent ? <CheckCircle style={{ width: '15px', height: '15px' }} /> : <Send style={{ width: '15px', height: '15px' }} />}
                                 </button>
+                                {/* Mark as Paid / Unpaid */}
+                                {invoice.status !== 'paid' && invoice.status !== 'draft' && (
+                                  <button
+                                    onClick={() => setConfirmModal({
+                                      isOpen: true,
+                                      title: 'Mark as Paid',
+                                      message: `Mark invoice ${invoice.invoice_number} as paid?`,
+                                      confirmLabel: 'Mark Paid',
+                                      confirmColor: '#16a34a',
+                                      onConfirm: () => markInvoiceStatus(invoice.id, 'paid')
+                                    })}
+                                    style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #bbf7d0', backgroundColor: '#f0fdf4', color: '#16a34a', cursor: 'pointer' }}
+                                    title="Mark as Paid"
+                                  >
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                  </button>
+                                )}
+                                {invoice.status === 'paid' && (
+                                  <button
+                                    onClick={() => markInvoiceStatus(invoice.id, 'sent')}
+                                    style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#94a3b8', cursor: 'pointer' }}
+                                    title="Undo — mark as Sent"
+                                  >
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
