@@ -6030,22 +6030,16 @@ const InvoiceGeneratorApp = () => {
                             onChange={e => {
                               const eligible = (timesheetStatus?.contracts || [])
                                 .map(contract => {
-                                  const ts = timesheets.find(t =>
-                                    !t.flagged_for_review && !t.invoice_generated &&
-                                    (t.contract_id === contract.contract_id || t.sender_email?.toLowerCase() === contract.consultant_email?.toLowerCase()) &&
-                                    t.month?.toLowerCase() === contract.checking_month?.toLowerCase()
-                                  );
-                                  return ts?.id ? Number(ts.id) : null;
+                                  const tsId = contract.timesheet_id ? Number(contract.timesheet_id) : null;
+                                  if (!tsId || contract.invoice_generated) return null;
+                                  return tsId;
                                 }).filter(Boolean);
                               setSelectedTimesheets(e.target.checked ? eligible : []);
                             }}
                             checked={selectedTimesheets.length > 0 && (timesheetStatus?.contracts || []).every(contract => {
-                              const ts = timesheets.find(t =>
-                                !t.flagged_for_review && !t.invoice_generated &&
-                                (t.contract_id === contract.contract_id || t.sender_email?.toLowerCase() === contract.consultant_email?.toLowerCase()) &&
-                                t.month?.toLowerCase() === contract.checking_month?.toLowerCase()
-                              );
-                              return !ts || selectedTimesheets.includes(Number(ts.id));
+                              const tsId = contract.timesheet_id ? Number(contract.timesheet_id) : null;
+                              if (!tsId || contract.invoice_generated) return true; // skip non-eligible
+                              return selectedTimesheets.includes(tsId);
                             })}
                           />
                         </th>
@@ -6081,6 +6075,11 @@ const InvoiceGeneratorApp = () => {
                         // Use assigned timesheet, or if only one unassigned exists, use it
                         const timesheet = assignedTimesheet || (unassignedTimesheets.length === 1 ? unassignedTimesheets[0] : null);
                         const hasMultipleUnassigned = !assignedTimesheet && unassignedTimesheets.length > 1;
+
+                        // Use contract.timesheet_id directly for checkbox (more reliable than timesheet matching)
+                        const tsId = contract.timesheet_id ? Number(contract.timesheet_id) : (timesheet ? Number(timesheet.id) : null);
+                        const isInvoiced = contract.invoice_generated || timesheet?.invoice_generated || false;
+                        const canSelect = tsId !== null && !isInvoiced;
                         
                         // Determine row color based on status
                         let rowBgColor = '';
@@ -6110,18 +6109,17 @@ const InvoiceGeneratorApp = () => {
                         return (
                           <tr key={contract.contract_id} className={`border-b hover:opacity-80 transition ${rowBgColor}`}>
                             <td style={{ padding: '12px 12px 12px 20px', verticalAlign: 'middle' }} onClick={e => e.stopPropagation()}>
-                              {timesheet && !timesheet.invoice_generated && (
+                              {canSelect && (
                                 <input
-                                  key={`cb-${timesheet.id}`}
+                                  key={`cb-${tsId}`}
                                   type="checkbox"
                                   style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#4f46e5' }}
-                                  checked={selectedTimesheets.includes(Number(timesheet.id))}
+                                  checked={selectedTimesheets.includes(tsId)}
                                   onChange={e => {
-                                    const tid = Number(timesheet.id);
                                     if (e.target.checked) {
-                                      setSelectedTimesheets(prev => [...prev, tid]);
+                                      setSelectedTimesheets(prev => [...prev, tsId]);
                                     } else {
-                                      setSelectedTimesheets(prev => prev.filter(x => x !== tid));
+                                      setSelectedTimesheets(prev => prev.filter(x => x !== tsId));
                                     }
                                   }}
                                 />
@@ -7183,6 +7181,7 @@ const InvoiceGeneratorApp = () => {
                 monthlyMap[key].profit += parseFloat(ts.client_invoice_total || 0) - parseFloat(ts.consultant_invoice_total || 0);
               });
               const monthly = Object.entries(monthlyMap).sort(([a],[b]) => a.localeCompare(b)).slice(-12).map(([,v]) => v);
+              const singleMonth = monthly.length <= 1;
 
               // Top consultants by revenue
               const consultantMap = {};
@@ -7201,32 +7200,78 @@ const InvoiceGeneratorApp = () => {
 
               return (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                  {/* Revenue Bar Chart */}
+                  {/* Monthly Revenue / Metrics Chart */}
                   {monthly.length > 0 && (
                     <div style={{ backgroundColor: 'white', borderRadius: '20px', border: '1px solid #e2e8f0', padding: '28px' }}>
-                      <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>Monthly Revenue</h3>
-                      <p style={{ margin: '0 0 24px', fontSize: '13px', color: '#94a3b8' }}>Client invoices – last 12 months</p>
-                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '160px' }}>
-                        {monthly.map((m, i) => (
-                          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end' }}>
-                            <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700 }}>
-                              {m.revenue >= 1000 ? `€${(m.revenue/1000).toFixed(1)}k` : `€${Math.round(m.revenue)}`}
+                      <h3 style={{ margin: '0 0 4px', fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                        {singleMonth ? `${monthly[0]?.label} — Breakdown` : 'Monthly Revenue'}
+                      </h3>
+                      <p style={{ margin: '0 0 24px', fontSize: '13px', color: '#94a3b8' }}>
+                        {singleMonth ? 'Revenue, cost and profit for this month' : 'Client invoices – last 12 months'}
+                      </p>
+
+                      {singleMonth ? (
+                        // Single month: show Revenue / Cost / Profit as horizontal metric bars
+                        (() => {
+                          const m = monthly[0];
+                          const maxVal = Math.max(m.revenue, m.cost, 1);
+                          const metrics = [
+                            { label: 'Revenue', value: m.revenue, color: '#4f46e5' },
+                            { label: 'Consultant Cost', value: m.cost, color: '#f59e0b' },
+                            { label: 'Net Profit', value: m.profit, color: '#10b981' },
+                          ];
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                              {metrics.map(({ label, value, color }) => (
+                                <div key={label}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{label}</span>
+                                    <span style={{ fontSize: '13px', fontWeight: 700, color }}>
+                                      €{value.toLocaleString('en-EU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                  </div>
+                                  <div style={{ height: '10px', backgroundColor: '#f1f5f9', borderRadius: '99px', overflow: 'hidden' }}>
+                                    <div style={{ height: '100%', width: `${Math.max(2, (value / maxVal) * 100)}%`, backgroundColor: color, borderRadius: '99px', transition: 'width 0.5s' }} />
+                                  </div>
+                                </div>
+                              ))}
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: '12px' }}>
+                                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 700 }}>Margin</span>
+                                <span style={{ fontSize: '13px', fontWeight: 800, color: monthly[0].profit >= 0 ? '#10b981' : '#ef4444' }}>
+                                  {monthly[0].revenue > 0 ? `${((monthly[0].profit / monthly[0].revenue) * 100).toFixed(1)}%` : '—'}
+                                </span>
+                              </div>
                             </div>
-                            <div title={`Revenue: €${m.revenue.toFixed(2)}\nCost: €${m.cost.toFixed(2)}\nProfit: €${m.profit.toFixed(2)}`}
-                              style={{ width: '100%', borderRadius: '6px 6px 0 0', backgroundColor: '#4f46e5', height: `${Math.max(4, (m.revenue / maxRevenue) * 120)}px`, transition: 'height 0.3s', cursor: 'pointer' }} />
-                            <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 600, textAlign: 'center', lineHeight: 1.2 }}>{m.label.split(' ')[0]}</div>
+                          );
+                        })()
+                      ) : (
+                        // Multiple months: vertical bar chart
+                        <>
+                          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '160px' }}>
+                            {monthly.map((m, i) => {
+                              const maxRevenue = Math.max(...monthly.map(x => x.revenue), 1);
+                              return (
+                                <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end' }}>
+                                  <div style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700 }}>
+                                    {m.revenue >= 1000 ? `€${(m.revenue/1000).toFixed(1)}k` : `€${Math.round(m.revenue)}`}
+                                  </div>
+                                  <div title={`Revenue: €${m.revenue.toFixed(2)}\nCost: €${m.cost.toFixed(2)}\nProfit: €${m.profit.toFixed(2)}`}
+                                    style={{ width: '100%', borderRadius: '6px 6px 0 0', backgroundColor: '#4f46e5', height: `${Math.max(4, (m.revenue / maxRevenue) * 120)}px`, transition: 'height 0.3s', cursor: 'pointer' }} />
+                                  <div style={{ fontSize: '9px', color: '#64748b', fontWeight: 600, textAlign: 'center', lineHeight: 1.2 }}>{m.label.split(' ')[0]}</div>
+                                </div>
+                              );
+                            })}
                           </div>
-                        ))}
-                      </div>
-                      {/* Legend */}
-                      <div style={{ display: 'flex', gap: '16px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
-                        {[['#4f46e5','Revenue'], ['#10b981','Profit']].map(([c,l]) => (
-                          <div key={l} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <div style={{ width: '10px', height: '10px', borderRadius: '3px', backgroundColor: c }} />
-                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{l}</span>
+                          <div style={{ display: 'flex', gap: '16px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+                            {[['#4f46e5','Revenue'], ['#10b981','Profit']].map(([c,l]) => (
+                              <div key={l} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div style={{ width: '10px', height: '10px', borderRadius: '3px', backgroundColor: c }} />
+                                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{l}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </>
+                      )}
                     </div>
                   )}
 
