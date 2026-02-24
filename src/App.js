@@ -2559,8 +2559,10 @@ const InvoiceGeneratorApp = () => {
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null, confirmLabel: 'Delete', confirmColor: '#ef4444' });
   const [pdfPreview, setPdfPreview] = useState({ isOpen: false, url: null, title: '' });
   const openPDF = (url, title) => setPdfPreview({ isOpen: true, url, title: title || 'Document Preview' });
-  const [selectedTimesheets, setSelectedTimesheets] = useState(new Set());
+  const [selectedTimesheets, setSelectedTimesheets] = useState([]);  // array of ids
   const [bulkGenerating, setBulkGenerating] = useState(false);
+  const [selectedInvoices, setSelectedInvoices] = useState([]);
+  const [bulkInvoiceAction, setBulkInvoiceAction] = useState(false);
   const [csvData, setCsvData] = useState([]);
   const [csvUploading, setCsvUploading] = useState(false);
   // Client CSV upload state
@@ -3053,13 +3055,43 @@ const InvoiceGeneratorApp = () => {
       }
     }
     setBulkGenerating(false);
-    setSelectedTimesheets(new Set());
+    setSelectedTimesheets([]);
     loadData();
     if (failed === 0) {
       showNotification(`✅ Generated ${success} invoice${success > 1 ? 's' : ''} successfully!`);
     } else {
       showNotification(`Generated ${success}, failed ${failed}`, 'error');
     }
+  };
+
+  const bulkGeneratePDFs = async (invoiceIds) => {
+    setBulkInvoiceAction(true);
+    let success = 0, failed = 0;
+    for (const id of invoiceIds) {
+      try { await generatePDF(id); success++; } catch { failed++; }
+    }
+    setBulkInvoiceAction(false);
+    setSelectedInvoices([]);
+    loadData();
+    showNotification(failed === 0 ? `✅ Generated ${success} PDF${success > 1 ? 's' : ''}!` : `Generated ${success}, failed ${failed}`, failed > 0 ? 'error' : 'success');
+  };
+
+  const bulkSendEmails = async (invoiceIds) => {
+    setBulkInvoiceAction(true);
+    let success = 0, failed = 0;
+    for (const id of invoiceIds) {
+      try {
+        const inv = invoices.find(i => i.id === id);
+        if (!inv) { failed++; continue; }
+        if (!inv.pdf_url) await generatePDF(id);
+        await apiCall(`/invoices/${id}/send-email`, { method: 'POST' });
+        success++;
+      } catch { failed++; }
+    }
+    setBulkInvoiceAction(false);
+    setSelectedInvoices([]);
+    loadData();
+    showNotification(failed === 0 ? `✅ Sent ${success} email${success > 1 ? 's' : ''}!` : `Sent ${success}, failed ${failed}`, failed > 0 ? 'error' : 'success');
   };
 
   const exportToCSV = (rows, filename) => {
@@ -5080,29 +5112,23 @@ const InvoiceGeneratorApp = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Consultants</h2>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                  <button
-                    onClick={() => exportToCSV(
-                      filterAndSort(consultants, 'consultants').map(c => ({
-                        'First Name': c.first_name, 'Last Name': c.last_name,
-                        'Email': c.email, 'Phone': c.phone || '',
-                        'Company': c.company_name || '', 'VAT': c.company_vat || '',
-                        'IBAN': c.iban || '', 'Address': c.company_address || ''
-                      })), `consultants_${new Date().toISOString().split('T')[0]}.csv`
-                    )}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '8px',
-                      padding: '12px 20px', borderRadius: '12px',
-                      border: '1px solid #e2e8f0', backgroundColor: 'white',
-                      color: '#475569', fontWeight: 700, fontSize: '13px', cursor: 'pointer'
-                    }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Export CSV
-                  </button>
-              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button
+                  onClick={() => exportToCSV(
+                    filterAndSort(consultants, 'consultants').map(c => ({
+                      'First Name': c.first_name, 'Last Name': c.last_name,
+                      'Email': c.email, 'Phone': c.phone || '',
+                      'Company': c.company_name || '', 'VAT': c.company_vat || '',
+                      'IBAN': c.iban || '', 'Address': c.company_address || ''
+                    })), `consultants_${new Date().toISOString().split('T')[0]}.csv`
+                  )}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Export CSV
+                </button>
               {(user.role === 'admin' || user.role === 'superadmin') && (
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <>
                   <button
                     onClick={() => setCsvUploadModalOpen(true)}
                     style={{
@@ -5143,8 +5169,9 @@ const InvoiceGeneratorApp = () => {
                     <Plus style={{ width: '16px', height: '16px' }} />
                     Add Consultant
                   </button>
-                </div>
+                </>
               )}
+              </div>
             </div>
 
             <div style={{
@@ -5333,24 +5360,23 @@ const InvoiceGeneratorApp = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Clients</h2>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                  <button
-                    onClick={() => exportToCSV(
-                      filterAndSort(clients, 'clients').map(c => ({
-                        'First Name': c.first_name, 'Last Name': c.last_name,
-                        'Email': c.email || '', 'Phone': c.phone || '',
-                        'Company': c.company_name || '', 'VAT': c.company_vat || '',
-                        'Address': c.company_address || ''
-                      })), `clients_${new Date().toISOString().split('T')[0]}.csv`
-                    )}
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    Export CSV
-                  </button>
-              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button
+                  onClick={() => exportToCSV(
+                    filterAndSort(clients, 'clients').map(c => ({
+                      'First Name': c.first_name, 'Last Name': c.last_name,
+                      'Email': c.email || '', 'Phone': c.phone || '',
+                      'Company': c.company_name || '', 'VAT': c.company_vat || '',
+                      'Address': c.company_address || ''
+                    })), `clients_${new Date().toISOString().split('T')[0]}.csv`
+                  )}
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Export CSV
+                </button>
               {(user.role === 'admin' || user.role === 'superadmin') && (
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <>
                   <button
                     onClick={() => setClientCsvUploadModalOpen(true)}
                     style={{
@@ -5390,8 +5416,9 @@ const InvoiceGeneratorApp = () => {
                     <Plus style={{ width: '16px', height: '16px' }} />
                     Add Client
                   </button>
-                </div>
+                </>
               )}
+              </div>
             </div>
 
             <div style={{
@@ -5560,7 +5587,7 @@ const InvoiceGeneratorApp = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Contracts</h2>
-              <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                 <button
                   onClick={() => exportToCSV(
                     filterAndSort(contracts, 'contracts').map(c => {
@@ -5582,9 +5609,8 @@ const InvoiceGeneratorApp = () => {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   Export CSV
                 </button>
-              </div>
               {(user.role === 'admin' || user.role === 'superadmin') && (
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <>
                   <button
                     onClick={() => setContractCsvUploadModalOpen(true)}
                     style={{
@@ -5625,8 +5651,9 @@ const InvoiceGeneratorApp = () => {
                     <Plus style={{ width: '16px', height: '16px' }} />
                     Add Contract
                   </button>
-                </div>
+                </>
               )}
+              </div>
             </div>
 
             <div style={{
@@ -5962,20 +5989,20 @@ const InvoiceGeneratorApp = () => {
               {activeTimesheetTab === 'current' && (
                 <div style={{ overflowX: 'auto' }}>
                   {/* Bulk Action Bar */}
-                  {selectedTimesheets.size > 0 && (
+                  {selectedTimesheets.length > 0 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 20px', backgroundColor: '#4f46e5', borderRadius: '12px', margin: '0 0 12px 0' }}>
                       <span style={{ color: 'white', fontWeight: 700, fontSize: '14px' }}>
-                        {selectedTimesheets.size} timesheet{selectedTimesheets.size > 1 ? 's' : ''} selected
+                        {selectedTimesheets.length} timesheet{selectedTimesheets.length > 1 ? 's' : ''} selected
                       </span>
                       <button
                         onClick={() => {
                           setConfirmModal({
                             isOpen: true,
-                            title: `Generate ${selectedTimesheets.size} Invoice${selectedTimesheets.size > 1 ? 's' : ''}`,
-                            message: `This will generate invoices for ${selectedTimesheets.size} selected timesheet${selectedTimesheets.size > 1 ? 's' : ''}. Are you sure?`,
+                            title: `Generate ${selectedTimesheets.length} Invoice${selectedTimesheets.length > 1 ? 's' : ''}`,
+                            message: `This will generate invoices for ${selectedTimesheets.length} selected timesheet${selectedTimesheets.length > 1 ? 's' : ''}. Are you sure?`,
                             confirmLabel: 'Generate All',
                             confirmColor: '#059669',
-                            onConfirm: () => bulkGenerateInvoices([...selectedTimesheets])
+                            onConfirm: () => bulkGenerateInvoices(selectedTimesheets)
                           });
                         }}
                         disabled={bulkGenerating}
@@ -5983,7 +6010,7 @@ const InvoiceGeneratorApp = () => {
                       >
                         {bulkGenerating ? 'Generating...' : `⚡ Generate All`}
                       </button>
-                      <button onClick={() => setSelectedTimesheets(new Set())} style={{ color: 'rgba(255,255,255,0.7)', background: 'none', border: 'none', fontSize: '13px', cursor: 'pointer', marginLeft: 'auto' }}>
+                      <button onClick={() => setSelectedTimesheets([])} style={{ color: 'rgba(255,255,255,0.7)', background: 'none', border: 'none', fontSize: '13px', cursor: 'pointer', marginLeft: 'auto' }}>
                         Clear selection
                       </button>
                     </div>
@@ -6004,15 +6031,15 @@ const InvoiceGeneratorApp = () => {
                                   );
                                   return ts?.id;
                                 }).filter(Boolean);
-                              setSelectedTimesheets(e.target.checked ? new Set(eligible) : new Set());
+                              setSelectedTimesheets(e.target.checked ? eligible : []);
                             }}
-                            checked={selectedTimesheets.size > 0 && (timesheetStatus?.contracts || []).every(contract => {
+                            checked={selectedTimesheets.length > 0 && (timesheetStatus?.contracts || []).every(contract => {
                               const ts = timesheets.find(t =>
                                 !t.flagged_for_review && !t.invoice_generated &&
                                 (t.contract_id === contract.contract_id || t.sender_email?.toLowerCase() === contract.consultant_email?.toLowerCase()) &&
                                 t.month?.toLowerCase() === contract.checking_month?.toLowerCase()
                               );
-                              return !ts || selectedTimesheets.has(ts.id);
+                              return !ts || selectedTimesheets.includes(ts.id);
                             })}
                           />
                         </th>
@@ -6080,11 +6107,13 @@ const InvoiceGeneratorApp = () => {
                               {timesheet && !timesheet.invoice_generated && (
                                 <input type="checkbox"
                                   style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#4f46e5' }}
-                                  checked={selectedTimesheets.has(timesheet.id)}
+                                  checked={selectedTimesheets.includes(timesheet.id)}
                                   onChange={e => {
-                                    const next = new Set(selectedTimesheets);
-                                    e.target.checked ? next.add(timesheet.id) : next.delete(timesheet.id);
-                                    setSelectedTimesheets(next);
+                                    if (e.target.checked) {
+                                      setSelectedTimesheets([...selectedTimesheets, timesheet.id]);
+                                    } else {
+                                      setSelectedTimesheets(selectedTimesheets.filter(x => x !== timesheet.id));
+                                    }
                                   }}
                                 />
                               )}
@@ -6844,6 +6873,7 @@ const InvoiceGeneratorApp = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.025em', margin: 0 }}>Generated Invoices</h2>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               <button
                 onClick={() => exportToCSV(
                   filterAndSort(invoices, 'invoices').map(inv => ({
@@ -6864,14 +6894,8 @@ const InvoiceGeneratorApp = () => {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 Export CSV
               </button>
-              <span style={{ 
-                fontSize: '13px', 
-                color: '#64748b',
-                backgroundColor: '#f1f5f9',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontWeight: 600
-              }}>{invoices.length} invoices total</span>
+              <span style={{ fontSize: '13px', color: '#64748b', backgroundColor: '#f1f5f9', padding: '8px 16px', borderRadius: '20px', fontWeight: 600 }}>{invoices.length} invoices total</span>
+              </div>
             </div>
 
             {invoices.length > 0 && (
@@ -6921,10 +6945,61 @@ const InvoiceGeneratorApp = () => {
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
                 overflow: 'hidden'
               }}>
+                {/* Invoices Bulk Bar */}
+                {selectedInvoices.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 20px', backgroundColor: '#4f46e5', margin: '12px', borderRadius: '12px' }}>
+                    <span style={{ color: 'white', fontWeight: 700, fontSize: '14px' }}>
+                      {selectedInvoices.length} invoice{selectedInvoices.length > 1 ? 's' : ''} selected
+                    </span>
+                    <button
+                      disabled={bulkInvoiceAction}
+                      onClick={() => setConfirmModal({
+                        isOpen: true,
+                        title: `Generate ${selectedInvoices.length} PDF${selectedInvoices.length > 1 ? 's' : ''}`,
+                        message: `Generate PDFs for ${selectedInvoices.length} selected invoice${selectedInvoices.length > 1 ? 's' : ''}?`,
+                        confirmLabel: 'Generate All',
+                        confirmColor: '#059669',
+                        onConfirm: () => bulkGeneratePDFs(selectedInvoices)
+                      })}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: 'none', backgroundColor: 'white', color: '#4f46e5', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      {bulkInvoiceAction ? 'Working...' : 'Generate PDFs'}
+                    </button>
+                    <button
+                      disabled={bulkInvoiceAction}
+                      onClick={() => setConfirmModal({
+                        isOpen: true,
+                        title: `Send ${selectedInvoices.length} Email${selectedInvoices.length > 1 ? 's' : ''}`,
+                        message: `Send invoice emails for ${selectedInvoices.length} selected invoice${selectedInvoices.length > 1 ? 's' : ''}? PDFs will be generated if missing.`,
+                        confirmLabel: 'Send All',
+                        confirmColor: '#4f46e5',
+                        onConfirm: () => bulkSendEmails(selectedInvoices)
+                      })}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.4)', backgroundColor: 'transparent', color: 'white', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                      {bulkInvoiceAction ? 'Working...' : 'Send Emails'}
+                    </button>
+                    <button onClick={() => setSelectedInvoices([])} style={{ color: 'rgba(255,255,255,0.7)', background: 'none', border: 'none', fontSize: '13px', cursor: 'pointer', marginLeft: 'auto' }}>
+                      Clear selection
+                    </button>
+                  </div>
+                )}
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                        <th style={{ padding: '16px 12px 16px 20px', width: '36px' }}>
+                          <input type="checkbox"
+                            style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#4f46e5' }}
+                            checked={selectedInvoices.length > 0 && paginateItems(filterAndSort(invoices, 'invoices'), 'invoices').every(inv => selectedInvoices.includes(inv.id))}
+                            onChange={e => {
+                              const pageIds = paginateItems(filterAndSort(invoices, 'invoices'), 'invoices').map(inv => inv.id);
+                              setSelectedInvoices(e.target.checked ? [...new Set([...selectedInvoices, ...pageIds])] : selectedInvoices.filter(id => !pageIds.includes(id)));
+                            }}
+                          />
+                        </th>
                         <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('invoices', 'invoice_number')}>
                           Invoice # {sortConfig.invoices.key === 'invoice_number' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
                         </th>
@@ -6954,6 +7029,16 @@ const InvoiceGeneratorApp = () => {
                         
                         return (
                           <tr key={invoice.id} style={{ borderBottom: '1px solid #e2e8f0' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
+                            <td style={{ padding: '12px 12px 12px 20px', verticalAlign: 'middle' }}>
+                              <input type="checkbox"
+                                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#4f46e5' }}
+                                checked={selectedInvoices.includes(invoice.id)}
+                                onChange={e => {
+                                  if (e.target.checked) setSelectedInvoices([...selectedInvoices, invoice.id]);
+                                  else setSelectedInvoices(selectedInvoices.filter(x => x !== invoice.id));
+                                }}
+                              />
+                            </td>
                             <td style={{ padding: '16px', fontFamily: 'monospace', fontSize: '12px' }}>
                               {editingInvoiceNumber === invoice.id ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
