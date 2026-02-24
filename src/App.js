@@ -3078,11 +3078,13 @@ const InvoiceGeneratorApp = () => {
 
   const bulkSendEmails = async (invoiceIds) => {
     setBulkInvoiceAction(true);
-    let success = 0, failed = 0;
+    let success = 0, failed = 0, skipped = 0;
     for (const id of invoiceIds) {
       try {
         const inv = invoices.find(i => i.id === id);
         if (!inv) { failed++; continue; }
+        // Skip already sent invoices
+        if (inv.status === 'sent' || inv.status === 'paid') { skipped++; continue; }
         if (!inv.pdf_url) await generatePDF(id);
         await apiCall(`/invoices/${id}/send-email`, { method: 'POST' });
         success++;
@@ -3091,7 +3093,11 @@ const InvoiceGeneratorApp = () => {
     setBulkInvoiceAction(false);
     setSelectedInvoices([]);
     loadData();
-    showNotification(failed === 0 ? `✅ Sent ${success} email${success > 1 ? 's' : ''}!` : `Sent ${success}, failed ${failed}`, failed > 0 ? 'error' : 'success');
+    const parts = [];
+    if (success > 0) parts.push(`Sent ${success}`);
+    if (skipped > 0) parts.push(`${skipped} already sent (skipped)`);
+    if (failed > 0) parts.push(`${failed} failed`);
+    showNotification(parts.join(', '), failed > 0 ? 'error' : 'success');
   };
 
   const exportToCSV = (rows, filename) => {
@@ -6002,7 +6008,7 @@ const InvoiceGeneratorApp = () => {
                             message: `This will generate invoices for ${selectedTimesheets.length} selected timesheet${selectedTimesheets.length > 1 ? 's' : ''}. Are you sure?`,
                             confirmLabel: 'Generate All',
                             confirmColor: '#059669',
-                            onConfirm: () => bulkGenerateInvoices(selectedTimesheets)
+                            onConfirm: () => bulkGenerateInvoices([...selectedTimesheets])
                           });
                         }}
                         disabled={bulkGenerating}
@@ -6029,7 +6035,7 @@ const InvoiceGeneratorApp = () => {
                                     (t.contract_id === contract.contract_id || t.sender_email?.toLowerCase() === contract.consultant_email?.toLowerCase()) &&
                                     t.month?.toLowerCase() === contract.checking_month?.toLowerCase()
                                   );
-                                  return ts?.id;
+                                  return ts?.id ? Number(ts.id) : null;
                                 }).filter(Boolean);
                               setSelectedTimesheets(e.target.checked ? eligible : []);
                             }}
@@ -6039,7 +6045,7 @@ const InvoiceGeneratorApp = () => {
                                 (t.contract_id === contract.contract_id || t.sender_email?.toLowerCase() === contract.consultant_email?.toLowerCase()) &&
                                 t.month?.toLowerCase() === contract.checking_month?.toLowerCase()
                               );
-                              return !ts || selectedTimesheets.includes(ts.id);
+                              return !ts || selectedTimesheets.includes(Number(ts.id));
                             })}
                           />
                         </th>
@@ -6103,16 +6109,19 @@ const InvoiceGeneratorApp = () => {
                         
                         return (
                           <tr key={contract.contract_id} className={`border-b hover:opacity-80 transition ${rowBgColor}`}>
-                            <td style={{ padding: '12px 12px 12px 20px', verticalAlign: 'middle' }}>
+                            <td style={{ padding: '12px 12px 12px 20px', verticalAlign: 'middle' }} onClick={e => e.stopPropagation()}>
                               {timesheet && !timesheet.invoice_generated && (
-                                <input type="checkbox"
+                                <input
+                                  key={`cb-${timesheet.id}`}
+                                  type="checkbox"
                                   style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#4f46e5' }}
-                                  checked={selectedTimesheets.includes(timesheet.id)}
+                                  checked={selectedTimesheets.includes(Number(timesheet.id))}
                                   onChange={e => {
+                                    const tid = Number(timesheet.id);
                                     if (e.target.checked) {
-                                      setSelectedTimesheets([...selectedTimesheets, timesheet.id]);
+                                      setSelectedTimesheets(prev => [...prev, tid]);
                                     } else {
-                                      setSelectedTimesheets(selectedTimesheets.filter(x => x !== timesheet.id));
+                                      setSelectedTimesheets(prev => prev.filter(x => x !== tid));
                                     }
                                   }}
                                 />
