@@ -5083,12 +5083,12 @@ const InvoiceGeneratorApp = () => {
               <div style={{ display: 'flex', gap: '12px' }}>
                   <button
                     onClick={() => exportToCSV(
-                      filteredConsultants.map(c => ({{
+                      filteredConsultants.map(c => ({
                         'First Name': c.first_name, 'Last Name': c.last_name,
                         'Email': c.email, 'Phone': c.phone || '',
                         'Company': c.company_name || '', 'VAT': c.company_vat || '',
                         'IBAN': c.iban || '', 'Address': c.company_address || ''
-                      }})), `consultants_${new Date().toISOString().split('T')[0]}.csv`
+                      })), `consultants_${new Date().toISOString().split('T')[0]}.csv`
                     )}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '8px',
