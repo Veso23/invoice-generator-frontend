@@ -2549,6 +2549,7 @@ const InvoiceGeneratorApp = () => {
     return localStorage.getItem('activeTab') || 'dashboard';
   });
   const [dataLoading, setDataLoading] = useState(false);
+  const [sendingInvoices, setSendingInvoices] = useState(new Set());
   const [notification, setNotification] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalConfig, setModalConfig] = useState({});
@@ -3237,9 +3238,9 @@ const InvoiceGeneratorApp = () => {
   };
 
   const sendInvoiceEmail = async (invoice) => {
+    if (sendingInvoices.has(invoice.id)) return; // prevent double-click
+    setSendingInvoices(prev => new Set(prev).add(invoice.id));
     try {
-      setDataLoading(true);
-      
       if (!invoice.pdf_url) {
         const pdfUrl = await generatePDF(invoice.id);
         if (!pdfUrl) {
@@ -3257,7 +3258,7 @@ const InvoiceGeneratorApp = () => {
     } catch (error) {
       showNotification('Failed to send email: ' + error.message, 'error');
     } finally {
-      setDataLoading(false);
+      setSendingInvoices(prev => { const s = new Set(prev); s.delete(invoice.id); return s; });
     }
   };
 
@@ -7299,11 +7300,11 @@ const InvoiceGeneratorApp = () => {
                                 </button>
                                 <button
                                   onClick={() => sendInvoiceEmail(invoice)}
-                                  style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: invoice.email_sent ? '#16a34a' : '#9333ea', cursor: 'pointer' }}
-                                  title={invoice.email_sent ? `Sent to ${invoice.email_sent_to}` : "Send Invoice Email"}
-                                  disabled={dataLoading}
+                                  style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: sendingInvoices.has(invoice.id) ? '#f3f4f6' : 'white', color: invoice.email_sent ? '#16a34a' : '#9333ea', cursor: sendingInvoices.has(invoice.id) ? 'not-allowed' : 'pointer', opacity: sendingInvoices.has(invoice.id) ? 0.5 : 1 }}
+                                  title={sendingInvoices.has(invoice.id) ? 'Sending...' : invoice.email_sent ? `Sent to ${invoice.email_sent_to}` : "Send Invoice Email"}
+                                  disabled={sendingInvoices.has(invoice.id)}
                                 >
-                                  {invoice.email_sent ? <CheckCircle style={{ width: '15px', height: '15px' }} /> : <Send style={{ width: '15px', height: '15px' }} />}
+                                  {sendingInvoices.has(invoice.id) ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> : invoice.email_sent ? <CheckCircle style={{ width: '15px', height: '15px' }} /> : <Send style={{ width: '15px', height: '15px' }} />}
                                 </button>
                               </div>
                             </td>
