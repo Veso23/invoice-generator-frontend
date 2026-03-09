@@ -2837,19 +2837,18 @@ const InvoiceGeneratorApp = () => {
     setEditInvoiceNumberValue('');
   };
 
-  const generatePDF = async (invoiceId) => {
+  const generatePDF = async (invoiceId, silent = false) => {
     try {
-      setDataLoading(true);
+      if (!silent) setDataLoading(true);
       const response = await apiCall(`/invoices/${invoiceId}/generate-pdf`, {
         method: 'POST'
       });
-      showNotification('PDF generated successfully!');
-      loadData();
+      if (!silent) { showNotification('PDF generated successfully!'); loadData(); }
       return response.pdfUrl;
     } catch (error) {
-      showNotification('Failed to generate PDF: ' + error.message, 'error');
+      if (!silent) showNotification('Failed to generate PDF: ' + error.message, 'error');
     } finally {
-      setDataLoading(false);
+      if (!silent) setDataLoading(false);
     }
   };
 
@@ -3103,7 +3102,7 @@ const InvoiceGeneratorApp = () => {
     setBulkInvoiceAction(true);
     let success = 0, failed = 0;
     for (const id of invoiceIds) {
-      try { await generatePDF(id); success++; } catch { failed++; }
+      try { await generatePDF(id, true); success++; } catch { failed++; }
     }
     setBulkInvoiceAction(false);
     setSelectedInvoices([]);
@@ -3122,7 +3121,7 @@ const InvoiceGeneratorApp = () => {
         if (!inv) { failed++; continue; }
         // Skip already sent invoices
         if (inv.status === 'sent' || inv.status === 'paid') { skipped++; continue; }
-        if (!inv.pdf_url) await generatePDF(id);
+        if (!inv.pdf_url) await generatePDF(id, true);
         await apiCall(`/invoices/${id}/send-email`, { method: 'POST' });
         success++;
       } catch { failed++; }
