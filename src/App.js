@@ -2557,8 +2557,6 @@ const InvoiceGeneratorApp = () => {
   const [editDaysValue, setEditDaysValue] = useState('');
   const [editingInvoiceNumber, setEditingInvoiceNumber] = useState(null);
   const [editInvoiceNumberValue, setEditInvoiceNumberValue] = useState('');
-  const [editingDueDate, setEditingDueDate] = useState(null); // invoice id being edited
-
   // Dismissed contract alert banners — stored in localStorage as a set of contract ID "fingerprints"
   const [dismissedContractAlerts, setDismissedContractAlerts] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem('dismissedContractAlerts') || '[]')); }
@@ -3112,34 +3110,7 @@ const InvoiceGeneratorApp = () => {
     showNotification(failed === 0 ? `✅ Generated ${success} PDF${success > 1 ? 's' : ''}!` : `Generated ${success}, failed ${failed}`, failed > 0 ? 'error' : 'success');
   };
 
-  const markInvoiceStatus = async (invoiceId, status) => {
-    try {
-      await apiCall(`/invoices/${invoiceId}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status })
-      });
-      showNotification(
-        status === 'paid' ? '✅ Marked as Paid!' :
-        status === 'overdue' ? '⚠️ Marked as Overdue' :
-        `Status updated to ${status}`
-      );
-      loadData();
-    } catch (error) {
-      showNotification('Failed to update status: ' + error.message, 'error');
-    }
-  };
 
-  const bulkMarkPaid = async (invoiceIds) => {
-    setBulkInvoiceAction(true);
-    let success = 0;
-    for (const id of invoiceIds) {
-      try { await apiCall(`/invoices/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'paid' }) }); success++; } catch {}
-    }
-    setBulkInvoiceAction(false);
-    setSelectedInvoices([]);
-    loadData();
-    showNotification(`✅ ${success} invoice${success > 1 ? 's' : ''} marked as paid!`);
-  };
 
   const bulkSendEmails = async (invoiceIds) => {
     setBulkInvoiceAction(true);
