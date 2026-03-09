@@ -2549,6 +2549,7 @@ const InvoiceGeneratorApp = () => {
     return localStorage.getItem('activeTab') || 'dashboard';
   });
   const [dataLoading, setDataLoading] = useState(false);
+  const loadDataCounterRef = useRef(0);
   const [sendingInvoices, setSendingInvoices] = useState(new Set());
   const [notification, setNotification] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -2756,6 +2757,7 @@ const InvoiceGeneratorApp = () => {
   const loadData = async () => {
     if (!user) return;
     
+    const callId = ++loadDataCounterRef.current;
     setDataLoading(true);
     try {
       const [consultantsData, clientsData, contractsData, invoicesData, timesheetsData, historyData] = await Promise.all([
@@ -2785,6 +2787,9 @@ const InvoiceGeneratorApp = () => {
         })
       ]);
 
+      // Discard if a newer loadData call has started
+      if (callId !== loadDataCounterRef.current) return;
+
       setConsultants(consultantsData);
       setClients(clientsData);
       setContracts(contractsData);
@@ -2803,7 +2808,7 @@ const InvoiceGeneratorApp = () => {
       console.error('Failed to load data:', error);
       showNotification('Failed to load some data. Please refresh the page.', 'error');
     }
-    setDataLoading(false);
+    if (callId === loadDataCounterRef.current) setDataLoading(false);
   };
 
   useEffect(() => {
