@@ -2264,18 +2264,7 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                   </div>
                 </div>
 
-                <h4 style={sectionTitleStyle}>Payment Terms</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '8px' }}>
-                  <div>
-                    <label style={labelStyle}>Default Payment Terms (days)</label>
-                    <select value={formData.payment_terms_days} onChange={(e) => setFormData({ ...formData, payment_terms_days: parseInt(e.target.value) })} style={{ ...inputStyle, cursor: 'pointer', backgroundColor: 'white' }}>
-                      {[7, 14, 21, 30, 45, 60, 90].map(d => (
-                        <option key={d} value={d}>Net {d} — due {d} days after sending</option>
-                      ))}
-                    </select>
-                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Due date is set automatically when you send an invoice email</p>
-                  </div>
-                </div>
+                {/* Payment Terms hidden — not needed for operators */}
 
                 <h4 style={sectionTitleStyle}>Contract Renewal Alerts</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -5213,8 +5202,8 @@ const InvoiceGeneratorApp = () => {
               );
             })()}
 
-            {/* Financial Overview */}
-            <div style={{
+            {/* Financial Overview — admin only */}
+            {(user?.role === 'admin' || user?.role === 'superadmin') && <div style={{
               backgroundColor: 'white',
               borderRadius: '24px',
               border: '1px solid #f1f5f9',
@@ -5319,7 +5308,7 @@ const InvoiceGeneratorApp = () => {
                   );
                 })()}
               </div>
-            </div>
+            </div>}
           </div>
         )}
 
@@ -7173,21 +7162,6 @@ const InvoiceGeneratorApp = () => {
                       disabled={bulkInvoiceAction}
                       onClick={() => setConfirmModal({
                         isOpen: true,
-                        title: `Mark ${selectedInvoices.length} as Paid`,
-                        message: `Mark ${selectedInvoices.length} invoice${selectedInvoices.length > 1 ? 's' : ''} as paid?`,
-                        confirmLabel: 'Mark All Paid',
-                        confirmColor: '#16a34a',
-                        onConfirm: () => bulkMarkPaid(selectedInvoices)
-                      })}
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.4)', backgroundColor: 'transparent', color: 'white', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                      {bulkInvoiceAction ? 'Working...' : 'Mark Paid'}
-                    </button>
-                    <button
-                      disabled={bulkInvoiceAction}
-                      onClick={() => setConfirmModal({
-                        isOpen: true,
                         title: `Generate ${selectedInvoices.length} PDF${selectedInvoices.length > 1 ? 's' : ''}`,
                         message: `Generate PDFs for ${selectedInvoices.length} selected invoice${selectedInvoices.length > 1 ? 's' : ''}?`,
                         confirmLabel: 'Generate All',
@@ -7249,7 +7223,6 @@ const InvoiceGeneratorApp = () => {
                           Total {sortConfig.invoices.key === 'total_amount' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
                         </th>
                         <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Due Date</th>
                         <th style={{ textAlign: 'center', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
                       </tr>
                     </thead>
@@ -7262,7 +7235,7 @@ const InvoiceGeneratorApp = () => {
                         const total = subtotal + vatAmount;
                         
                         return (
-                          <tr key={invoice.id} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: invoice.status === 'overdue' ? '#fff5f5' : invoice.status === 'paid' ? '#f0fdf4' : 'white' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = invoice.status === 'overdue' ? '#fee2e2' : invoice.status === 'paid' ? '#dcfce7' : '#f9fafb'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = invoice.status === 'overdue' ? '#fff5f5' : invoice.status === 'paid' ? '#f0fdf4' : 'white'}>
+                          <tr key={invoice.id} style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: 'white' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
                             <td style={{ padding: '12px 12px 12px 20px', verticalAlign: 'middle' }}>
                               <input type="checkbox"
                                 style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#4f46e5' }}
@@ -7339,60 +7312,11 @@ const InvoiceGeneratorApp = () => {
                                   overdue: { bg: '#fee2e2', color: '#991b1b', label: '⚠ Overdue' },
                                 }[s] || { bg: '#f3f4f6', color: '#374151', label: s };
                                 return (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
-                                    <span style={{ padding: '4px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 700, backgroundColor: cfg.bg, color: cfg.color }}>
-                                      {cfg.label}
-                                    </span>
-                                    {invoice.paid_at && s === 'paid' && (
-                                      <span style={{ fontSize: '10px', color: '#16a34a', fontWeight: 600 }}>
-                                        {new Date(invoice.paid_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                      </span>
-                                    )}
-                                  </div>
+                                  <span style={{ padding: '4px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 700, backgroundColor: cfg.bg, color: cfg.color }}>
+                                    {cfg.label}
+                                  </span>
                                 );
                               })()}
-                            </td>
-                            {/* Due Date — inline editable */}
-                            <td style={{ padding: '16px' }} onClick={(e) => e.stopPropagation()}>
-                              {invoice.status !== 'paid' ? (
-                                editingDueDate === invoice.id ? (
-                                  <input
-                                    type="date"
-                                    defaultValue={invoice.due_date ? invoice.due_date.split('T')[0] : ''}
-                                    autoFocus
-                                    style={{ border: '1px solid #3b82f6', borderRadius: '8px', padding: '6px 10px', fontSize: '13px', outline: 'none', color: '#0f172a' }}
-                                    onChange={async (e) => {
-                                      if (!e.target.value) return;
-                                      try {
-                                        await apiCall(`/invoices/${invoice.id}/status`, {
-                                          method: 'PATCH',
-                                          body: JSON.stringify({ status: invoice.status, due_date: e.target.value })
-                                        });
-                                        setEditingDueDate(null);
-                                        loadData();
-                                      } catch (err) {
-                                        showNotification('Failed to update due date', 'error');
-                                      }
-                                    }}
-                                    onBlur={() => setEditingDueDate(null)}
-                                    onKeyDown={(e) => { if (e.key === 'Escape') setEditingDueDate(null); }}
-                                  />
-                                ) : (
-                                  <div
-                                    onClick={() => setEditingDueDate(invoice.id)}
-                                    style={{ cursor: 'pointer', padding: '6px 10px', borderRadius: '8px', border: '1px dashed #e2e8f0', display: 'inline-flex', alignItems: 'center', gap: '6px', color: invoice.due_date ? (invoice.status === 'overdue' ? '#dc2626' : '#475569') : '#94a3b8', fontSize: '13px', fontWeight: invoice.due_date ? 600 : 400 }}
-                                    title="Click to set due date"
-                                  >
-                                    {invoice.due_date
-                                      ? new Date(invoice.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-                                      : 'Set due date'
-                                    }
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                  </div>
-                                )
-                              ) : (
-                                <span style={{ fontSize: '13px', color: '#94a3b8' }}>—</span>
-                              )}
                             </td>
                             <td style={{ padding: '16px' }}>
                               <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}>
@@ -7410,32 +7334,6 @@ const InvoiceGeneratorApp = () => {
                                 >
                                   {invoice.email_sent ? <CheckCircle style={{ width: '15px', height: '15px' }} /> : <Send style={{ width: '15px', height: '15px' }} />}
                                 </button>
-                                {/* Mark as Paid / Unpaid */}
-                                {invoice.status !== 'paid' && invoice.status !== 'draft' && (
-                                  <button
-                                    onClick={() => setConfirmModal({
-                                      isOpen: true,
-                                      title: 'Mark as Paid',
-                                      message: `Mark invoice ${invoice.invoice_number} as paid?`,
-                                      confirmLabel: 'Mark Paid',
-                                      confirmColor: '#16a34a',
-                                      onConfirm: () => markInvoiceStatus(invoice.id, 'paid')
-                                    })}
-                                    style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #bbf7d0', backgroundColor: '#f0fdf4', color: '#16a34a', cursor: 'pointer' }}
-                                    title="Mark as Paid"
-                                  >
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                                  </button>
-                                )}
-                                {invoice.status === 'paid' && (
-                                  <button
-                                    onClick={() => markInvoiceStatus(invoice.id, 'sent')}
-                                    style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#94a3b8', cursor: 'pointer' }}
-                                    title="Undo — mark as Sent"
-                                  >
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                                  </button>
-                                )}
                               </div>
                             </td>
                           </tr>
@@ -7472,8 +7370,8 @@ const InvoiceGeneratorApp = () => {
               <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>{timesheetHistory.length} total records</span>
             </div>
 
-            {/* Charts Section */}
-            {(() => {
+            {/* Charts Section — admin only */}
+            {(user?.role === 'admin' || user?.role === 'superadmin') && (() => {
               // Build monthly revenue data from invoice history
               const monthlyMap = {};
               const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
