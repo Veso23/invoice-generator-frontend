@@ -3140,45 +3140,64 @@ const InvoiceGeneratorApp = () => {
   };
 
   const updateConsultant = async (id, consultantData) => {
+    // Optimistic update — close modal and show change immediately
+    const prev = consultants.find(c => c.id === id);
+    setConsultants(ps => ps.map(c => c.id === id ? { ...c, ...consultantData } : c));
+    setEditModalOpen(false);
+    showNotification('Consultant updated successfully!');
     try {
       const updated = await apiCall(`/consultants/${id}`, {
         method: 'PUT',
         body: JSON.stringify(consultantData)
       });
-      setConsultants(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
+      // Sync with server response (IDs, timestamps etc.)
+      setConsultants(ps => ps.map(c => c.id === id ? { ...c, ...updated } : c));
       cacheInvalidate('consultants');
-      showNotification('Consultant updated successfully!');
-      setEditModalOpen(false);
     } catch (error) {
+      // Rollback on failure
+      if (prev) setConsultants(ps => ps.map(c => c.id === id ? prev : c));
       showNotification('Failed to update consultant: ' + error.message, 'error');
     }
   };
 
   const updateClient = async (id, clientData) => {
+    const prev = clients.find(c => c.id === id);
+    setClients(ps => ps.map(c => c.id === id ? { ...c, ...clientData } : c));
+    setEditModalOpen(false);
+    showNotification('Client updated successfully!');
     try {
       const updated = await apiCall(`/clients/${id}`, {
         method: 'PUT',
         body: JSON.stringify(clientData)
       });
-      setClients(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
+      setClients(ps => ps.map(c => c.id === id ? { ...c, ...updated } : c));
       cacheInvalidate('clients');
-      showNotification('Client updated successfully!');
-      setEditModalOpen(false);
     } catch (error) {
+      if (prev) setClients(ps => ps.map(c => c.id === id ? prev : c));
       showNotification('Failed to update client: ' + error.message, 'error');
     }
   };
 
   const updateContract = async (id, contractData) => {
+    const prevContract = contracts.find(c => c.id === id);
+    const cons = consultants.find(c => c.id === (contractData.consultantId || prevContract?.consultant_id));
+    const cli = clients.find(c => c.id === (contractData.clientId || prevContract?.client_id));
+    const optimistic = {
+      ...prevContract, ...contractData,
+      consultant_first_name: cons?.first_name, consultant_last_name: cons?.last_name,
+      consultant_company_name: cons?.company_name,
+      client_first_name: cli?.first_name, client_last_name: cli?.last_name,
+      client_company_name: cli?.company_name,
+    };
+    setContracts(ps => ps.map(c => c.id === id ? optimistic : c));
+    setEditModalOpen(false);
+    showNotification('Contract updated successfully!');
     try {
       const resp = await apiCall(`/contracts/${id}`, {
         method: 'PUT',
         body: JSON.stringify(contractData)
       });
       const updated = resp.contract || resp;
-      // Enrich with joined fields from local state
-      const cons = consultants.find(c => c.id === updated.consultant_id);
-      const cli = clients.find(c => c.id === updated.client_id);
       const enriched = {
         ...updated,
         consultant_first_name: cons?.first_name, consultant_last_name: cons?.last_name,
@@ -3188,11 +3207,10 @@ const InvoiceGeneratorApp = () => {
         client_company_name: cli?.company_name, client_company_vat: cli?.company_vat,
         client_contract_id: cli?.client_contract_id,
       };
-      setContracts(prev => prev.map(c => c.id === id ? { ...c, ...enriched } : c));
+      setContracts(ps => ps.map(c => c.id === id ? { ...c, ...enriched } : c));
       cacheInvalidate('contracts');
-      showNotification('Contract updated successfully!');
-      setEditModalOpen(false);
     } catch (error) {
+      if (prevContract) setContracts(ps => ps.map(c => c.id === id ? prevContract : c));
       showNotification('Failed to update contract: ' + error.message, 'error');
     }
   };
@@ -3530,16 +3548,23 @@ const InvoiceGeneratorApp = () => {
   };
 
   const addConsultant = async (consultantData) => {
+    const tempId = `temp_${Date.now()}`;
+    const optimistic = { id: tempId, ...consultantData, created_at: new Date().toISOString() };
+    setConsultants(prev => [optimistic, ...prev]);
+    setServerTotals(prev => ({ ...prev, consultants: prev.consultants + 1 }));
+    showNotification('Consultant added successfully!');
     try {
       const newRecord = await apiCall('/consultants', {
         method: 'POST',
         body: JSON.stringify(consultantData)
       });
-      setConsultants(prev => [newRecord, ...prev]);
-      setServerTotals(prev => ({ ...prev, consultants: prev.consultants + 1 }));
+      // Replace temp record with real one from server
+      setConsultants(prev => prev.map(c => c.id === tempId ? newRecord : c));
       cacheInvalidate('consultants');
-      showNotification('Consultant added successfully!');
     } catch (error) {
+      // Rollback
+      setConsultants(prev => prev.filter(c => c.id !== tempId));
+      setServerTotals(prev => ({ ...prev, consultants: prev.consultants - 1 }));
       showNotification('Failed to add consultant: ' + error.message, 'error');
     }
   };
@@ -4213,13 +4238,24 @@ const InvoiceGeneratorApp = () => {
   };
 
   const addContract = async (contractData) => {
+    const tempId = `temp_${Date.now()}`;
+    const cons = consultants.find(c => c.id === contractData.consultantId);
+    const cli = clients.find(c => c.id === contractData.clientId);
+    const optimistic = {
+      id: tempId, ...contractData, created_at: new Date().toISOString(),
+      consultant_first_name: cons?.first_name, consultant_last_name: cons?.last_name,
+      consultant_company_name: cons?.company_name,
+      client_first_name: cli?.first_name, client_last_name: cli?.last_name,
+      client_company_name: cli?.company_name,
+    };
+    setContracts(prev => [optimistic, ...prev]);
+    setServerTotals(prev => ({ ...prev, contracts: prev.contracts + 1 }));
+    showNotification('Contract added successfully!');
     try {
       const newRecord = await apiCall('/contracts', {
         method: 'POST',
         body: JSON.stringify(contractData)
       });
-      const cons = consultants.find(c => c.id === newRecord.consultant_id);
-      const cli = clients.find(c => c.id === newRecord.client_id);
       const enriched = {
         ...newRecord,
         consultant_first_name: cons?.first_name, consultant_last_name: cons?.last_name,
@@ -4229,26 +4265,31 @@ const InvoiceGeneratorApp = () => {
         client_company_name: cli?.company_name, client_company_vat: cli?.company_vat,
         client_contract_id: cli?.client_contract_id,
       };
-      setContracts(prev => [enriched, ...prev]);
-      setServerTotals(prev => ({ ...prev, contracts: prev.contracts + 1 }));
+      setContracts(prev => prev.map(c => c.id === tempId ? enriched : c));
       cacheInvalidate('contracts');
-      showNotification('Contract added successfully!');
     } catch (error) {
+      setContracts(prev => prev.filter(c => c.id !== tempId));
+      setServerTotals(prev => ({ ...prev, contracts: prev.contracts - 1 }));
       showNotification('Failed to add contract: ' + error.message, 'error');
     }
   };
 
   const addClient = async (clientData) => {
+    const tempId = `temp_${Date.now()}`;
+    const optimistic = { id: tempId, ...clientData, created_at: new Date().toISOString() };
+    setClients(prev => [optimistic, ...prev]);
+    setServerTotals(prev => ({ ...prev, clients: prev.clients + 1 }));
+    showNotification('Client added successfully!');
     try {
       const newRecord = await apiCall('/clients', {
         method: 'POST',
         body: JSON.stringify(clientData)
       });
-      setClients(prev => [newRecord, ...prev]);
-      setServerTotals(prev => ({ ...prev, clients: prev.clients + 1 }));
+      setClients(prev => prev.map(c => c.id === tempId ? newRecord : c));
       cacheInvalidate('clients');
-      showNotification('Client added successfully!');
     } catch (error) {
+      setClients(prev => prev.filter(c => c.id !== tempId));
+      setServerTotals(prev => ({ ...prev, clients: prev.clients - 1 }));
       showNotification('Failed to add client: ' + error.message, 'error');
     }
   };
