@@ -7426,8 +7426,6 @@ const InvoiceGeneratorApp = () => {
                       { val: 'all',         label: 'All' },
                       { val: 'draft',       label: 'Draft',        color: '#854d0e', bg: '#fef9c3' },
                       { val: 'sent',        label: 'Sent',         color: '#1e40af', bg: '#dbeafe' },
-                      { val: 'paid',        label: 'Paid',         color: '#166534', bg: '#dcfce7' },
-                      { val: 'overdue',     label: '⚠ Overdue',   color: '#991b1b', bg: '#fee2e2' },
                       { val: 'credited',    label: '↩ Credited',  color: '#9d174d', bg: '#fce7f3' },
                       { val: 'credit_note', label: 'Credit Notes', color: '#dc2626', bg: '#fff1f2' },
                     ].map(({ val, label, color, bg }) => (
