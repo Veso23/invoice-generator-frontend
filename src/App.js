@@ -2849,16 +2849,18 @@ const InvoiceGeneratorApp = () => {
     setContracts(rows); setServerTotals(prev => ({ ...prev, contracts: total }));
   };
 
-  const loadInvoices = async (force = false, page, size) => {
+  const loadInvoices = async (force = false, page, size, search) => {
     const p = page ?? currentPages.invoices;
     const s = size ?? pageSizes.invoices;
-    const cacheKey = `invoices_${p}_${s}`;
+    const q = search ?? searchQueries.invoices ?? '';
+    const cacheKey = `invoices_${p}_${s}_${q}`;
     if (!force && cacheGet(cacheKey)) {
       const cached = cacheGet(cacheKey);
       setInvoices(cached.data); setServerTotals(prev => ({ ...prev, invoices: cached.total })); return;
     }
     const offset = (p - 1) * s;
     const params = new URLSearchParams({ limit: s, offset });
+    if (q) params.set('search', q);
     const data = await apiCall(`/invoices?${params}`);
     const rows = Array.isArray(data) ? data : (data.data || []);
     const total = data.total ?? rows.length;
@@ -3382,7 +3384,7 @@ const InvoiceGeneratorApp = () => {
     setSearchQueries(prev => ({ ...prev, [tab]: query }));
     setCurrentPages(prev => ({ ...prev, [tab]: 1 }));
     // Trigger backend search for server-paginated tabs
-    const loaders = { consultants: loadConsultants, clients: loadClients, contracts: loadContracts };
+    const loaders = { consultants: loadConsultants, clients: loadClients, contracts: loadContracts, invoices: loadInvoices };
     if (loaders[tab]) {
       loaders[tab](true, 1, pageSizes[tab], query).catch(console.error);
     }
@@ -7468,16 +7470,16 @@ const InvoiceGeneratorApp = () => {
                         <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('invoices', 'invoice_date')}>
                           Date {sortConfig.invoices.key === 'invoice_date' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
                         </th>
-                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Period</th>
-                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Days</th>
-                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rate</th>
-                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subtotal</th>
-                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>VAT</th>
-                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', cursor: 'pointer' }} onClick={() => handleSort('invoices', 'total_amount')}>
+                        <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Period</th>
+                        <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Days</th>
+                        <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Rate</th>
+                        <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Subtotal</th>
+                        <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>VAT</th>
+                        <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', cursor: 'pointer' }} onClick={() => handleSort('invoices', 'total_amount')}>
                           Total {sortConfig.invoices.key === 'total_amount' && (sortConfig.invoices.direction === 'asc' ? '↑' : '↓')}
                         </th>
-                        <th style={{ textAlign: 'left', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-                        <th style={{ textAlign: 'center', padding: '16px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
+                        <th style={{ textAlign: 'left', padding: '12px 10px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Status</th>
+                        <th style={{ textAlign: 'center', padding: '12px 10px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -7542,12 +7544,12 @@ const InvoiceGeneratorApp = () => {
                                 )}
                               </div>
                             </td>
-                            <td style={{ padding: '16px', fontSize: '14px' }}>{new Date(invoice.period_to).toLocaleDateString('en-GB')}</td>
-                            <td style={{ padding: '16px', fontSize: '12px' }}>{new Date(invoice.period_to).toLocaleDateString('en-US', { month: 'long' })}</td>
-                            <td style={{ padding: '16px', fontWeight: 500 }}>{invoice.days_worked}</td>
-                            <td style={{ padding: '16px' }}>{formatCurrency(invoice.daily_rate)}</td>
-                            <td style={{ padding: '16px', fontWeight: 500 }}>{formatCurrency(subtotal)}</td>
-                            <td style={{ padding: '16px' }}>
+                            <td style={{ padding: '12px 10px', fontSize: '13px', whiteSpace: 'nowrap' }}>{new Date(invoice.period_to).toLocaleDateString('en-GB')}</td>
+                            <td style={{ padding: '12px 10px', fontSize: '12px', whiteSpace: 'nowrap' }}>{new Date(invoice.period_to).toLocaleDateString('en-US', { month: 'long' })}</td>
+                            <td style={{ padding: '12px 10px', fontWeight: 500, whiteSpace: 'nowrap' }}>{invoice.days_worked}</td>
+                            <td style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>{formatCurrency(invoice.daily_rate)}</td>
+                            <td style={{ padding: '12px 10px', fontWeight: 500, whiteSpace: 'nowrap' }}>{formatCurrency(subtotal)}</td>
+                            <td style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>
                               {invoice.vat_enabled ? (
                                 <div style={{ fontSize: '14px' }}>
                                   <div style={{ color: '#64748b' }}>{parseFloat(invoice.vat_rate).toFixed(0)}%</div>
@@ -7557,8 +7559,8 @@ const InvoiceGeneratorApp = () => {
                                 <span style={{ fontSize: '12px', color: '#9ca3af', fontStyle: 'italic' }}>No VAT</span>
                               )}
                             </td>
-                            <td style={{ padding: '16px', fontWeight: 700, color: '#0f172a' }}>{formatCurrency(total)}</td>
-                            <td style={{ padding: '16px' }}>
+                            <td style={{ padding: '12px 10px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap' }}>{formatCurrency(total)}</td>
+                            <td style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>
                               {(() => {
                                 const s = invoice.status;
                                 const cfg = {
