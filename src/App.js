@@ -2919,6 +2919,22 @@ const InvoiceGeneratorApp = () => {
   };
 
   // ── Full reload (force, clears cache) ────────────────────────────────────
+  const handleTabClick = (tabId) => {
+    if (tabId === activeTab) {
+      // Refresh current tab's data (force=true to bypass cache)
+      const refreshMap = {
+        consultants: () => loadConsultants(true),
+        clients:     () => loadClients(true),
+        contracts:   () => loadContracts(true),
+        invoices:    () => loadInvoices(true),
+        timesheets:  () => loadTimesheets(true),
+      };
+      refreshMap[tabId]?.();
+    } else {
+      setActiveTab(tabId);
+    }
+  };
+
   const loadData = async () => {
     if (!user) return;
     const callId = ++loadDataCounterRef.current;
@@ -5023,7 +5039,7 @@ const InvoiceGeneratorApp = () => {
                 .map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => handleTabClick(tab.id)}
                     style={{
                       padding: '10px 20px',
                       borderRadius: '12px',
