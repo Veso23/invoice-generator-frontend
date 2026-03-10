@@ -7361,7 +7361,7 @@ const InvoiceGeneratorApp = () => {
               </div>
             </div>
 
-            {invoices.length > 0 && (
+            {(invoices.length > 0 || searchQueries.invoices) && (
               <div style={{
                 backgroundColor: 'white',
                 borderRadius: '16px',
@@ -7387,7 +7387,7 @@ const InvoiceGeneratorApp = () => {
               </div>
             )}
             
-            {invoices.length === 0 ? (
+            {invoices.length === 0 && !searchQueries.invoices ? (
               <div style={{
                 backgroundColor: 'white',
                 borderRadius: '24px',
@@ -7399,6 +7399,22 @@ const InvoiceGeneratorApp = () => {
                 <FileText style={{ width: '64px', height: '64px', color: '#cbd5e1', margin: '0 auto 24px' }} />
                 <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>No invoices generated yet</h3>
                 <p style={{ fontSize: '14px', color: '#64748b' }}>Go to the dashboard to generate invoices from your contracts</p>
+              </div>
+            ) : invoices.length === 0 && searchQueries.invoices ? (
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '24px',
+                padding: '48px 32px',
+                textAlign: 'center',
+                border: '1px solid #f1f5f9',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
+              }}>
+                <div style={{ fontSize: '40px', marginBottom: '16px' }}>🔍</div>
+                <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>No results for "{searchQueries.invoices}"</h3>
+                <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px' }}>Try a different name, company or invoice number</p>
+                <button onClick={() => { setSearchQueries(prev => ({ ...prev, invoices: '' })); loadInvoices(true, 1, pageSizes.invoices, ''); }} style={{ padding: '8px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                  Clear search
+                </button>
               </div>
             ) : (
               <div style={{
