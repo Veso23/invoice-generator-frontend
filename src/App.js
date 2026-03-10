@@ -3435,6 +3435,36 @@ const InvoiceGeneratorApp = () => {
     }
   };
 
+  const createCreditNote = async (invoice) => {
+    if (!window.confirm(`Create credit note CN-${invoice.invoice_number}? This will cancel the original invoice and release the timesheet for re-invoicing.`)) return;
+    try {
+      const resp = await apiCall(`/invoices/${invoice.id}/credit-note`, { method: 'POST' });
+      // Update original invoice status locally
+      setInvoices(prev => prev.map(i => {
+        if (i.id === invoice.id) return { ...i, status: 'credited', invoice_type_detail: 'credited' };
+        if (i.id === resp.creditNote?.id) return resp.creditNote; // shouldn't be in list yet
+        return i;
+      }));
+      // Prepend credit note to list
+      if (resp.creditNote) {
+        setInvoices(prev => [resp.creditNote, ...prev]);
+        setServerTotals(prev => ({ ...prev, invoices: prev.invoices + 1 }));
+      }
+      // Release timesheet
+      if (invoice.timesheet_id) {
+        setTimesheets(prev => prev.map(t => t.id === invoice.timesheet_id
+          ? { ...t, invoice_generated: false, invoice_id: null }
+          : t
+        ));
+        cacheInvalidate('timesheets');
+      }
+      cacheInvalidate('invoices');
+      showNotification(`Credit note CN-${invoice.invoice_number} created successfully!`);
+    } catch (error) {
+      showNotification('Failed to create credit note: ' + error.message, 'error');
+    }
+  };
+
   const sendInvoiceEmail = async (invoice) => {
     if (sendingInvoices.has(invoice.id)) return;
     setSendingInvoices(prev => new Set(prev).add(invoice.id));
@@ -7486,8 +7516,10 @@ const InvoiceGeneratorApp = () => {
                                   <button onClick={cancelEditInvoiceNumber} style={{ color: '#9ca3af', padding: '4px' }} title="Cancel">×</button>
                                 </div>
                               ) : (
-                                <div onClick={() => startEditInvoiceNumber(invoice)} style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', display: 'inline-block' }} title="Click to edit">
+                                <div onClick={() => startEditInvoiceNumber(invoice)} style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '6px', color: invoice.invoice_type_detail === 'credit_note' ? '#dc2626' : 'inherit' }} title="Click to edit">
                                   {invoice.invoice_number}
+                                  {invoice.invoice_type_detail === 'credit_note' && <span style={{ fontSize: '10px', background: '#fee2e2', color: '#dc2626', borderRadius: '4px', padding: '1px 5px', fontWeight: 700 }}>CN</span>}
+                                  {invoice.invoice_type_detail === 'credited' && <span style={{ fontSize: '10px', background: '#fce7f3', color: '#9d174d', borderRadius: '4px', padding: '1px 5px', fontWeight: 700 }}>↩</span>}
                                 </div>
                               )}
                             </td>
@@ -7530,6 +7562,7 @@ const InvoiceGeneratorApp = () => {
                                   sent:    { bg: '#dbeafe', color: '#1e40af', label: 'Sent' },
                                   paid:    { bg: '#dcfce7', color: '#166534', label: '✓ Paid' },
                                   overdue: { bg: '#fee2e2', color: '#991b1b', label: '⚠ Overdue' },
+                                  credited:{ bg: '#fce7f3', color: '#9d174d', label: '↩ Credited' },
                                 }[s] || { bg: '#f3f4f6', color: '#374151', label: s };
                                 return (
                                   <span style={{ padding: '4px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 700, backgroundColor: cfg.bg, color: cfg.color }}>
@@ -7546,6 +7579,15 @@ const InvoiceGeneratorApp = () => {
                                 <button onClick={() => downloadPDF(invoice)} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#16a34a', cursor: 'pointer' }} title={invoice.pdf_url ? "View PDF" : "Generate & View PDF"} disabled={dataLoading}>
                                   <Download style={{ width: '15px', height: '15px' }} />
                                 </button>
+                                {['sent','paid','overdue'].includes(invoice.status) && invoice.invoice_type_detail !== 'credit_note' && (
+                                  <button
+                                    onClick={() => createCreditNote(invoice)}
+                                    style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #fecaca', backgroundColor: '#fff1f2', color: '#dc2626', cursor: 'pointer' }}
+                                    title="Create Credit Note (Cancel Invoice)"
+                                  >
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 12h18M3 12l6-6M3 12l6 6"/></svg>
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => sendInvoiceEmail(invoice)}
                                   style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: sendingInvoices.has(invoice.id) ? '#f3f4f6' : 'white', color: invoice.email_sent ? '#16a34a' : '#9333ea', cursor: sendingInvoices.has(invoice.id) ? 'not-allowed' : 'pointer', opacity: sendingInvoices.has(invoice.id) ? 0.5 : 1 }}
