@@ -2614,10 +2614,13 @@ const InvoiceGeneratorApp = () => {
   const [contractCsvData, setContractCsvData] = useState([]);
   const [contractCsvUploading, setContractCsvUploading] = useState(false);
   const [pageSizes, setPageSizes] = useState({
-    consultants: 10,
-    clients: 10,
-    contracts: 10,
-    invoices: 10
+    consultants: 25,
+    clients: 25,
+    contracts: 25,
+    invoices: 25
+  });
+  const [serverTotals, setServerTotals] = useState({
+    consultants: 0, clients: 0, contracts: 0, invoices: 0
   });
   const [searchQueries, setSearchQueries] = useState({
     consultants: '',
@@ -2708,8 +2711,9 @@ const InvoiceGeneratorApp = () => {
         method: 'PUT',
         body: JSON.stringify({ contractId })
       });
+      setTimesheets(prev => prev.map(t => t.id === timesheetId ? { ...t, contract_id: contractId } : t));
+      cacheInvalidate('timesheets');
       showNotification('Contract selected successfully');
-      cacheInvalidate('timesheets', 'invoices'); loadedTabsRef.current.delete('timesheets'); loadedTabsRef.current.delete('invoices'); await Promise.all([loadTimesheets(true), loadInvoices(true)]).catch(console.error);
       return true;
     } catch (error) {
       showNotification('Failed to set contract: ' + error.message, 'error');
@@ -2733,11 +2737,30 @@ const InvoiceGeneratorApp = () => {
       }
       
       // Proceed with invoice generation (single contract case)
-      await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
+      const invoiceResp = await apiCall(`/timesheets/${timesheet.id}/generate-invoice`, {
         method: 'POST'
       });
+      // Update timesheet status locally
+      setTimesheets(prev => prev.map(t => t.id === timesheet.id ? { ...t, invoice_generated: true, status: 'invoice_generated' } : t));
+      // Add new invoices to local state (enrich with contract data we have)
+      if (invoiceResp.consultantInvoice || invoiceResp.clientInvoice) {
+        const contract = contracts.find(c => c.id === invoiceResp.matchedContract?.id);
+        const newInvoices = [invoiceResp.consultantInvoice, invoiceResp.clientInvoice].filter(Boolean).map(inv => ({
+          ...inv,
+          consultant_contract_id: contract?.consultant_contract_id,
+          client_contract_id: contract?.client_contract_id,
+          consultant_first_name: contract?.consultant_first_name,
+          consultant_last_name: contract?.consultant_last_name,
+          consultant_company_name: contract?.consultant_company_name,
+          client_first_name: contract?.client_first_name,
+          client_last_name: contract?.client_last_name,
+          client_company_name: contract?.client_company_name,
+        }));
+        setInvoices(prev => [...newInvoices, ...prev]);
+        setServerTotals(prev => ({ ...prev, invoices: prev.invoices + newInvoices.length }));
+      }
+      cacheInvalidate('timesheets', 'invoices');
       showNotification('Invoice generated successfully!');
-      cacheInvalidate('timesheets', 'invoices'); loadedTabsRef.current.delete('timesheets'); loadedTabsRef.current.delete('invoices'); await Promise.all([loadTimesheets(true), loadInvoices(true)]).catch(console.error);
     } catch (error) {
       // Check if error indicates multiple contracts
       if (error.message && error.message.includes('Multiple contracts')) {
@@ -2768,37 +2791,79 @@ const InvoiceGeneratorApp = () => {
   const cacheSet = (key, data) => { cacheRef.current[key] = { data, ts: Date.now() }; };
   const cacheInvalidate = (...keys) => { keys.forEach(k => delete cacheRef.current[k]); };
 
-  // ── Per-tab loaders ──────────────────────────────────────────────────────
-  const loadConsultants = async (force = false) => {
-    if (!force && cacheGet('consultants')) { setConsultants(cacheGet('consultants')); return; }
-    const data = await apiCall('/consultants');
+  // ── Per-tab loaders with server-side pagination ───────────────────────────
+  const loadConsultants = async (force = false, page, size, search) => {
+    const p = page ?? currentPages.consultants;
+    const s = size ?? pageSizes.consultants;
+    const q = search ?? searchQueries.consultants;
+    const cacheKey = `consultants_${p}_${s}_${q}`;
+    if (!force && cacheGet(cacheKey)) {
+      const cached = cacheGet(cacheKey);
+      setConsultants(cached.data); setServerTotals(prev => ({ ...prev, consultants: cached.total })); return;
+    }
+    const offset = (p - 1) * s;
+    const params = new URLSearchParams({ limit: s, offset });
+    if (q) params.append('search', q);
+    const data = await apiCall(`/consultants?${params}`);
     const rows = Array.isArray(data) ? data : (data.data || []);
-    cacheSet('consultants', rows);
-    setConsultants(rows);
+    const total = data.total ?? rows.length;
+    cacheSet(cacheKey, { data: rows, total });
+    setConsultants(rows); setServerTotals(prev => ({ ...prev, consultants: total }));
   };
 
-  const loadClients = async (force = false) => {
-    if (!force && cacheGet('clients')) { setClients(cacheGet('clients')); return; }
-    const data = await apiCall('/clients');
+  const loadClients = async (force = false, page, size, search) => {
+    const p = page ?? currentPages.clients;
+    const s = size ?? pageSizes.clients;
+    const q = search ?? searchQueries.clients;
+    const cacheKey = `clients_${p}_${s}_${q}`;
+    if (!force && cacheGet(cacheKey)) {
+      const cached = cacheGet(cacheKey);
+      setClients(cached.data); setServerTotals(prev => ({ ...prev, clients: cached.total })); return;
+    }
+    const offset = (p - 1) * s;
+    const params = new URLSearchParams({ limit: s, offset });
+    if (q) params.append('search', q);
+    const data = await apiCall(`/clients?${params}`);
     const rows = Array.isArray(data) ? data : (data.data || []);
-    cacheSet('clients', rows);
-    setClients(rows);
+    const total = data.total ?? rows.length;
+    cacheSet(cacheKey, { data: rows, total });
+    setClients(rows); setServerTotals(prev => ({ ...prev, clients: total }));
   };
 
-  const loadContracts = async (force = false) => {
-    if (!force && cacheGet('contracts')) { setContracts(cacheGet('contracts')); return; }
-    const data = await apiCall('/contracts');
+  const loadContracts = async (force = false, page, size, search) => {
+    const p = page ?? currentPages.contracts;
+    const s = size ?? pageSizes.contracts;
+    const q = search ?? searchQueries.contracts;
+    const cacheKey = `contracts_${p}_${s}_${q}`;
+    if (!force && cacheGet(cacheKey)) {
+      const cached = cacheGet(cacheKey);
+      setContracts(cached.data); setServerTotals(prev => ({ ...prev, contracts: cached.total })); return;
+    }
+    const offset = (p - 1) * s;
+    const params = new URLSearchParams({ limit: s, offset });
+    if (q) params.append('search', q);
+    const data = await apiCall(`/contracts?${params}`);
     const rows = Array.isArray(data) ? data : (data.data || []);
-    cacheSet('contracts', rows);
-    setContracts(rows);
+    const total = data.total ?? rows.length;
+    cacheSet(cacheKey, { data: rows, total });
+    setContracts(rows); setServerTotals(prev => ({ ...prev, contracts: total }));
   };
 
-  const loadInvoices = async (force = false) => {
-    if (!force && cacheGet('invoices')) { setInvoices(cacheGet('invoices')); return; }
-    const data = await apiCall('/invoices');
+  const loadInvoices = async (force = false, page, size) => {
+    const p = page ?? currentPages.invoices;
+    const s = size ?? pageSizes.invoices;
+    const cacheKey = `invoices_${p}_${s}`;
+    if (!force && cacheGet(cacheKey)) {
+      const cached = cacheGet(cacheKey);
+      setInvoices(cached.data); setServerTotals(prev => ({ ...prev, invoices: cached.total })); return;
+    }
+    const offset = (p - 1) * s;
+    const params = new URLSearchParams({ limit: s, offset });
+    const data = await apiCall(`/invoices?${params}`);
     const rows = Array.isArray(data) ? data : (data.data || []);
-    cacheSet('invoices', rows);
-    setInvoices(rows);
+    const total = data.total ?? rows.length;
+    cacheSet(cacheKey, { data: rows, total });
+    setInvoices(rows); setServerTotals(prev => ({ ...prev, invoices: total }));
   };
 
   const loadTimesheets = async (force = false) => {
@@ -2920,9 +2985,10 @@ const InvoiceGeneratorApp = () => {
         method: 'PUT',
         body: JSON.stringify({ invoiceNumber: editInvoiceNumberValue })
       });
+      setInvoices(prev => prev.map(i => i.id === invoiceId ? { ...i, invoice_number: editInvoiceNumberValue } : i));
+      cacheInvalidate('invoices');
       showNotification('Invoice number updated successfully!');
       setEditingInvoiceNumber(null);
-      cacheInvalidate('invoices'); await loadInvoices(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update invoice number: ' + error.message, 'error');
     }
@@ -3086,13 +3152,14 @@ const InvoiceGeneratorApp = () => {
 
   const updateConsultant = async (id, consultantData) => {
     try {
-      await apiCall(`/consultants/${id}`, {
+      const updated = await apiCall(`/consultants/${id}`, {
         method: 'PUT',
         body: JSON.stringify(consultantData)
       });
+      setConsultants(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
+      cacheInvalidate('consultants');
       showNotification('Consultant updated successfully!');
       setEditModalOpen(false);
-      cacheInvalidate('consultants'); loadedTabsRef.current.delete('consultants'); await loadConsultants(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update consultant: ' + error.message, 'error');
     }
@@ -3100,13 +3167,14 @@ const InvoiceGeneratorApp = () => {
 
   const updateClient = async (id, clientData) => {
     try {
-      await apiCall(`/clients/${id}`, {
+      const updated = await apiCall(`/clients/${id}`, {
         method: 'PUT',
         body: JSON.stringify(clientData)
       });
+      setClients(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
+      cacheInvalidate('clients');
       showNotification('Client updated successfully!');
       setEditModalOpen(false);
-      cacheInvalidate('clients'); loadedTabsRef.current.delete('clients'); await loadClients(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update client: ' + error.message, 'error');
     }
@@ -3114,13 +3182,27 @@ const InvoiceGeneratorApp = () => {
 
   const updateContract = async (id, contractData) => {
     try {
-      await apiCall(`/contracts/${id}`, {
+      const resp = await apiCall(`/contracts/${id}`, {
         method: 'PUT',
         body: JSON.stringify(contractData)
       });
+      const updated = resp.contract || resp;
+      // Enrich with joined fields from local state
+      const cons = consultants.find(c => c.id === updated.consultant_id);
+      const cli = clients.find(c => c.id === updated.client_id);
+      const enriched = {
+        ...updated,
+        consultant_first_name: cons?.first_name, consultant_last_name: cons?.last_name,
+        consultant_company_name: cons?.company_name, consultant_company_vat: cons?.company_vat,
+        consultant_contract_id: cons?.consultant_contract_id,
+        client_first_name: cli?.first_name, client_last_name: cli?.last_name,
+        client_company_name: cli?.company_name, client_company_vat: cli?.company_vat,
+        client_contract_id: cli?.client_contract_id,
+      };
+      setContracts(prev => prev.map(c => c.id === id ? { ...c, ...enriched } : c));
+      cacheInvalidate('contracts');
       showNotification('Contract updated successfully!');
       setEditModalOpen(false);
-      cacheInvalidate('contracts'); loadedTabsRef.current.delete('contracts'); await loadContracts(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update contract: ' + error.message, 'error');
     }
@@ -3133,8 +3215,10 @@ const InvoiceGeneratorApp = () => {
       await apiCall(`/consultants/${id}`, {
         method: 'DELETE'
       });
+      setConsultants(prev => prev.filter(c => c.id !== id));
+      setServerTotals(prev => ({ ...prev, consultants: Math.max(0, prev.consultants - 1) }));
+      cacheInvalidate('consultants');
       showNotification('Consultant deleted successfully!');
-      cacheInvalidate('consultants'); loadedTabsRef.current.delete('consultants'); await loadConsultants(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to delete consultant: ' + error.message, 'error');
     }
@@ -3147,8 +3231,10 @@ const InvoiceGeneratorApp = () => {
       await apiCall(`/clients/${id}`, {
         method: 'DELETE'
       });
+      setClients(prev => prev.filter(c => c.id !== id));
+      setServerTotals(prev => ({ ...prev, clients: Math.max(0, prev.clients - 1) }));
+      cacheInvalidate('clients');
       showNotification('Client deleted successfully!');
-      cacheInvalidate('clients'); loadedTabsRef.current.delete('clients'); await loadClients(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to delete client: ' + error.message, 'error');
     }
@@ -3165,8 +3251,9 @@ const InvoiceGeneratorApp = () => {
       onConfirm: async () => {
         try {
           await apiCall(`/timesheets/${id}`, { method: "DELETE" });
+          setTimesheets(prev => prev.filter(t => t.id !== id));
+          cacheInvalidate('timesheets');
           showNotification("Timesheet deleted successfully!");
-          cacheInvalidate('timesheets'); loadedTabsRef.current.delete('timesheets'); await loadTimesheets(true).catch(console.error);
         } catch (error) {
           showNotification("Failed to delete timesheet: " + error.message, "error");
         }
@@ -3260,8 +3347,9 @@ const InvoiceGeneratorApp = () => {
         method: 'PATCH',
         body: JSON.stringify({ reminder_enabled: !currentValue })
       });
+      setConsultants(prev => prev.map(c => c.id === consultantId ? { ...c, reminder_enabled: !currentValue } : c));
+      cacheInvalidate('consultants');
       showNotification(`Reminders ${!currentValue ? 'enabled' : 'disabled'} for this consultant`);
-      cacheInvalidate('consultants'); await loadConsultants(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update reminder setting: ' + error.message, 'error');
     }
@@ -3274,16 +3362,23 @@ const InvoiceGeneratorApp = () => {
       await apiCall(`/contracts/${id}`, {
         method: 'DELETE'
       });
+      setContracts(prev => prev.filter(c => c.id !== id));
+      setServerTotals(prev => ({ ...prev, contracts: Math.max(0, prev.contracts - 1) }));
+      cacheInvalidate('contracts');
       showNotification('Contract deleted successfully!');
-      cacheInvalidate('contracts'); loadedTabsRef.current.delete('contracts'); await loadContracts(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to delete contract: ' + error.message, 'error');
     }
   };
 
   const handleSearch = (tab, query) => {
-    setSearchQueries({ ...searchQueries, [tab]: query });
+    setSearchQueries(prev => ({ ...prev, [tab]: query }));
     setCurrentPages(prev => ({ ...prev, [tab]: 1 }));
+    // Trigger backend search for server-paginated tabs
+    const loaders = { consultants: loadConsultants, clients: loadClients, contracts: loadContracts };
+    if (loaders[tab]) {
+      loaders[tab](true, 1, pageSizes[tab], query).catch(console.error);
+    }
   };
 
   const handleSort = (tab, key) => {
@@ -3292,22 +3387,24 @@ const InvoiceGeneratorApp = () => {
   };
 
   const filterAndSort = (data, tab) => {
-    const query = searchQueries[tab].toLowerCase().trim();
+    const serverPaginatedTabs = ['consultants', 'clients', 'contracts', 'invoices'];
+    const query = searchQueries[tab]?.toLowerCase().trim();
     
-    let filtered = data.filter(item => {
-      if (!query) return true;
-      // Join all field values into one searchable string
-      const itemText = Object.values(item).map(val => String(val || '')).join(' ').toLowerCase();
-      // Split query by whitespace - ALL words must be found somewhere in the item
-      const words = query.split(/\s+/).filter(Boolean);
-      return words.every(word => itemText.includes(word));
-    });
+    let filtered = data;
+    // Only filter client-side for non-server-paginated tabs (history, timesheets)
+    if (!serverPaginatedTabs.includes(tab)) {
+      filtered = data.filter(item => {
+        if (!query) return true;
+        const itemText = Object.values(item).map(val => String(val || '')).join(' ').toLowerCase();
+        const words = query.split(/\s+/).filter(Boolean);
+        return words.every(word => itemText.includes(word));
+      });
+    }
     
-    if (sortConfig[tab].key) {
-      filtered.sort((a, b) => {
+    if (sortConfig[tab]?.key) {
+      filtered = [...filtered].sort((a, b) => {
         const aVal = a[sortConfig[tab].key];
         const bVal = b[sortConfig[tab].key];
-        
         if (aVal < bVal) return sortConfig[tab].direction === 'asc' ? -1 : 1;
         if (aVal > bVal) return sortConfig[tab].direction === 'asc' ? 1 : -1;
         return 0;
@@ -3450,12 +3547,14 @@ const InvoiceGeneratorApp = () => {
 
   const addConsultant = async (consultantData) => {
     try {
-      await apiCall('/consultants', {
+      const newRecord = await apiCall('/consultants', {
         method: 'POST',
         body: JSON.stringify(consultantData)
       });
+      setConsultants(prev => [newRecord, ...prev]);
+      setServerTotals(prev => ({ ...prev, consultants: prev.consultants + 1 }));
+      cacheInvalidate('consultants');
       showNotification('Consultant added successfully!');
-      cacheInvalidate('consultants'); loadedTabsRef.current.delete('consultants'); await loadConsultants(true);
     } catch (error) {
       showNotification('Failed to add consultant: ' + error.message, 'error');
     }
@@ -4131,12 +4230,25 @@ const InvoiceGeneratorApp = () => {
 
   const addContract = async (contractData) => {
     try {
-      await apiCall('/contracts', {
+      const newRecord = await apiCall('/contracts', {
         method: 'POST',
         body: JSON.stringify(contractData)
       });
+      const cons = consultants.find(c => c.id === newRecord.consultant_id);
+      const cli = clients.find(c => c.id === newRecord.client_id);
+      const enriched = {
+        ...newRecord,
+        consultant_first_name: cons?.first_name, consultant_last_name: cons?.last_name,
+        consultant_company_name: cons?.company_name, consultant_company_vat: cons?.company_vat,
+        consultant_contract_id: cons?.consultant_contract_id,
+        client_first_name: cli?.first_name, client_last_name: cli?.last_name,
+        client_company_name: cli?.company_name, client_company_vat: cli?.company_vat,
+        client_contract_id: cli?.client_contract_id,
+      };
+      setContracts(prev => [enriched, ...prev]);
+      setServerTotals(prev => ({ ...prev, contracts: prev.contracts + 1 }));
+      cacheInvalidate('contracts');
       showNotification('Contract added successfully!');
-      cacheInvalidate('contracts'); loadedTabsRef.current.delete('contracts'); await loadContracts(true);
     } catch (error) {
       showNotification('Failed to add contract: ' + error.message, 'error');
     }
@@ -4144,12 +4256,14 @@ const InvoiceGeneratorApp = () => {
 
   const addClient = async (clientData) => {
     try {
-      await apiCall('/clients', {
+      const newRecord = await apiCall('/clients', {
         method: 'POST',
         body: JSON.stringify(clientData)
       });
+      setClients(prev => [newRecord, ...prev]);
+      setServerTotals(prev => ({ ...prev, clients: prev.clients + 1 }));
+      cacheInvalidate('clients');
       showNotification('Client added successfully!');
-      cacheInvalidate('clients'); loadedTabsRef.current.delete('clients'); await loadClients(true);
     } catch (error) {
       showNotification('Failed to add client: ' + error.message, 'error');
     }
@@ -4161,10 +4275,11 @@ const InvoiceGeneratorApp = () => {
         method: 'PUT',
         body: JSON.stringify({ days: parseFloat(newDays) })
       });
+      setTimesheets(prev => prev.map(t => t.id === timesheetId ? { ...t, days: parseFloat(newDays) } : t));
+      cacheInvalidate('timesheets');
       showNotification('Days updated successfully!');
       setEditingDays(null);
       setEditDaysValue('');
-      cacheInvalidate('timesheets'); await loadTimesheets(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update days: ' + error.message, 'error');
     }
@@ -4193,10 +4308,11 @@ const InvoiceGeneratorApp = () => {
         method: 'PUT',
         body: JSON.stringify({ month: newMonth })
       });
+      setTimesheets(prev => prev.map(t => t.id === timesheetId ? { ...t, month: newMonth } : t));
+      cacheInvalidate('timesheets');
       showNotification('Month updated successfully!');
       setEditingMonth(null);
       setEditMonthValue('');
-      cacheInvalidate('timesheets'); await loadTimesheets(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update month: ' + error.message, 'error');
     }
@@ -4214,8 +4330,9 @@ const InvoiceGeneratorApp = () => {
         method: 'PUT',
         body: JSON.stringify({ flagged: true })
       });
+      setTimesheets(prev => prev.map(t => t.id === id ? { ...t, flagged: true } : t));
+      cacheInvalidate('timesheets');
       showNotification('Timesheet flagged for review');
-      cacheInvalidate('timesheets'); await loadTimesheets(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to flag timesheet: ' + error.message, 'error');
     }
@@ -4228,8 +4345,9 @@ const InvoiceGeneratorApp = () => {
         method: 'PUT',
         body: JSON.stringify({ flagged: false })
       });
+      setTimesheets(prev => prev.map(t => t.id === id ? { ...t, flagged: false } : t));
+      cacheInvalidate('timesheets');
       showNotification('Flag removed from timesheet');
-      cacheInvalidate('timesheets'); await loadTimesheets(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to unflag timesheet: ' + error.message, 'error');
     }
@@ -5500,7 +5618,7 @@ const InvoiceGeneratorApp = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {paginateItems(filterAndSort(consultants, 'consultants'), 'consultants').map((consultant) => (
+                    {filterAndSort(consultants, 'consultants').map((consultant) => (
                       <tr key={consultant.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
                         <td style={{ padding: '16px 20px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -5613,17 +5731,17 @@ const InvoiceGeneratorApp = () => {
                 </table>
               </div>
               {(() => {
-                const filtered = filterAndSort(consultants, 'consultants');
                 const size = pageSizes.consultants;
-                const totalPages = Math.ceil(filtered.length / size);
+                const total = serverTotals.consultants || consultants.length;
+                const totalPages = Math.ceil(total / size);
                 return (
                   <PaginationBar
                     currentPage={currentPages.consultants}
                     totalPages={totalPages}
-                    totalItems={filtered.length}
+                    totalItems={serverTotals.consultants || consultants.length}
                     itemsPerPage={size}
-                    onPageChange={(p) => setCurrentPages(prev => ({ ...prev, consultants: p }))}
-                    onPageSizeChange={(s) => { setPageSizes(prev => ({ ...prev, consultants: s })); setCurrentPages(prev => ({ ...prev, consultants: 1 })); }}
+                    onPageChange={(p) => { setCurrentPages(prev => ({ ...prev, consultants: p })); loadConsultants(true, p, pageSizes.consultants); }}
+                    onPageSizeChange={(s) => { setPageSizes(prev => ({ ...prev, consultants: s })); setCurrentPages(prev => ({ ...prev, consultants: 1 })); loadConsultants(true, 1, s); }}
                   />
                 );
               })()}
@@ -5747,7 +5865,7 @@ const InvoiceGeneratorApp = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {paginateItems(filterAndSort(clients, 'clients'), 'clients').map((client) => (
+                    {filterAndSort(clients, 'clients').map((client) => (
                       <tr key={client.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }} onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'} onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'white'}>
                         <td style={{ padding: '16px 20px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -5840,17 +5958,17 @@ const InvoiceGeneratorApp = () => {
                 </table>
               </div>
               {(() => {
-                const filtered = filterAndSort(clients, 'clients');
                 const size = pageSizes.clients;
-                const totalPages = Math.ceil(filtered.length / size);
+                const total = serverTotals.clients || clients.length;
+                const totalPages = Math.ceil(total / size);
                 return (
                   <PaginationBar
                     currentPage={currentPages.clients}
                     totalPages={totalPages}
-                    totalItems={filtered.length}
+                    totalItems={serverTotals.clients || clients.length}
                     itemsPerPage={size}
-                    onPageChange={(p) => setCurrentPages(prev => ({ ...prev, clients: p }))}
-                    onPageSizeChange={(s) => { setPageSizes(prev => ({ ...prev, clients: s })); setCurrentPages(prev => ({ ...prev, clients: 1 })); }}
+                    onPageChange={(p) => { setCurrentPages(prev => ({ ...prev, clients: p })); loadClients(true, p, pageSizes.clients); }}
+                    onPageSizeChange={(s) => { setPageSizes(prev => ({ ...prev, clients: s })); setCurrentPages(prev => ({ ...prev, clients: 1 })); loadClients(true, 1, s); }}
                   />
                 );
               })()}
@@ -5978,7 +6096,7 @@ const InvoiceGeneratorApp = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {paginateItems(filterAndSort(contracts, 'contracts'), 'contracts').map((contract) => {
+                    {filterAndSort(contracts, 'contracts').map((contract) => {
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
                       const startDate = new Date(contract.from_date);
@@ -6083,17 +6201,17 @@ const InvoiceGeneratorApp = () => {
                 </table>
               </div>
               {(() => {
-                const filtered = filterAndSort(contracts, 'contracts');
                 const size = pageSizes.contracts;
-                const totalPages = Math.ceil(filtered.length / size);
+                const total = serverTotals.contracts || contracts.length;
+                const totalPages = Math.ceil(total / size);
                 return (
                   <PaginationBar
                     currentPage={currentPages.contracts}
                     totalPages={totalPages}
-                    totalItems={filtered.length}
+                    totalItems={serverTotals.contracts || contracts.length}
                     itemsPerPage={size}
-                    onPageChange={(p) => setCurrentPages(prev => ({ ...prev, contracts: p }))}
-                    onPageSizeChange={(s) => { setPageSizes(prev => ({ ...prev, contracts: s })); setCurrentPages(prev => ({ ...prev, contracts: 1 })); }}
+                    onPageChange={(p) => { setCurrentPages(prev => ({ ...prev, contracts: p })); loadContracts(true, p, pageSizes.contracts); }}
+                    onPageSizeChange={(s) => { setPageSizes(prev => ({ ...prev, contracts: s })); setCurrentPages(prev => ({ ...prev, contracts: 1 })); loadContracts(true, 1, s); }}
                   />
                 );
               })()}
@@ -7271,9 +7389,9 @@ const InvoiceGeneratorApp = () => {
                         <th style={{ padding: '16px 12px 16px 20px', width: '36px' }}>
                           <input type="checkbox"
                             style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#4f46e5' }}
-                            checked={selectedInvoices.length > 0 && paginateItems(filterAndSort(invoices, 'invoices'), 'invoices').every(inv => selectedInvoices.includes(inv.id))}
+                            checked={selectedInvoices.length > 0 && filterAndSort(invoices, 'invoices').every(inv => selectedInvoices.includes(inv.id))}
                             onChange={e => {
-                              const pageIds = paginateItems(filterAndSort(invoices, 'invoices'), 'invoices').map(inv => inv.id);
+                              const pageIds = filterAndSort(invoices, 'invoices').map(inv => inv.id);
                               setSelectedInvoices(e.target.checked ? [...new Set([...selectedInvoices, ...pageIds])] : selectedInvoices.filter(id => !pageIds.includes(id)));
                             }}
                           />
@@ -7298,7 +7416,7 @@ const InvoiceGeneratorApp = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {paginateItems(filterAndSort(invoices, 'invoices'), 'invoices').map((invoice) => {
+                      {filterAndSort(invoices, 'invoices').map((invoice) => {
                         const subtotal = parseFloat(invoice.subtotal);
                         const vatRate = parseFloat(invoice.vat_rate);
                         const vatEnabled = invoice.vat_enabled !== false;
@@ -7414,17 +7532,17 @@ const InvoiceGeneratorApp = () => {
                   </table>
                 </div>
                 {(() => {
-                  const filtered = filterAndSort(invoices, 'invoices');
                   const size = pageSizes.invoices;
-                  const totalPages = Math.ceil(filtered.length / size);
+                  const total = serverTotals.invoices || invoices.length;
+                  const totalPages = Math.ceil(total / size);
                   return (
                     <PaginationBar
                       currentPage={currentPages.invoices}
                       totalPages={totalPages}
-                      totalItems={filtered.length}
+                      totalItems={serverTotals.invoices || invoices.length}
                       itemsPerPage={size}
-                      onPageChange={(p) => setCurrentPages(prev => ({ ...prev, invoices: p }))}
-                      onPageSizeChange={(s) => { setPageSizes(prev => ({ ...prev, invoices: s })); setCurrentPages(prev => ({ ...prev, invoices: 1 })); }}
+                      onPageChange={(p) => { setCurrentPages(prev => ({ ...prev, invoices: p })); loadInvoices(true, p, pageSizes.invoices); }}
+                      onPageSizeChange={(s) => { setPageSizes(prev => ({ ...prev, invoices: s })); setCurrentPages(prev => ({ ...prev, invoices: 1 })); loadInvoices(true, 1, s); }}
                     />
                   );
                 })()}
