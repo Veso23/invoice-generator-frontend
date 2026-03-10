@@ -4330,7 +4330,7 @@ const InvoiceGeneratorApp = () => {
         method: 'PUT',
         body: JSON.stringify({ flagged: true })
       });
-      setTimesheets(prev => prev.map(t => t.id === id ? { ...t, flagged: true } : t));
+      setTimesheets(prev => prev.map(t => t.id === timesheetId ? { ...t, flagged: true } : t));
       cacheInvalidate('timesheets');
       showNotification('Timesheet flagged for review');
     } catch (error) {
@@ -4345,7 +4345,7 @@ const InvoiceGeneratorApp = () => {
         method: 'PUT',
         body: JSON.stringify({ flagged: false })
       });
-      setTimesheets(prev => prev.map(t => t.id === id ? { ...t, flagged: false } : t));
+      setTimesheets(prev => prev.map(t => t.id === timesheetId ? { ...t, flagged: false } : t));
       cacheInvalidate('timesheets');
       showNotification('Flag removed from timesheet');
     } catch (error) {
