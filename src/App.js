@@ -3414,11 +3414,6 @@ const InvoiceGeneratorApp = () => {
     return filtered;
   };
 
-  const paginateItems = (items, tab) => {
-    const page = currentPages[tab] || 1;
-    const size = pageSizes[tab] || 10;
-    return items.slice((page - 1) * size, page * size);
-  };
 
   const downloadPDF = async (invoice) => {
     try {
