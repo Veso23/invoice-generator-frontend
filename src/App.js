@@ -7384,6 +7384,7 @@ const InvoiceGeneratorApp = () => {
                               <th style={{ textAlign: 'left', padding: '14px 16px', fontSize: '11px', fontWeight: 700, color: '#9d174d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Days</th>
                               <th style={{ textAlign: 'left', padding: '14px 16px', fontSize: '11px', fontWeight: 700, color: '#9d174d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Credited invoice</th>
                               <th style={{ textAlign: 'left', padding: '14px 16px', fontSize: '11px', fontWeight: 700, color: '#9d174d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Missing</th>
+                              <th style={{ textAlign: 'center', padding: '14px 16px', fontSize: '11px', fontWeight: 700, color: '#9d174d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Timesheet</th>
                               <th style={{ textAlign: 'center', padding: '14px 16px', fontSize: '11px', fontWeight: 700, color: '#9d174d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Action</th>
                             </tr>
                           </thead>
@@ -7410,7 +7411,29 @@ const InvoiceGeneratorApp = () => {
                                     {ts.month || '—'}
                                   </td>
                                   <td style={{ padding: '16px', fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>
-                                    {totalDays ?? '—'}
+                                    {editingDays === ts.id ? (
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <input
+                                          type="number" step="0.5"
+                                          value={editDaysValue}
+                                          onChange={e => setEditDaysValue(e.target.value)}
+                                          style={{ border: '1px solid #3b82f6', borderRadius: '4px', padding: '4px 8px', fontSize: '13px', width: '70px', outline: 'none' }}
+                                          autoFocus
+                                          onKeyPress={e => {
+                                            if (e.key === 'Enter') updateDays(ts.id, editDaysValue);
+                                            if (e.key === 'Escape') cancelEditDays();
+                                          }}
+                                        />
+                                        <button onClick={() => updateDays(ts.id, editDaysValue)} style={{ color: '#16a34a', padding: '4px', background: 'none', border: 'none', cursor: 'pointer' }} title="Save">
+                                          <CheckCircle style={{ width: '16px', height: '16px' }} />
+                                        </button>
+                                        <button onClick={cancelEditDays} style={{ color: '#9ca3af', padding: '4px', background: 'none', border: 'none', cursor: 'pointer' }} title="Cancel">×</button>
+                                      </div>
+                                    ) : (
+                                      <div onClick={() => startEditDays(ts)} style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', display: 'inline-block', color: '#2563eb' }} title="Click to edit">
+                                        {totalDays ?? '—'}
+                                      </div>
+                                    )}
                                   </td>
                                   <td style={{ padding: '16px' }}>
                                     <span style={{ fontFamily: 'monospace', fontSize: '12px', color: '#9d174d', background: '#fce7f3', padding: '3px 8px', borderRadius: '6px' }}>
@@ -7421,6 +7444,19 @@ const InvoiceGeneratorApp = () => {
                                     <span style={{ fontSize: '12px', fontWeight: 700, color: missing === 'Both' ? '#dc2626' : '#9d174d', background: missing === 'Both' ? '#fee2e2' : '#fce7f3', padding: '3px 10px', borderRadius: '20px' }}>
                                       {missing === 'Both' ? '⚠ Both' : `↩ ${missing}`}
                                     </span>
+                                  </td>
+                                  <td style={{ padding: '16px', textAlign: 'center' }}>
+                                    {ts.timesheet_file_url ? (
+                                      <button
+                                        onClick={() => openPDF(fixTimesheetUrl(ts.timesheet_file_url), `Timesheet – ${ts.person_name || ts.sender_email}`)}
+                                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#2563eb', cursor: 'pointer' }}
+                                        title="View Timesheet PDF"
+                                      >
+                                        <Eye style={{ width: '15px', height: '15px' }} />
+                                      </button>
+                                    ) : (
+                                      <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>—</span>
+                                    )}
                                   </td>
                                   <td style={{ padding: '16px', textAlign: 'center' }}>
                                     <button
