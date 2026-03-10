@@ -8127,7 +8127,11 @@ const InvoiceGeneratorApp = () => {
                                   {ts.previously_credited && (
                                     <span title={`Previously invoiced as ${ts.credited_invoice_number} — cancelled by credit note`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', backgroundColor: '#fce7f3', color: '#9d174d', borderRadius: '20px', fontSize: '11px', fontWeight: 600, cursor: 'default' }}>
                                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 12h18M3 12l6-6M3 12l6 6"/></svg>
-                                      Previously credited
+                                      {!ts.has_consultant_invoice && !ts.has_client_invoice
+                                        ? 'Re-invoice needed'
+                                        : !ts.has_consultant_invoice
+                                        ? 'Consultant invoice needed'
+                                        : 'Client invoice needed'}
                                     </span>
                                   )}
                                 </div>
