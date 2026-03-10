@@ -2745,7 +2745,7 @@ const InvoiceGeneratorApp = () => {
       // Add new invoices to local state (enrich with contract data we have)
       if (invoiceResp.consultantInvoice || invoiceResp.clientInvoice) {
         const contract = contracts.find(c => c.id === invoiceResp.matchedContract?.id);
-        const newInvoices = [invoiceResp.consultantInvoice, invoiceResp.clientInvoice].filter(Boolean).map(inv => ({
+        const newInvoices = [invoiceResp.clientInvoice, invoiceResp.consultantInvoice].filter(Boolean).map(inv => ({
           ...inv,
           consultant_contract_id: contract?.consultant_contract_id,
           client_contract_id: contract?.client_contract_id,
