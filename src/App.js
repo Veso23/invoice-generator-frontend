@@ -2549,7 +2549,11 @@ const InvoiceGeneratorApp = () => {
     return localStorage.getItem('activeTab') || 'dashboard';
   });
   const [dataLoading, setDataLoading] = useState(false);
+  const [tabLoading, setTabLoading] = useState(false);
   const loadDataCounterRef = useRef(0);
+  const loadedTabsRef = useRef(new Set()); // tracks which tabs have been loaded
+  const cacheRef = useRef({}); // simple TTL cache: { key: { data, ts } }
+  const CACHE_TTL = 60000; // 1 minute
   const [sendingInvoices, setSendingInvoices] = useState(new Set());
   const [notification, setNotification] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -2705,7 +2709,7 @@ const InvoiceGeneratorApp = () => {
         body: JSON.stringify({ contractId })
       });
       showNotification('Contract selected successfully');
-      loadData();
+      cacheInvalidate('timesheets', 'invoices'); loadedTabsRef.current.delete('timesheets'); loadedTabsRef.current.delete('invoices'); await Promise.all([loadTimesheets(true), loadInvoices(true)]).catch(console.error);
       return true;
     } catch (error) {
       showNotification('Failed to set contract: ' + error.message, 'error');
@@ -2733,7 +2737,7 @@ const InvoiceGeneratorApp = () => {
         method: 'POST'
       });
       showNotification('Invoice generated successfully!');
-      loadData();
+      cacheInvalidate('timesheets', 'invoices'); loadedTabsRef.current.delete('timesheets'); loadedTabsRef.current.delete('invoices'); await Promise.all([loadTimesheets(true), loadInvoices(true)]).catch(console.error);
     } catch (error) {
       // Check if error indicates multiple contracts
       if (error.message && error.message.includes('Multiple contracts')) {
@@ -2754,56 +2758,135 @@ const InvoiceGeneratorApp = () => {
   };
 
   // Load data from API
+  // ── Cache helpers ────────────────────────────────────────────────────────
+  const cacheGet = (key) => {
+    const entry = cacheRef.current[key];
+    if (!entry) return null;
+    if (Date.now() - entry.ts > CACHE_TTL) { delete cacheRef.current[key]; return null; }
+    return entry.data;
+  };
+  const cacheSet = (key, data) => { cacheRef.current[key] = { data, ts: Date.now() }; };
+  const cacheInvalidate = (...keys) => { keys.forEach(k => delete cacheRef.current[k]); };
+
+  // ── Per-tab loaders ──────────────────────────────────────────────────────
+  const loadConsultants = async (force = false) => {
+    if (!force && cacheGet('consultants')) { setConsultants(cacheGet('consultants')); return; }
+    const data = await apiCall('/consultants');
+    const rows = Array.isArray(data) ? data : (data.data || []);
+    cacheSet('consultants', rows);
+    setConsultants(rows);
+  };
+
+  const loadClients = async (force = false) => {
+    if (!force && cacheGet('clients')) { setClients(cacheGet('clients')); return; }
+    const data = await apiCall('/clients');
+    const rows = Array.isArray(data) ? data : (data.data || []);
+    cacheSet('clients', rows);
+    setClients(rows);
+  };
+
+  const loadContracts = async (force = false) => {
+    if (!force && cacheGet('contracts')) { setContracts(cacheGet('contracts')); return; }
+    const data = await apiCall('/contracts');
+    const rows = Array.isArray(data) ? data : (data.data || []);
+    cacheSet('contracts', rows);
+    setContracts(rows);
+  };
+
+  const loadInvoices = async (force = false) => {
+    if (!force && cacheGet('invoices')) { setInvoices(cacheGet('invoices')); return; }
+    const data = await apiCall('/invoices');
+    const rows = Array.isArray(data) ? data : (data.data || []);
+    cacheSet('invoices', rows);
+    setInvoices(rows);
+  };
+
+  const loadTimesheets = async (force = false) => {
+    if (!force && cacheGet('timesheets')) { setTimesheets(cacheGet('timesheets')); return; }
+    const data = await apiCall('/timesheets');
+    cacheSet('timesheets', data);
+    setTimesheets(data);
+  };
+
+  const loadHistory = async (force = false) => {
+    if (!force && cacheGet('history')) { setTimesheetHistory(cacheGet('history')); return; }
+    const data = await apiCall('/timesheets/history');
+    cacheSet('history', data);
+    setTimesheetHistory(data);
+  };
+
+  // ── Tab-based load on tab switch ─────────────────────────────────────────
+  const loadTabData = async (tab) => {
+    if (!user) return;
+    if (loadedTabsRef.current.has(tab)) return; // already loaded
+    loadedTabsRef.current.add(tab);
+    setTabLoading(true);
+    try {
+      if (tab === 'dashboard') {
+        await Promise.all([
+          loadConsultants().catch(console.error),
+          loadContracts().catch(console.error),
+          loadCompanySettings().catch(console.error),
+          loadTimesheetStatus().catch(console.error),
+        ]);
+      } else if (tab === 'consultants') {
+        await loadConsultants().catch(console.error);
+      } else if (tab === 'clients') {
+        await loadClients().catch(console.error);
+      } else if (tab === 'contracts') {
+        await Promise.all([loadContracts(), loadConsultants(), loadClients()]).catch(console.error);
+      } else if (tab === 'timesheets') {
+        await Promise.all([loadTimesheets(), loadContracts(), loadConsultants(), loadClients(), loadTimesheetStatus()]).catch(console.error);
+      } else if (tab === 'invoices') {
+        await Promise.all([loadInvoices(), loadContracts(), loadConsultants(), loadClients()]).catch(console.error);
+      } else if (tab === 'history') {
+        await loadHistory().catch(console.error);
+      }
+    } finally {
+      setTabLoading(false);
+    }
+  };
+
+  // ── Full reload (force, clears cache) ────────────────────────────────────
   const loadData = async () => {
     if (!user) return;
-    
     const callId = ++loadDataCounterRef.current;
     setDataLoading(true);
+    cacheInvalidate('consultants', 'clients', 'contracts', 'invoices', 'timesheets', 'history');
+    loadedTabsRef.current.clear();
     try {
       const [consultantsData, clientsData, contractsData, invoicesData, timesheetsData, historyData] = await Promise.all([
-        apiCall('/consultants').catch(err => {
-          console.error('Failed to load consultants:', err);
-          return [];
-        }),
-        apiCall('/clients').catch(err => {
-          console.error('Failed to load clients:', err);
-          return [];
-        }),
-        apiCall('/contracts').catch(err => {
-          console.error('Failed to load contracts:', err);
-          return [];
-        }),
-        apiCall('/invoices').catch(err => {
-          console.error('Failed to load invoices:', err);
-          return [];
-        }),
-        apiCall('/timesheets').catch(err => {
-          console.error('Failed to load timesheets:', err);
-          return [];
-        }),
-        apiCall('/timesheets/history').catch(err => {
-          console.error('Failed to load timesheet history:', err);
-          return [];
-        })
+        apiCall('/consultants').catch(err => { console.error('Failed to load consultants:', err); return []; }),
+        apiCall('/clients').catch(err => { console.error('Failed to load clients:', err); return []; }),
+        apiCall('/contracts').catch(err => { console.error('Failed to load contracts:', err); return []; }),
+        apiCall('/invoices').catch(err => { console.error('Failed to load invoices:', err); return []; }),
+        apiCall('/timesheets').catch(err => { console.error('Failed to load timesheets:', err); return []; }),
+        apiCall('/timesheets/history').catch(err => { console.error('Failed to load timesheet history:', err); return []; })
       ]);
 
-      // Discard if a newer loadData call has started
       if (callId !== loadDataCounterRef.current) return;
 
-      setConsultants(consultantsData);
-      setClients(clientsData);
-      setContracts(contractsData);
-      setInvoices(invoicesData);
-      setTimesheets(timesheetsData);
-      setTimesheetHistory(historyData);
-      
+      const parseRows = d => Array.isArray(d) ? d : (d.data || []);
+      const cRows = parseRows(consultantsData);
+      const clRows = parseRows(clientsData);
+      const coRows = parseRows(contractsData);
+      const invRows = parseRows(invoicesData);
+
+      setConsultants(cRows); cacheSet('consultants', cRows);
+      setClients(clRows); cacheSet('clients', clRows);
+      setContracts(coRows); cacheSet('contracts', coRows);
+      setInvoices(invRows); cacheSet('invoices', invRows);
+      setTimesheets(timesheetsData); cacheSet('timesheets', timesheetsData);
+      setTimesheetHistory(historyData); cacheSet('history', historyData);
+
+      // Mark all tabs as loaded
+      ['dashboard','consultants','clients','contracts','timesheets','invoices','history'].forEach(t => loadedTabsRef.current.add(t));
+
       await loadCompanySettings().catch(err => console.error('Settings load failed:', err));
       await loadTimesheetStatus().catch(err => console.error('Timesheet status load failed:', err));
-      
       if (user.role === 'admin' || user.role === 'superadmin') {
         await loadUsers().catch(err => console.error('Users load failed:', err));
       }
-      
     } catch (error) {
       console.error('Failed to load data:', error);
       showNotification('Failed to load some data. Please refresh the page.', 'error');
@@ -2818,6 +2901,14 @@ const InvoiceGeneratorApp = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, viewingCompanyId]);
 
+  // Load tab data when switching tabs
+  useEffect(() => {
+    if (user && activeTab) {
+      loadTabData(activeTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, user]);
+
   const startEditInvoiceNumber = (invoice) => {
     setEditingInvoiceNumber(invoice.id);
     setEditInvoiceNumberValue(invoice.invoice_number);
@@ -2831,7 +2922,7 @@ const InvoiceGeneratorApp = () => {
       });
       showNotification('Invoice number updated successfully!');
       setEditingInvoiceNumber(null);
-      loadData();
+      cacheInvalidate('invoices'); await loadInvoices(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update invoice number: ' + error.message, 'error');
     }
@@ -2845,10 +2936,12 @@ const InvoiceGeneratorApp = () => {
   const generatePDF = async (invoiceId, silent = false) => {
     try {
       if (!silent) setDataLoading(true);
-      const response = await apiCall(`/invoices/${invoiceId}/generate-pdf`, {
-        method: 'POST'
-      });
-      if (!silent) { showNotification('PDF generated successfully!'); loadData(); }
+      const response = await apiCall(`/invoices/${invoiceId}/generate-pdf`, { method: 'POST' });
+      if (response.pdfUrl) {
+        setInvoices(prev => prev.map(i => i.id === invoiceId ? { ...i, pdf_url: response.pdfUrl } : i));
+        cacheInvalidate('invoices');
+      }
+      if (!silent) showNotification('PDF generated successfully!');
       return response.pdfUrl;
     } catch (error) {
       if (!silent) showNotification('Failed to generate PDF: ' + error.message, 'error');
@@ -2999,7 +3092,7 @@ const InvoiceGeneratorApp = () => {
       });
       showNotification('Consultant updated successfully!');
       setEditModalOpen(false);
-      loadData();
+      cacheInvalidate('consultants'); loadedTabsRef.current.delete('consultants'); await loadConsultants(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update consultant: ' + error.message, 'error');
     }
@@ -3013,7 +3106,7 @@ const InvoiceGeneratorApp = () => {
       });
       showNotification('Client updated successfully!');
       setEditModalOpen(false);
-      loadData();
+      cacheInvalidate('clients'); loadedTabsRef.current.delete('clients'); await loadClients(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update client: ' + error.message, 'error');
     }
@@ -3027,7 +3120,7 @@ const InvoiceGeneratorApp = () => {
       });
       showNotification('Contract updated successfully!');
       setEditModalOpen(false);
-      loadData();
+      cacheInvalidate('contracts'); loadedTabsRef.current.delete('contracts'); await loadContracts(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update contract: ' + error.message, 'error');
     }
@@ -3041,7 +3134,7 @@ const InvoiceGeneratorApp = () => {
         method: 'DELETE'
       });
       showNotification('Consultant deleted successfully!');
-      loadData();
+      cacheInvalidate('consultants'); loadedTabsRef.current.delete('consultants'); await loadConsultants(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to delete consultant: ' + error.message, 'error');
     }
@@ -3055,7 +3148,7 @@ const InvoiceGeneratorApp = () => {
         method: 'DELETE'
       });
       showNotification('Client deleted successfully!');
-      loadData();
+      cacheInvalidate('clients'); loadedTabsRef.current.delete('clients'); await loadClients(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to delete client: ' + error.message, 'error');
     }
@@ -3073,7 +3166,7 @@ const InvoiceGeneratorApp = () => {
         try {
           await apiCall(`/timesheets/${id}`, { method: "DELETE" });
           showNotification("Timesheet deleted successfully!");
-          loadData();
+          cacheInvalidate('timesheets'); loadedTabsRef.current.delete('timesheets'); await loadTimesheets(true).catch(console.error);
         } catch (error) {
           showNotification("Failed to delete timesheet: " + error.message, "error");
         }
@@ -3095,7 +3188,7 @@ const InvoiceGeneratorApp = () => {
     }
     setBulkGenerating(false);
     setSelectedTimesheets([]);
-    loadData();
+    cacheInvalidate('timesheets', 'invoices'); loadedTabsRef.current.delete('timesheets'); loadedTabsRef.current.delete('invoices'); await Promise.all([loadTimesheets(true), loadInvoices(true)]).catch(console.error);
     if (failed === 0) {
       showNotification(`✅ Generated ${success} invoice${success > 1 ? 's' : ''} successfully!`);
     } else {
@@ -3111,7 +3204,7 @@ const InvoiceGeneratorApp = () => {
     }
     setBulkInvoiceAction(false);
     setSelectedInvoices([]);
-    loadData();
+    cacheInvalidate('invoices');
     showNotification(failed === 0 ? `✅ Generated ${success} PDF${success > 1 ? 's' : ''}!` : `Generated ${success}, failed ${failed}`, failed > 0 ? 'error' : 'success');
   };
 
@@ -3133,7 +3226,9 @@ const InvoiceGeneratorApp = () => {
     }
     setBulkInvoiceAction(false);
     setSelectedInvoices([]);
-    loadData();
+    cacheInvalidate('invoices');
+    // Refresh invoices state from cache-invalidated source
+    loadInvoices(true).catch(console.error);
     const parts = [];
     if (success > 0) parts.push(`Sent ${success}`);
     if (skipped > 0) parts.push(`${skipped} already sent (skipped)`);
@@ -3166,7 +3261,7 @@ const InvoiceGeneratorApp = () => {
         body: JSON.stringify({ reminder_enabled: !currentValue })
       });
       showNotification(`Reminders ${!currentValue ? 'enabled' : 'disabled'} for this consultant`);
-      loadData();
+      cacheInvalidate('consultants'); await loadConsultants(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update reminder setting: ' + error.message, 'error');
     }
@@ -3180,7 +3275,7 @@ const InvoiceGeneratorApp = () => {
         method: 'DELETE'
       });
       showNotification('Contract deleted successfully!');
-      loadData();
+      cacheInvalidate('contracts'); loadedTabsRef.current.delete('contracts'); await loadContracts(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to delete contract: ' + error.message, 'error');
     }
@@ -3242,23 +3337,23 @@ const InvoiceGeneratorApp = () => {
   };
 
   const sendInvoiceEmail = async (invoice) => {
-    if (sendingInvoices.has(invoice.id)) return; // prevent double-click
+    if (sendingInvoices.has(invoice.id)) return;
     setSendingInvoices(prev => new Set(prev).add(invoice.id));
     try {
       if (!invoice.pdf_url) {
-        const pdfUrl = await generatePDF(invoice.id);
-        if (!pdfUrl) {
-          showNotification('Failed to generate PDF', 'error');
-          return;
-        }
+        const pdfUrl = await generatePDF(invoice.id, true);
+        if (!pdfUrl) { showNotification('Failed to generate PDF', 'error'); return; }
+        // Update local state with new pdf_url
+        setInvoices(prev => prev.map(i => i.id === invoice.id ? { ...i, pdf_url: pdfUrl } : i));
       }
-      
-      await apiCall(`/invoices/${invoice.id}/send-email`, {
-        method: 'POST'
-      });
-      
+      await apiCall(`/invoices/${invoice.id}/send-email`, { method: 'POST' });
+      // Local state update — no full reload needed
+      setInvoices(prev => prev.map(i => i.id === invoice.id
+        ? { ...i, status: i.status === 'draft' ? 'sent' : i.status, email_sent: true, email_sent_at: new Date().toISOString() }
+        : i
+      ));
+      cacheInvalidate('invoices');
       showNotification('Invoice email sent successfully!');
-      loadData();
     } catch (error) {
       showNotification('Failed to send email: ' + error.message, 'error');
     } finally {
@@ -3360,7 +3455,7 @@ const InvoiceGeneratorApp = () => {
         body: JSON.stringify(consultantData)
       });
       showNotification('Consultant added successfully!');
-      loadData();
+      cacheInvalidate('consultants'); loadedTabsRef.current.delete('consultants'); await loadConsultants(true);
     } catch (error) {
       showNotification('Failed to add consultant: ' + error.message, 'error');
     }
@@ -3603,7 +3698,7 @@ const InvoiceGeneratorApp = () => {
       setCsvUploading(false);
       setCsvUploadModalOpen(false);
       setCsvData([]);
-      loadData();
+      cacheInvalidate('consultants'); loadedTabsRef.current.delete('consultants'); await loadConsultants(true).catch(console.error);
       
       if (result.failed === 0) {
         showNotification(`Successfully imported ${result.success} consultants!`);
@@ -3716,7 +3811,7 @@ const InvoiceGeneratorApp = () => {
       setClientCsvUploading(false);
       setClientCsvUploadModalOpen(false);
       setClientCsvData([]);
-      loadData();
+      cacheInvalidate('clients'); loadedTabsRef.current.delete('clients'); await loadClients(true).catch(console.error);
       
       if (result.failed === 0) {
         showNotification(`Successfully imported ${result.success} clients!`);
@@ -3881,7 +3976,7 @@ const InvoiceGeneratorApp = () => {
       setContractCsvUploading(false);
       setContractCsvUploadModalOpen(false);
       setContractCsvData([]);
-      loadData();
+      cacheInvalidate('contracts'); loadedTabsRef.current.delete('contracts'); await loadContracts(true).catch(console.error);
       
       if (result.failed === 0) {
         showNotification(`Successfully imported ${result.success} contracts!`);
@@ -4041,7 +4136,7 @@ const InvoiceGeneratorApp = () => {
         body: JSON.stringify(contractData)
       });
       showNotification('Contract added successfully!');
-      loadData();
+      cacheInvalidate('contracts'); loadedTabsRef.current.delete('contracts'); await loadContracts(true);
     } catch (error) {
       showNotification('Failed to add contract: ' + error.message, 'error');
     }
@@ -4054,7 +4149,7 @@ const InvoiceGeneratorApp = () => {
         body: JSON.stringify(clientData)
       });
       showNotification('Client added successfully!');
-      loadData();
+      cacheInvalidate('clients'); loadedTabsRef.current.delete('clients'); await loadClients(true);
     } catch (error) {
       showNotification('Failed to add client: ' + error.message, 'error');
     }
@@ -4069,7 +4164,7 @@ const InvoiceGeneratorApp = () => {
       showNotification('Days updated successfully!');
       setEditingDays(null);
       setEditDaysValue('');
-      loadData();
+      cacheInvalidate('timesheets'); await loadTimesheets(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update days: ' + error.message, 'error');
     }
@@ -4101,7 +4196,7 @@ const InvoiceGeneratorApp = () => {
       showNotification('Month updated successfully!');
       setEditingMonth(null);
       setEditMonthValue('');
-      loadData();
+      cacheInvalidate('timesheets'); await loadTimesheets(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to update month: ' + error.message, 'error');
     }
@@ -4120,7 +4215,7 @@ const InvoiceGeneratorApp = () => {
         body: JSON.stringify({ flagged: true })
       });
       showNotification('Timesheet flagged for review');
-      loadData();
+      cacheInvalidate('timesheets'); await loadTimesheets(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to flag timesheet: ' + error.message, 'error');
     }
@@ -4134,7 +4229,7 @@ const InvoiceGeneratorApp = () => {
         body: JSON.stringify({ flagged: false })
       });
       showNotification('Flag removed from timesheet');
-      loadData();
+      cacheInvalidate('timesheets'); await loadTimesheets(true).catch(console.error);
     } catch (error) {
       showNotification('Failed to unflag timesheet: ' + error.message, 'error');
     }
@@ -4157,7 +4252,7 @@ const InvoiceGeneratorApp = () => {
         delete newState[contractId];
         return newState;
       });
-      loadData();
+      cacheInvalidate('timesheets', 'invoices'); loadedTabsRef.current.delete('timesheets'); loadedTabsRef.current.delete('invoices'); await Promise.all([loadTimesheets(true), loadInvoices(true)]).catch(console.error);
     } catch (error) {
       showNotification('Failed to assign: ' + error.message, 'error');
     }
@@ -4588,7 +4683,7 @@ const InvoiceGeneratorApp = () => {
                         method: 'POST'
                       });
                       showNotification('Invoice generated successfully!');
-                      loadData();
+                      cacheInvalidate('timesheets', 'invoices'); loadedTabsRef.current.delete('timesheets'); loadedTabsRef.current.delete('invoices'); await Promise.all([loadTimesheets(true), loadInvoices(true)]).catch(console.error);
                     } catch (error) {
                       showNotification('Failed to generate invoice: ' + error.message, 'error');
                     } finally {
@@ -4902,7 +4997,7 @@ const InvoiceGeneratorApp = () => {
 
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px', position: 'relative', minHeight: '400px' }}>
         {/* Loading Overlay */}
-        <LoadingOverlay show={dataLoading} message="Loading data..." />
+        <LoadingOverlay show={dataLoading || tabLoading} message={tabLoading ? "Loading..." : "Loading data..."} />
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
