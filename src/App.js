@@ -7424,7 +7424,7 @@ const InvoiceGeneratorApp = () => {
                                   </td>
                                   <td style={{ padding: '16px', textAlign: 'center' }}>
                                     <button
-                                      onClick={() => generateInvoice(ts)}
+                                      onClick={() => generateInvoiceForTimesheet(ts)}
                                       disabled={generatingInvoice[ts.id]}
                                       style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: 'none', backgroundColor: generatingInvoice[ts.id] ? '#f3f4f6' : '#9d174d', color: generatingInvoice[ts.id] ? '#9ca3af' : 'white', fontSize: '13px', fontWeight: 700, cursor: generatingInvoice[ts.id] ? 'not-allowed' : 'pointer' }}
                                     >
