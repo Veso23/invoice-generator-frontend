@@ -6448,6 +6448,37 @@ const InvoiceGeneratorApp = () => {
                     ).length}
                   </span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTimesheetTab('reinvoice')}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    backgroundColor: activeTimesheetTab === 'reinvoice' ? '#9d174d' : 'white',
+                    color: activeTimesheetTab === 'reinvoice' ? 'white' : '#64748b',
+                    boxShadow: activeTimesheetTab === 'reinvoice' ? '0 4px 14px rgba(157, 23, 77, 0.3)' : '0 1px 2px rgba(0,0,0,0.05)'
+                  }}
+                >
+                  Re-invoice
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: '20px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    backgroundColor: activeTimesheetTab === 'reinvoice' ? 'rgba(255,255,255,0.2)' : '#fce7f3',
+                    color: activeTimesheetTab === 'reinvoice' ? 'white' : '#9d174d'
+                  }}>
+                    {timesheets.filter(ts => ts.previously_credited && !ts.invoice_generated).length}
+                  </span>
+                </button>
               </div>
 
               {/* CURRENT MONTH TAB CONTENT */}
@@ -7331,6 +7362,88 @@ const InvoiceGeneratorApp = () => {
                   </table>
                 </div>
               )}
+
+              {/* RE-INVOICE TAB CONTENT */}
+              {activeTimesheetTab === 'reinvoice' && (() => {
+                const reinvoiceTs = timesheets.filter(ts => ts.previously_credited && !ts.invoice_generated);
+                return (
+                  <div>
+                    {reinvoiceTs.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '64px 32px', color: '#64748b' }}>
+                        <div style={{ fontSize: '40px', marginBottom: '16px' }}>✅</div>
+                        <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>No re-invoicing needed</h3>
+                        <p style={{ fontSize: '14px' }}>All credited timesheets have been re-invoiced</p>
+                      </div>
+                    ) : (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ backgroundColor: '#fdf2f8', borderBottom: '2px solid #fbcfe8' }}>
+                              <th style={{ textAlign: 'left', padding: '14px 16px', fontSize: '11px', fontWeight: 700, color: '#9d174d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Consultant</th>
+                              <th style={{ textAlign: 'left', padding: '14px 16px', fontSize: '11px', fontWeight: 700, color: '#9d174d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Period</th>
+                              <th style={{ textAlign: 'left', padding: '14px 16px', fontSize: '11px', fontWeight: 700, color: '#9d174d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Days</th>
+                              <th style={{ textAlign: 'left', padding: '14px 16px', fontSize: '11px', fontWeight: 700, color: '#9d174d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Credited invoice</th>
+                              <th style={{ textAlign: 'left', padding: '14px 16px', fontSize: '11px', fontWeight: 700, color: '#9d174d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Missing</th>
+                              <th style={{ textAlign: 'center', padding: '14px 16px', fontSize: '11px', fontWeight: 700, color: '#9d174d', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {reinvoiceTs.map(ts => {
+                              const totalDays = ts.days_edited != null ? ts.days_edited
+                                : ts.pdf_days ? parseFloat(ts.pdf_days)
+                                : ts.email_days ? parseFloat(ts.email_days)
+                                : ts.pdf_hours ? parseFloat(ts.pdf_hours) / 8
+                                : ts.email_hours ? parseFloat(ts.email_hours) / 8 : null;
+                              const missing = !ts.has_consultant_invoice && !ts.has_client_invoice
+                                ? 'Both'
+                                : !ts.has_consultant_invoice ? 'Consultant'
+                                : 'Client';
+                              return (
+                                <tr key={ts.id} style={{ borderBottom: '1px solid #fce7f3', backgroundColor: 'white' }}
+                                  onMouseOver={e => e.currentTarget.style.backgroundColor = '#fdf2f8'}
+                                  onMouseOut={e => e.currentTarget.style.backgroundColor = 'white'}>
+                                  <td style={{ padding: '16px' }}>
+                                    <div style={{ fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>{ts.consultant_first_name} {ts.consultant_last_name}</div>
+                                    <div style={{ fontSize: '12px', color: '#94a3b8' }}>{ts.consultant_company_name}</div>
+                                  </td>
+                                  <td style={{ padding: '16px', fontSize: '13px', color: '#475569', whiteSpace: 'nowrap' }}>
+                                    {ts.month || '—'}
+                                  </td>
+                                  <td style={{ padding: '16px', fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>
+                                    {totalDays ?? '—'}
+                                  </td>
+                                  <td style={{ padding: '16px' }}>
+                                    <span style={{ fontFamily: 'monospace', fontSize: '12px', color: '#9d174d', background: '#fce7f3', padding: '3px 8px', borderRadius: '6px' }}>
+                                      {ts.credited_invoice_number || '—'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '16px' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: 700, color: missing === 'Both' ? '#dc2626' : '#9d174d', background: missing === 'Both' ? '#fee2e2' : '#fce7f3', padding: '3px 10px', borderRadius: '20px' }}>
+                                      {missing === 'Both' ? '⚠ Both' : `↩ ${missing}`}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '16px', textAlign: 'center' }}>
+                                    <button
+                                      onClick={() => generateInvoice(ts)}
+                                      disabled={generatingInvoice[ts.id]}
+                                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: 'none', backgroundColor: generatingInvoice[ts.id] ? '#f3f4f6' : '#9d174d', color: generatingInvoice[ts.id] ? '#9ca3af' : 'white', fontSize: '13px', fontWeight: 700, cursor: generatingInvoice[ts.id] ? 'not-allowed' : 'pointer' }}
+                                    >
+                                      {generatingInvoice[ts.id]
+                                        ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Generating...</>
+                                        : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> Generate Invoice</>
+                                      }
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -8124,16 +8237,6 @@ const InvoiceGeneratorApp = () => {
                                     <AlertCircle style={{ width: '12px', height: '12px' }} />
                                     Pending
                                   </span>
-                                  {ts.previously_credited && (
-                                    <span title={`Previously invoiced as ${ts.credited_invoice_number} — cancelled by credit note`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 8px', backgroundColor: '#fce7f3', color: '#9d174d', borderRadius: '20px', fontSize: '11px', fontWeight: 600, cursor: 'default' }}>
-                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 12h18M3 12l6-6M3 12l6 6"/></svg>
-                                      {!ts.has_consultant_invoice && !ts.has_client_invoice
-                                        ? 'Re-invoice needed'
-                                        : !ts.has_consultant_invoice
-                                        ? 'Consultant invoice needed'
-                                        : 'Client invoice needed'}
-                                    </span>
-                                  )}
                                 </div>
                               )}
                             </td>
