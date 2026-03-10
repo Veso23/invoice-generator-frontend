@@ -3435,34 +3435,38 @@ const InvoiceGeneratorApp = () => {
     }
   };
 
-  const createCreditNote = async (invoice) => {
-    if (!window.confirm(`Create credit note CN-${invoice.invoice_number}? This will cancel the original invoice and release the timesheet for re-invoicing.`)) return;
-    try {
-      const resp = await apiCall(`/invoices/${invoice.id}/credit-note`, { method: 'POST' });
-      // Update original invoice status locally
-      setInvoices(prev => prev.map(i => {
-        if (i.id === invoice.id) return { ...i, status: 'credited', invoice_type_detail: 'credited' };
-        if (i.id === resp.creditNote?.id) return resp.creditNote; // shouldn't be in list yet
-        return i;
-      }));
-      // Prepend credit note to list
-      if (resp.creditNote) {
-        setInvoices(prev => [resp.creditNote, ...prev]);
-        setServerTotals(prev => ({ ...prev, invoices: prev.invoices + 1 }));
+  const createCreditNote = (invoice) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Create Credit Note',
+      message: `Create credit note CN-${invoice.invoice_number}?\n\nThis will cancel the original invoice and release the timesheet for re-invoicing.`,
+      confirmLabel: 'Create Credit Note',
+      confirmColor: '#dc2626',
+      onConfirm: async () => {
+        try {
+          const resp = await apiCall(`/invoices/${invoice.id}/credit-note`, { method: 'POST' });
+          setInvoices(prev => prev.map(i => {
+            if (i.id === invoice.id) return { ...i, status: 'credited', invoice_type_detail: 'credited' };
+            return i;
+          }));
+          if (resp.creditNote) {
+            setInvoices(prev => [resp.creditNote, ...prev]);
+            setServerTotals(prev => ({ ...prev, invoices: prev.invoices + 1 }));
+          }
+          if (invoice.timesheet_id) {
+            setTimesheets(prev => prev.map(t => t.id === invoice.timesheet_id
+              ? { ...t, invoice_generated: false, invoice_id: null }
+              : t
+            ));
+            cacheInvalidate('timesheets');
+          }
+          cacheInvalidate('invoices');
+          showNotification(`Credit note CN-${invoice.invoice_number} created successfully!`);
+        } catch (error) {
+          showNotification('Failed to create credit note: ' + error.message, 'error');
+        }
       }
-      // Release timesheet
-      if (invoice.timesheet_id) {
-        setTimesheets(prev => prev.map(t => t.id === invoice.timesheet_id
-          ? { ...t, invoice_generated: false, invoice_id: null }
-          : t
-        ));
-        cacheInvalidate('timesheets');
-      }
-      cacheInvalidate('invoices');
-      showNotification(`Credit note CN-${invoice.invoice_number} created successfully!`);
-    } catch (error) {
-      showNotification('Failed to create credit note: ' + error.message, 'error');
-    }
+    });
   };
 
   const sendInvoiceEmail = async (invoice) => {
