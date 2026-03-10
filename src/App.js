@@ -2881,11 +2881,11 @@ const InvoiceGeneratorApp = () => {
   };
 
   // ── Tab-based load on tab switch ─────────────────────────────────────────
-  const loadTabData = async (tab) => {
+  const loadTabData = async (tab, showLoader = true) => {
     if (!user) return;
     if (loadedTabsRef.current.has(tab)) return; // already loaded
     loadedTabsRef.current.add(tab);
-    setTabLoading(true);
+    if (showLoader) setTabLoading(true);
     try {
       if (tab === 'dashboard') {
         await Promise.all([
@@ -2908,7 +2908,7 @@ const InvoiceGeneratorApp = () => {
         await loadHistory().catch(console.error);
       }
     } finally {
-      setTabLoading(false);
+      if (showLoader) setTabLoading(false);
     }
   };
 
@@ -2916,47 +2916,36 @@ const InvoiceGeneratorApp = () => {
   const loadData = async () => {
     if (!user) return;
     const callId = ++loadDataCounterRef.current;
-    setDataLoading(true);
     cacheInvalidate('consultants', 'clients', 'contracts', 'invoices', 'timesheets', 'history');
     loadedTabsRef.current.clear();
+
+    // Load active tab first (non-blocking — no overlay)
+    setTabLoading(true);
     try {
-      const [consultantsData, clientsData, contractsData, invoicesData, timesheetsData, historyData] = await Promise.all([
-        apiCall('/consultants').catch(err => { console.error('Failed to load consultants:', err); return []; }),
-        apiCall('/clients').catch(err => { console.error('Failed to load clients:', err); return []; }),
-        apiCall('/contracts').catch(err => { console.error('Failed to load contracts:', err); return []; }),
-        apiCall('/invoices').catch(err => { console.error('Failed to load invoices:', err); return []; }),
-        apiCall('/timesheets').catch(err => { console.error('Failed to load timesheets:', err); return []; }),
-        apiCall('/timesheets/history').catch(err => { console.error('Failed to load timesheet history:', err); return []; })
-      ]);
-
-      if (callId !== loadDataCounterRef.current) return;
-
-      const parseRows = d => Array.isArray(d) ? d : (d.data || []);
-      const cRows = parseRows(consultantsData);
-      const clRows = parseRows(clientsData);
-      const coRows = parseRows(contractsData);
-      const invRows = parseRows(invoicesData);
-
-      setConsultants(cRows); cacheSet('consultants', cRows);
-      setClients(clRows); cacheSet('clients', clRows);
-      setContracts(coRows); cacheSet('contracts', coRows);
-      setInvoices(invRows); cacheSet('invoices', invRows);
-      setTimesheets(timesheetsData); cacheSet('timesheets', timesheetsData);
-      setTimesheetHistory(historyData); cacheSet('history', historyData);
-
-      // Mark all tabs as loaded
-      ['dashboard','consultants','clients','contracts','timesheets','invoices','history'].forEach(t => loadedTabsRef.current.add(t));
-
-      await loadCompanySettings().catch(err => console.error('Settings load failed:', err));
-      await loadTimesheetStatus().catch(err => console.error('Timesheet status load failed:', err));
-      if (user.role === 'admin' || user.role === 'superadmin') {
-        await loadUsers().catch(err => console.error('Users load failed:', err));
-      }
-    } catch (error) {
-      console.error('Failed to load data:', error);
-      showNotification('Failed to load some data. Please refresh the page.', 'error');
+      await loadTabData(activeTab, false);
+    } catch (err) {
+      console.error('Active tab load failed:', err);
+    } finally {
+      setTabLoading(false);
     }
-    if (callId === loadDataCounterRef.current) setDataLoading(false);
+
+    if (callId !== loadDataCounterRef.current) return;
+
+    // Load rest in background without blocking UI
+    Promise.all([
+      loadConsultants().catch(console.error),
+      loadClients().catch(console.error),
+      loadContracts().catch(console.error),
+      loadInvoices().catch(console.error),
+      loadTimesheets().catch(console.error),
+      loadHistory().catch(console.error),
+      loadCompanySettings().catch(console.error),
+      loadTimesheetStatus().catch(console.error),
+      ...(user.role === 'admin' || user.role === 'superadmin' ? [loadUsers().catch(console.error)] : []),
+    ]).then(() => {
+      if (callId !== loadDataCounterRef.current) return;
+      ['dashboard','consultants','clients','contracts','timesheets','invoices','history'].forEach(t => loadedTabsRef.current.add(t));
+    });
   };
 
   useEffect(() => {
@@ -5109,8 +5098,15 @@ const InvoiceGeneratorApp = () => {
       </div>
 
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px', position: 'relative', minHeight: '400px' }}>
-        {/* Loading Overlay */}
-        <LoadingOverlay show={dataLoading || tabLoading} message={tabLoading ? "Loading..." : "Loading data..."} />
+        {/* Non-blocking top progress bar for tab loading */}
+        {tabLoading && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '3px', zIndex: 9999, overflow: 'hidden', backgroundColor: '#e0e7ff' }}>
+            <div style={{ height: '100%', width: '40%', backgroundColor: '#4f46e5', borderRadius: '0 2px 2px 0', animation: 'slideProgress 1.2s ease-in-out infinite' }} />
+            <style>{`@keyframes slideProgress { 0% { transform: translateX(-100%) scaleX(1); } 50% { transform: translateX(150%) scaleX(1.5); } 100% { transform: translateX(300%) scaleX(1); } }`}</style>
+          </div>
+        )}
+        {/* Blocking overlay only for heavy ops (PDF generation etc.) */}
+        <LoadingOverlay show={dataLoading} message="Loading data..." />
 
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
