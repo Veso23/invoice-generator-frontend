@@ -2601,6 +2601,7 @@ const InvoiceGeneratorApp = () => {
   const [selectedTimesheets, setSelectedTimesheets] = useState([]);  // array of ids
   const [bulkGenerating, setBulkGenerating] = useState(false);
   const [selectedInvoices, setSelectedInvoices] = useState([]);
+  const [invoiceFilters, setInvoiceFilters] = useState({ type: 'all', status: 'all' });
   const [bulkInvoiceAction, setBulkInvoiceAction] = useState(false);
   const [chartDrillMonth, setChartDrillMonth] = useState(null); // null = overview, 'Jan 2026' = drill
   const [csvData, setCsvData] = useState([]);
@@ -2849,11 +2850,12 @@ const InvoiceGeneratorApp = () => {
     setContracts(rows); setServerTotals(prev => ({ ...prev, contracts: total }));
   };
 
-  const loadInvoices = async (force = false, page, size, search) => {
+  const loadInvoices = async (force = false, page, size, search, filters) => {
     const p = page ?? currentPages.invoices;
     const s = size ?? pageSizes.invoices;
     const q = search ?? searchQueries.invoices ?? '';
-    const cacheKey = `invoices_${p}_${s}_${q}`;
+    const f = filters ?? invoiceFilters;
+    const cacheKey = `invoices_${p}_${s}_${q}_${f.type}_${f.status}`;
     if (!force && cacheGet(cacheKey)) {
       const cached = cacheGet(cacheKey);
       setInvoices(cached.data); setServerTotals(prev => ({ ...prev, invoices: cached.total })); return;
@@ -2861,6 +2863,8 @@ const InvoiceGeneratorApp = () => {
     const offset = (p - 1) * s;
     const params = new URLSearchParams({ limit: s, offset });
     if (q) params.set('search', q);
+    if (f.type !== 'all') params.set('type', f.type);
+    if (f.status !== 'all') params.set('status', f.status);
     const data = await apiCall(`/invoices?${params}`);
     const rows = Array.isArray(data) ? data : (data.data || []);
     const total = data.total ?? rows.length;
@@ -7386,8 +7390,60 @@ const InvoiceGeneratorApp = () => {
                 />
               </div>
             )}
-            
-            {invoices.length === 0 && !searchQueries.invoices ? (
+
+            {/* Invoice Filter Pills */}
+            {(() => {
+              const pillBase = { padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', border: '1.5px solid transparent', transition: 'all 0.15s' };
+              const active = (color, bg) => ({ ...pillBase, backgroundColor: bg, color: color, borderColor: color });
+              const inactive = { ...pillBase, backgroundColor: '#f8fafc', color: '#64748b', borderColor: '#e2e8f0' };
+              const setFilter = (key, val) => {
+                const newFilters = { ...invoiceFilters, [key]: val };
+                setInvoiceFilters(newFilters);
+                setCurrentPages(prev => ({ ...prev, invoices: 1 }));
+                cacheInvalidate('invoices');
+                loadInvoices(true, 1, pageSizes.invoices, searchQueries.invoices, newFilters);
+              };
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                  {/* Row 1 — Type */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', minWidth: '40px' }}>Type</span>
+                    {[
+                      { val: 'all', label: 'All' },
+                      { val: 'consultant', label: 'Consultant' },
+                      { val: 'client', label: 'Client' },
+                    ].map(({ val, label }) => (
+                      <button key={val} onClick={() => setFilter('type', val)}
+                        style={invoiceFilters.type === val ? active('#4f46e5', '#eef2ff') : inactive}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Row 2 — Status */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', minWidth: '40px' }}>Status</span>
+                    {[
+                      { val: 'all',         label: 'All' },
+                      { val: 'draft',       label: 'Draft',        color: '#854d0e', bg: '#fef9c3' },
+                      { val: 'sent',        label: 'Sent',         color: '#1e40af', bg: '#dbeafe' },
+                      { val: 'paid',        label: 'Paid',         color: '#166534', bg: '#dcfce7' },
+                      { val: 'overdue',     label: '⚠ Overdue',   color: '#991b1b', bg: '#fee2e2' },
+                      { val: 'credited',    label: '↩ Credited',  color: '#9d174d', bg: '#fce7f3' },
+                      { val: 'credit_note', label: 'Credit Notes', color: '#dc2626', bg: '#fff1f2' },
+                    ].map(({ val, label, color, bg }) => (
+                      <button key={val} onClick={() => setFilter('status', val)}
+                        style={invoiceFilters.status === val
+                          ? (val === 'all' ? active('#4f46e5', '#eef2ff') : active(color, bg))
+                          : inactive}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {invoices.length === 0 && !searchQueries.invoices && invoiceFilters.type === 'all' && invoiceFilters.status === 'all' ? (
               <div style={{
                 backgroundColor: 'white',
                 borderRadius: '24px',
@@ -7400,7 +7456,7 @@ const InvoiceGeneratorApp = () => {
                 <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>No invoices generated yet</h3>
                 <p style={{ fontSize: '14px', color: '#64748b' }}>Go to the dashboard to generate invoices from your contracts</p>
               </div>
-            ) : invoices.length === 0 && searchQueries.invoices ? (
+            ) : invoices.length === 0 && (searchQueries.invoices || invoiceFilters.type !== 'all' || invoiceFilters.status !== 'all') ? (
               <div style={{
                 backgroundColor: 'white',
                 borderRadius: '24px',
@@ -7412,8 +7468,8 @@ const InvoiceGeneratorApp = () => {
                 <div style={{ fontSize: '40px', marginBottom: '16px' }}>🔍</div>
                 <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>No results for "{searchQueries.invoices}"</h3>
                 <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '20px' }}>Try a different name, company or invoice number</p>
-                <button onClick={() => { setSearchQueries(prev => ({ ...prev, invoices: '' })); loadInvoices(true, 1, pageSizes.invoices, ''); }} style={{ padding: '8px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                  Clear search
+                <button onClick={() => { setSearchQueries(prev => ({ ...prev, invoices: '' })); setInvoiceFilters({ type: 'all', status: 'all' }); loadInvoices(true, 1, pageSizes.invoices, '', { type: 'all', status: 'all' }); }} style={{ padding: '8px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#475569', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                  Clear filters
                 </button>
               </div>
             ) : (
