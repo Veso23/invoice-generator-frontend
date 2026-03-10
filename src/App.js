@@ -3552,17 +3552,16 @@ const InvoiceGeneratorApp = () => {
     const optimistic = { id: tempId, ...consultantData, created_at: new Date().toISOString() };
     setConsultants(prev => [optimistic, ...prev]);
     setServerTotals(prev => ({ ...prev, consultants: prev.consultants + 1 }));
-    showNotification('Consultant added successfully!');
     try {
       const newRecord = await apiCall('/consultants', {
         method: 'POST',
         body: JSON.stringify(consultantData)
       });
-      // Replace temp record with real one from server
       setConsultants(prev => prev.map(c => c.id === tempId ? newRecord : c));
       cacheInvalidate('consultants');
+      showNotification('Consultant added successfully!');
     } catch (error) {
-      // Rollback
+      // Rollback on failure (e.g. duplicate email/VAT)
       setConsultants(prev => prev.filter(c => c.id !== tempId));
       setServerTotals(prev => ({ ...prev, consultants: prev.consultants - 1 }));
       showNotification('Failed to add consultant: ' + error.message, 'error');
@@ -4250,7 +4249,6 @@ const InvoiceGeneratorApp = () => {
     };
     setContracts(prev => [optimistic, ...prev]);
     setServerTotals(prev => ({ ...prev, contracts: prev.contracts + 1 }));
-    showNotification('Contract added successfully!');
     try {
       const newRecord = await apiCall('/contracts', {
         method: 'POST',
@@ -4267,6 +4265,7 @@ const InvoiceGeneratorApp = () => {
       };
       setContracts(prev => prev.map(c => c.id === tempId ? enriched : c));
       cacheInvalidate('contracts');
+      showNotification('Contract added successfully!');
     } catch (error) {
       setContracts(prev => prev.filter(c => c.id !== tempId));
       setServerTotals(prev => ({ ...prev, contracts: prev.contracts - 1 }));
@@ -4279,7 +4278,6 @@ const InvoiceGeneratorApp = () => {
     const optimistic = { id: tempId, ...clientData, created_at: new Date().toISOString() };
     setClients(prev => [optimistic, ...prev]);
     setServerTotals(prev => ({ ...prev, clients: prev.clients + 1 }));
-    showNotification('Client added successfully!');
     try {
       const newRecord = await apiCall('/clients', {
         method: 'POST',
@@ -4287,6 +4285,7 @@ const InvoiceGeneratorApp = () => {
       });
       setClients(prev => prev.map(c => c.id === tempId ? newRecord : c));
       cacheInvalidate('clients');
+      showNotification('Client added successfully!');
     } catch (error) {
       setClients(prev => prev.filter(c => c.id !== tempId));
       setServerTotals(prev => ({ ...prev, clients: prev.clients - 1 }));
