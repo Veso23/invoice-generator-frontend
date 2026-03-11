@@ -714,6 +714,7 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
 
   // ✅ renderField MUST BE INSIDE SimpleModal
   const renderField = (field) => {
+    if (field.hidden) return null;
     const error = fieldErrors[field.name];
     
     if (field.type === 'checkbox') {
@@ -1829,7 +1830,12 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
         timesheet_email: settings.timesheet_email || '',
         invoice_template: settings.invoice_template || 'classic',
         contract_renewal_alert_days: settings.contract_renewal_alert_days != null ? parseInt(settings.contract_renewal_alert_days) : 30,
-        payment_terms_days: settings.payment_terms_days != null ? parseInt(settings.payment_terms_days) : 30
+        payment_terms_days: settings.payment_terms_days != null ? parseInt(settings.payment_terms_days) : 30,
+        peppol_enabled: settings.peppol_enabled || false,
+        peppol_environment: settings.peppol_environment || 'mock',
+        peppol_provider: settings.peppol_provider || '',
+        peppol_api_key: settings.peppol_api_key || '',
+        peppol_sender_id: settings.peppol_sender_id || ''
       });
     }
   }, [isOpen, settings]);
@@ -2278,6 +2284,129 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                     <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Show alert banner on Dashboard when a contract is expiring soon</p>
                   </div>
                 </div>
+              </div>
+
+              {/* ── PEPPOL SECTION ───────────────────────────────────────── */}
+              <div style={{ padding: '28px 32px', borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                  <div>
+                    <h4 style={{ ...sectionTitleStyle, marginBottom: '4px' }}>⚡ PEPPOL Electronic Invoicing</h4>
+                    <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>
+                      Enable for countries where e-invoicing is required (Belgium, Netherlands, Norway, Italy...)
+                    </p>
+                  </div>
+                  {/* Toggle */}
+                  <div
+                    onClick={() => setFormData(f => ({ ...f, peppol_enabled: !f.peppol_enabled }))}
+                    style={{
+                      width: '52px', height: '28px', borderRadius: '14px', cursor: 'pointer',
+                      backgroundColor: formData.peppol_enabled ? '#7c3aed' : '#e2e8f0',
+                      position: 'relative', transition: 'background-color 0.2s', flexShrink: 0
+                    }}
+                  >
+                    <div style={{
+                      position: 'absolute', top: '3px',
+                      left: formData.peppol_enabled ? '27px' : '3px',
+                      width: '22px', height: '22px', borderRadius: '50%',
+                      backgroundColor: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                      transition: 'left 0.2s'
+                    }} />
+                  </div>
+                </div>
+
+                {formData.peppol_enabled && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {/* Environment */}
+                    <div>
+                      <label style={labelStyle}>Environment</label>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        {[
+                          { value: 'mock', label: '🧪 Mock', desc: 'Local simulation, no real network' },
+                          { value: 'sandbox', label: '🔬 Sandbox', desc: 'PEPPOL Testbed — real network, test data' },
+                          { value: 'production', label: '🚀 Production', desc: 'Live PEPPOL network' }
+                        ].map(env => (
+                          <div
+                            key={env.value}
+                            onClick={() => setFormData(f => ({ ...f, peppol_environment: env.value }))}
+                            style={{
+                              flex: 1, padding: '12px 14px', borderRadius: '10px', cursor: 'pointer',
+                              border: `2px solid ${formData.peppol_environment === env.value ? '#7c3aed' : '#e2e8f0'}`,
+                              backgroundColor: formData.peppol_environment === env.value ? '#faf5ff' : 'white',
+                              transition: 'all 0.15s'
+                            }}
+                          >
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: formData.peppol_environment === env.value ? '#7c3aed' : '#374151' }}>{env.label}</div>
+                            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{env.desc}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Provider */}
+                    {formData.peppol_environment !== 'mock' && (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div>
+                          <label style={labelStyle}>Provider</label>
+                          <select
+                            value={formData.peppol_provider}
+                            onChange={e => setFormData(f => ({ ...f, peppol_provider: e.target.value }))}
+                            style={{ ...inputStyle, cursor: 'pointer', backgroundColor: 'white' }}
+                          >
+                            <option value="">Select provider...</option>
+                            <option value="storecove">Storecove</option>
+                            <option value="billit">Billit (Belgium)</option>
+                            <option value="advalvas">Advalvas (Belgium)</option>
+                            <option value="unifiedpost">Unifiedpost</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Your PEPPOL Sender ID</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 0208:0123456789"
+                            value={formData.peppol_sender_id}
+                            onChange={e => setFormData(f => ({ ...f, peppol_sender_id: e.target.value }))}
+                            style={inputStyle}
+                          />
+                          <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Belgian format: 0208 + BTW number</p>
+                        </div>
+                        <div style={{ gridColumn: '1 / -1' }}>
+                          <label style={labelStyle}>API Key</label>
+                          <input
+                            type="password"
+                            placeholder="Provider API key"
+                            value={formData.peppol_api_key}
+                            onChange={e => setFormData(f => ({ ...f, peppol_api_key: e.target.value }))}
+                            style={inputStyle}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {formData.peppol_environment === 'mock' && (
+                      <div style={{ padding: '12px 16px', backgroundColor: '#faf5ff', borderRadius: '10px', border: '1px solid #e9d5ff' }}>
+                        <p style={{ fontSize: '12px', color: '#7c3aed', margin: 0, fontWeight: 600 }}>
+                          🧪 Mock mode active — PEPPOL button will appear on client invoices. Sending simulates delivery locally without connecting to any network.
+                        </p>
+                      </div>
+                    )}
+                    {formData.peppol_environment === 'sandbox' && (
+                      <div style={{ padding: '12px 16px', backgroundColor: '#eff6ff', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
+                        <p style={{ fontSize: '12px', color: '#2563eb', margin: 0, fontWeight: 600 }}>
+                          🔬 Sandbox mode — connects to PEPPOL Testbed. Real XML validation, no real invoices sent. Requires provider credentials.
+                        </p>
+                      </div>
+                    )}
+                    {formData.peppol_environment === 'production' && (
+                      <div style={{ padding: '12px 16px', backgroundColor: '#fff7ed', borderRadius: '10px', border: '1px solid #fed7aa' }}>
+                        <p style={{ fontSize: '12px', color: '#c2410c', margin: 0, fontWeight: 600 }}>
+                          ⚠️ Production mode — invoices will be sent to the real PEPPOL network. Make sure all settings are correct.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -3099,7 +3228,8 @@ const InvoiceGeneratorApp = () => {
           { name: 'iban', label: 'IBAN', placeholder: 'IBAN', value: item.iban },
           { name: 'swift', label: 'SWIFT Code', placeholder: 'SWIFT Code', value: item.swift },
           { name: 'email', label: 'Email', placeholder: 'Email', type: 'email', value: item.email },
-          { name: 'phone', label: 'Phone', placeholder: 'Phone', value: item.phone }
+          { name: 'phone', label: 'Phone', placeholder: 'Phone', value: item.phone },
+          { name: 'peppolId', label: '⚡ PEPPOL ID', placeholder: 'e.g. 0208:0123456789', value: item.peppol_id, hidden: !companySettings?.peppol_enabled }
         ],
         onSubmit: (data) => updateClient(item.id, data)
       },
@@ -3489,6 +3619,39 @@ const InvoiceGeneratorApp = () => {
         }
       }
     });
+  };
+
+  const [peppolSending, setPeppolSending] = useState(new Set());
+
+  const sendPeppol = async (invoice) => {
+    if (peppolSending.has(invoice.id)) return;
+    setPeppolSending(prev => new Set(prev).add(invoice.id));
+    try {
+      const result = await apiCall(`/invoices/${invoice.id}/send-peppol`, { method: 'POST' });
+      // Optimistic update
+      setInvoices(prev => prev.map(inv =>
+        inv.id === invoice.id
+          ? { ...inv, peppol_status: 'delivered', peppol_sent_at: new Date().toISOString(), peppol_document_id: result.document_id }
+          : inv
+      ));
+      showNotification(
+        result.mock
+          ? `⚡ PEPPOL delivered (mock) — ${result.document_id}`
+          : `⚡ Invoice sent via PEPPOL`,
+        'success'
+      );
+    } catch (err) {
+      if (err.message?.includes('PEPPOL ID')) {
+        showNotification('Client has no PEPPOL ID. Edit the client profile first.', 'error');
+      } else {
+        showNotification(`PEPPOL failed: ${err.message}`, 'error');
+      }
+      setInvoices(prev => prev.map(inv =>
+        inv.id === invoice.id ? { ...inv, peppol_status: 'failed' } : inv
+      ));
+    } finally {
+      setPeppolSending(prev => { const s = new Set(prev); s.delete(invoice.id); return s; });
+    }
   };
 
   const sendInvoiceEmail = async (invoice) => {
@@ -7806,9 +7969,20 @@ const InvoiceGeneratorApp = () => {
                                   credited:{ bg: '#fce7f3', color: '#9d174d', label: '↩ Credited' },
                                 }[s] || { bg: '#f3f4f6', color: '#374151', label: s };
                                 return (
-                                  <span style={{ padding: '4px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 700, backgroundColor: cfg.bg, color: cfg.color }}>
-                                    {cfg.label}
-                                  </span>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                    <span style={{ padding: '4px 10px', borderRadius: '9999px', fontSize: '11px', fontWeight: 700, backgroundColor: cfg.bg, color: cfg.color }}>
+                                      {cfg.label}
+                                    </span>
+                                    {invoice.peppol_status && companySettings?.peppol_enabled && (
+                                      <span style={{
+                                        padding: '2px 8px', borderRadius: '9999px', fontSize: '10px', fontWeight: 700,
+                                        backgroundColor: invoice.peppol_status === 'delivered' ? '#f0fdf4' : invoice.peppol_status === 'failed' ? '#fff1f2' : '#faf5ff',
+                                        color: invoice.peppol_status === 'delivered' ? '#16a34a' : invoice.peppol_status === 'failed' ? '#dc2626' : '#7c3aed'
+                                      }}>
+                                        ⚡ {invoice.peppol_status === 'delivered' ? 'PEPPOL ✓' : invoice.peppol_status === 'failed' ? 'PEPPOL ✗' : 'PEPPOL…'}
+                                      </span>
+                                    )}
+                                  </div>
                                 );
                               })()}
                             </td>
@@ -7837,6 +8011,36 @@ const InvoiceGeneratorApp = () => {
                                 >
                                   {sendingInvoices.has(invoice.id) ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> : invoice.email_sent ? <CheckCircle style={{ width: '15px', height: '15px' }} /> : <Send style={{ width: '15px', height: '15px' }} />}
                                 </button>
+                                {invoice.invoice_type === 'client' && invoice.invoice_type_detail !== 'credit_note' && companySettings?.peppol_enabled && (
+                                  <button
+                                    onClick={() => sendPeppol(invoice)}
+                                    disabled={peppolSending.has(invoice.id)}
+                                    title={
+                                      invoice.peppol_status === 'delivered' ? `Sent via PEPPOL (${invoice.peppol_document_id || ''})` :
+                                      invoice.peppol_status === 'failed' ? 'PEPPOL failed — click to retry' :
+                                      peppolSending.has(invoice.id) ? 'Sending via PEPPOL...' :
+                                      'Send via PEPPOL'
+                                    }
+                                    style={{
+                                      width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      borderRadius: '8px', cursor: peppolSending.has(invoice.id) ? 'not-allowed' : 'pointer',
+                                      border: invoice.peppol_status === 'delivered' ? '1px solid #bbf7d0' :
+                                              invoice.peppol_status === 'failed' ? '1px solid #fecaca' : '1px solid #e9d5ff',
+                                      backgroundColor: invoice.peppol_status === 'delivered' ? '#f0fdf4' :
+                                                       invoice.peppol_status === 'failed' ? '#fff1f2' : 'white',
+                                      color: invoice.peppol_status === 'delivered' ? '#16a34a' :
+                                             invoice.peppol_status === 'failed' ? '#dc2626' : '#7c3aed',
+                                      opacity: peppolSending.has(invoice.id) ? 0.5 : 1
+                                    }}
+                                  >
+                                    {peppolSending.has(invoice.id)
+                                      ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                                      : invoice.peppol_status === 'delivered' ? <CheckCircle style={{ width: '14px', height: '14px' }} />
+                                      : invoice.peppol_status === 'failed' ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                                      : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                    }
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
