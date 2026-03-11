@@ -8044,7 +8044,8 @@ const InvoiceGeneratorApp = () => {
                                   <button
                                     onClick={() => {
                                       const token = localStorage.getItem('token');
-                                      window.open(`${API_BASE}/api/invoices/${invoice.id}/peppol-xml?token=${token}`, '_blank');
+                                      const baseUrl = API_BASE_URL.replace('/api', '');
+                                      window.open(`${baseUrl}/api/invoices/${invoice.id}/peppol-xml?token=${token}`, '_blank');
                                     }}
                                     title="Download UBL XML (for validation)"
                                     style={{
