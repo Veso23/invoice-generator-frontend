@@ -3656,7 +3656,8 @@ const InvoiceGeneratorApp = () => {
     if (!peppolId) return null;
     const parts = peppolId.split(':');
     if (parts.length !== 2) return 'Format must be SCHEME:ID (e.g. 0208:0690938522)';
-    const [scheme, id] = parts;
+    const scheme = parts[0];
+    const id = parts[1];
     if (!/^\d{4}$/.test(scheme)) return 'Scheme must be 4 digits (e.g. 0208)';
     if (!id || id.length < 3) return 'ID part too short';
 
@@ -3714,7 +3715,6 @@ const InvoiceGeneratorApp = () => {
     if (err) { showNotification(`Invalid PEPPOL ID: ${err}`, 'error'); return; }
     setPeppolLookupLoading(true);
     try {
-      const [scheme, id] = peppolId.split(':');
       // Query PEPPOL Directory API (public, no auth needed)
       const response = await fetch(
         `https://directory.peppol.eu/search/1.0/json?participant=${encodeURIComponent(peppolId)}&resultCount=1`,
