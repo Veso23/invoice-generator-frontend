@@ -3715,23 +3715,13 @@ const InvoiceGeneratorApp = () => {
     if (err) { showNotification(`Invalid PEPPOL ID: ${err}`, 'error'); return; }
     setPeppolLookupLoading(true);
     try {
-      // Query PEPPOL Directory API (public, no auth needed)
-      const response = await fetch(
-        `https://directory.peppol.eu/search/1.0/json?participant=${encodeURIComponent(peppolId)}&resultCount=1`,
-        { headers: { 'Accept': 'application/json' } }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.total > 0) {
-          const entity = data.matches?.[0]?.entities?.[0];
-          const name = entity?.name?.[0]?.name || 'Unknown';
-          showNotification(`⚡ Found in PEPPOL network: "${name}"`, 'success');
-        } else {
-          showNotification(`⚠️ ${peppolId} is NOT registered in the PEPPOL network`, 'warning');
-        }
+      const data = await apiCall(`/peppol/lookup?id=${encodeURIComponent(peppolId)}`);
+      if (data.total > 0) {
+        const entity = data.matches?.[0]?.entities?.[0];
+        const name = entity?.name?.[0]?.name || 'Unknown';
+        showNotification(`⚡ Found in PEPPOL network: "${name}"`, 'success');
       } else {
-        // Fallback — try SML DNS lookup endpoint
-        showNotification(`Could not reach PEPPOL Directory. Try again later.`, 'error');
+        showNotification(`⚠️ ${peppolId} is NOT registered in the PEPPOL network`, 'warning');
       }
     } catch (e) {
       showNotification(`PEPPOL lookup failed: ${e.message}`, 'error');
