@@ -3229,7 +3229,8 @@ const InvoiceGeneratorApp = () => {
           { name: 'swift', label: 'SWIFT Code', placeholder: 'SWIFT Code', value: item.swift },
           { name: 'email', label: 'Email', placeholder: 'Email', type: 'email', value: item.email },
           { name: 'phone', label: 'Phone', placeholder: 'Phone', value: item.phone },
-          { name: 'peppolId', label: '⚡ PEPPOL ID', placeholder: 'e.g. 0208:0123456789', value: item.peppol_id, hidden: !companySettings?.peppol_enabled }
+          { name: 'peppolId', label: '⚡ PEPPOL ID', placeholder: 'e.g. 0208:0123456789', value: item.peppol_id, hidden: !companySettings?.peppol_enabled },
+          { name: 'countryCode', label: 'Country Code', placeholder: 'e.g. BE, NL, CZ, DE', value: item.country_code }
         ],
         onSubmit: (data) => updateClient(item.id, data)
       },
