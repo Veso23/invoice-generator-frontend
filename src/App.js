@@ -8043,7 +8043,7 @@ const InvoiceGeneratorApp = () => {
                                   </button>
                                   <button
                                     onClick={() => {
-                                      const token = localStorage.getItem('token');
+                                      const token = localStorage.getItem('authToken');
                                       const baseUrl = API_BASE_URL.replace('/api', '');
                                       window.open(`${baseUrl}/api/invoices/${invoice.id}/peppol-xml?token=${token}`, '_blank');
                                     }}
