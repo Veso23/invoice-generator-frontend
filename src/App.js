@@ -799,6 +799,7 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
             {field.label}
           </label>
         )}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         <input
           type={field.type || 'text'}
           placeholder={field.placeholder}
@@ -813,7 +814,7 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
           required={field.required !== false}
           step={field.step}
           style={{ 
-            width: '100%', 
+            flex: 1,
             padding: '12px 16px',
             border: error ? '2px solid #ef4444' : '1px solid #e2e8f0',
             borderRadius: '12px',
@@ -826,6 +827,8 @@ const SimpleModal = ({ isOpen, onClose, title, onSubmit, fields, submitButtonTex
             backgroundColor: isDisabled ? '#f8fafc' : error ? '#fef2f2' : 'white'
           }}
         />
+        {field.suffix && field.suffix(formData[field.name])}
+        </div>
         {error && (
           <p style={{ 
             color: '#ef4444', 
@@ -3236,8 +3239,23 @@ const InvoiceGeneratorApp = () => {
           { name: 'swift', label: 'SWIFT Code', placeholder: 'SWIFT Code', value: item.swift },
           { name: 'email', label: 'Email', placeholder: 'Email', type: 'email', value: item.email },
           { name: 'phone', label: 'Phone', placeholder: 'Phone', value: item.phone },
-          { name: 'peppolId', label: '⚡ PEPPOL ID', placeholder: 'e.g. 0208:0123456789', value: item.peppol_id, hidden: !companySettings?.peppol_enabled },
-          { name: 'countryCode', label: 'Country Code', placeholder: 'e.g. BE, NL, CZ, DE', value: item.country_code }
+          { name: 'peppolId', label: '⚡ PEPPOL ID', placeholder: 'e.g. 0208:0123456789', value: item.peppol_id, hidden: !companySettings?.peppol_enabled,
+            validate: (v) => v ? validatePeppolId(v) : null,
+            suffix: companySettings?.peppol_enabled ? (value) => (
+              <button
+                type="button"
+                onClick={() => lookupPeppolParticipant(value)}
+                disabled={peppolLookupLoading || !value}
+                title="Check if registered in PEPPOL network"
+                style={{ padding: '8px 12px', backgroundColor: value ? '#7c3aed' : '#e2e8f0', color: value ? 'white' : '#94a3b8', border: 'none', borderRadius: '8px', cursor: value ? 'pointer' : 'not-allowed', fontSize: '12px', fontWeight: 700, whiteSpace: 'nowrap' }}
+              >
+                {peppolLookupLoading ? '...' : '🔍 Check'}
+              </button>
+            ) : null
+          },
+          { name: 'countryCode', label: 'Country Code', placeholder: 'e.g. BE, NL, CZ, DE', value: item.country_code,
+            validate: (v) => v && !/^[A-Z]{2}$/.test(v.toUpperCase()) ? 'Must be 2 letters (e.g. BE)' : null
+          }
         ],
         onSubmit: (data) => updateClient(item.id, data)
       },
@@ -3630,6 +3648,97 @@ const InvoiceGeneratorApp = () => {
   };
 
   const [peppolSending, setPeppolSending] = useState(new Set());
+  const [peppolDetailInvoice, setPeppolDetailInvoice] = useState(null);
+  const [peppolLookupLoading, setPeppolLookupLoading] = useState(false);
+
+  // Validate PEPPOL ID format
+  const validatePeppolId = (peppolId) => {
+    if (!peppolId) return null;
+    const parts = peppolId.split(':');
+    if (parts.length !== 2) return 'Format must be SCHEME:ID (e.g. 0208:0690938522)';
+    const [scheme, id] = parts;
+    if (!/^\d{4}$/.test(scheme)) return 'Scheme must be 4 digits (e.g. 0208)';
+    if (!id || id.length < 3) return 'ID part too short';
+
+    switch (scheme) {
+      case '0208': { // Belgium — BTW, 10 digits, MOD97
+        if (!/^\d{10}$/.test(id)) return 'Belgian (0208) must be 10 digits (e.g. 0690938522)';
+        const base = parseInt(id.substring(0, 8), 10);
+        const check = parseInt(id.substring(8), 10);
+        if (check !== 97 - (base % 97)) return 'Belgian enterprise number has invalid checksum';
+        break;
+      }
+      case '0106': // Netherlands — KvK, 8-9 digits
+        if (!/^\d{8,9}$/.test(id)) return 'Dutch KvK (0106) must be 8 or 9 digits';
+        break;
+      case '0190': // Netherlands — OIN, 20 digits
+        if (!/^\d{20}$/.test(id)) return 'Dutch OIN (0190) must be exactly 20 digits';
+        break;
+      case '0192': { // Norway — Org number, 9 digits, MOD11
+        if (!/^\d{9}$/.test(id)) return 'Norwegian (0192) org number must be exactly 9 digits';
+        const weights = [3, 2, 7, 6, 5, 4, 3, 2];
+        const digits = id.split('').map(Number);
+        const sum = weights.reduce((acc, w, i) => acc + w * digits[i], 0);
+        const rem = sum % 11;
+        const check = rem === 0 ? 0 : 11 - rem;
+        if (check === 10 || check !== digits[8]) return 'Norwegian org number has invalid checksum';
+        break;
+      }
+      case '9930': // Germany — VAT, DE + 9 digits
+        if (!/^DE\d{9}$/.test(id)) return 'German (9930) must be DE + 9 digits (e.g. DE123456789)';
+        break;
+      case '0201': // Italy — P.IVA, 11 digits
+        if (!/^\d{11}$/.test(id)) return 'Italian (0201) P.IVA must be exactly 11 digits';
+        break;
+      case '0007': { // Sweden — Org number, 10 digits, Luhn
+        if (!/^\d{10}$/.test(id)) return 'Swedish (0007) org number must be exactly 10 digits';
+        const digits = id.split('').map(Number);
+        let sum = 0;
+        for (let i = 0; i < 9; i++) { let d = digits[i] * (i % 2 === 0 ? 2 : 1); if (d > 9) d -= 9; sum += d; }
+        if ((10 - (sum % 10)) % 10 !== digits[9]) return 'Swedish org number has invalid Luhn checksum';
+        break;
+      }
+      case '0088': // GLN — 13 digits
+        if (!/^\d{13}$/.test(id)) return 'GLN (0088) must be exactly 13 digits';
+        break;
+      default:
+        break; // Unknown scheme — allow, Directory lookup will verify
+    }
+    return null; // valid
+  };
+
+  // PEPPOL Directory lookup — checks if participant is registered in the network
+  const lookupPeppolParticipant = async (peppolId) => {
+    if (!peppolId) return;
+    const err = validatePeppolId(peppolId);
+    if (err) { showNotification(`Invalid PEPPOL ID: ${err}`, 'error'); return; }
+    setPeppolLookupLoading(true);
+    try {
+      const [scheme, id] = peppolId.split(':');
+      // Query PEPPOL Directory API (public, no auth needed)
+      const response = await fetch(
+        `https://directory.peppol.eu/search/1.0/json?participant=${encodeURIComponent(peppolId)}&resultCount=1`,
+        { headers: { 'Accept': 'application/json' } }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        if (data.total > 0) {
+          const entity = data.matches?.[0]?.entities?.[0];
+          const name = entity?.name?.[0]?.name || 'Unknown';
+          showNotification(`⚡ Found in PEPPOL network: "${name}"`, 'success');
+        } else {
+          showNotification(`⚠️ ${peppolId} is NOT registered in the PEPPOL network`, 'warning');
+        }
+      } else {
+        // Fallback — try SML DNS lookup endpoint
+        showNotification(`Could not reach PEPPOL Directory. Try again later.`, 'error');
+      }
+    } catch (e) {
+      showNotification(`PEPPOL lookup failed: ${e.message}`, 'error');
+    } finally {
+      setPeppolLookupLoading(false);
+    }
+  };
 
   const sendPeppol = async (invoice) => {
     if (peppolSending.has(invoice.id)) return;
@@ -4735,6 +4844,68 @@ const InvoiceGeneratorApp = () => {
     return `€${parts.join('.')}`;
   };
   const formatDate = (dateString) => new Date(dateString).toLocaleDateString();
+
+  // PEPPOL Detail Modal
+  const PeppolDetailModal = ({ invoice, onClose }) => {
+    if (!invoice) return null;
+    const sentAt = invoice.peppol_sent_at
+      ? new Date(invoice.peppol_sent_at).toLocaleString()
+      : null;
+    const env = companySettings?.peppol_environment || 'mock';
+    const statusColor = invoice.peppol_status === 'delivered' ? '#16a34a' : invoice.peppol_status === 'failed' ? '#dc2626' : '#7c3aed';
+    const statusBg = invoice.peppol_status === 'delivered' ? '#f0fdf4' : invoice.peppol_status === 'failed' ? '#fff1f2' : '#faf5ff';
+    return (
+      <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+           onClick={onClose}>
+        <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '28px', width: '480px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}
+             onClick={e => e.stopPropagation()}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>⚡ PEPPOL Details</h3>
+            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#94a3b8' }}>×</button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: '10px' }}>
+              <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Status</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: statusColor, backgroundColor: statusBg, padding: '2px 10px', borderRadius: '9999px' }}>
+                {invoice.peppol_status === 'delivered' ? '✓ Delivered' : invoice.peppol_status === 'failed' ? '✗ Failed' : invoice.peppol_status === 'pending' ? '⏳ Pending' : invoice.peppol_status}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: '10px' }}>
+              <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Invoice</span>
+              <span style={{ fontSize: '13px', fontWeight: 700 }}>{invoice.invoice_number}</span>
+            </div>
+            {invoice.peppol_document_id && (
+              <div style={{ padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: '10px' }}>
+                <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 600, marginBottom: '4px' }}>Document ID</div>
+                <div style={{ fontSize: '12px', fontFamily: 'monospace', color: '#374151', wordBreak: 'break-all' }}>{invoice.peppol_document_id}</div>
+              </div>
+            )}
+            {sentAt && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: '10px' }}>
+                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Sent at</span>
+                <span style={{ fontSize: '13px', fontWeight: 600 }}>{sentAt}</span>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: '10px' }}>
+              <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Environment</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: env === 'production' ? '#c2410c' : env === 'sandbox' ? '#2563eb' : '#7c3aed' }}>
+                {env === 'mock' ? '🧪 Mock' : env === 'sandbox' ? '🔬 Sandbox' : '🚀 Production'}
+              </span>
+            </div>
+            {companySettings?.peppol_provider && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px', backgroundColor: '#f8fafc', borderRadius: '10px' }}>
+                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Provider</span>
+                <span style={{ fontSize: '13px', fontWeight: 700, textTransform: 'capitalize' }}>{companySettings.peppol_provider}</span>
+              </div>
+            )}
+          </div>
+          <button onClick={onClose} style={{ marginTop: '20px', width: '100%', padding: '12px', backgroundColor: '#f1f5f9', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', color: '#475569' }}>
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -7982,11 +8153,14 @@ const InvoiceGeneratorApp = () => {
                                       {cfg.label}
                                     </span>
                                     {invoice.peppol_status && companySettings?.peppol_enabled && (
-                                      <span style={{
-                                        padding: '2px 8px', borderRadius: '9999px', fontSize: '10px', fontWeight: 700,
-                                        backgroundColor: invoice.peppol_status === 'delivered' ? '#f0fdf4' : invoice.peppol_status === 'failed' ? '#fff1f2' : '#faf5ff',
-                                        color: invoice.peppol_status === 'delivered' ? '#16a34a' : invoice.peppol_status === 'failed' ? '#dc2626' : '#7c3aed'
-                                      }}>
+                                      <span
+                                        onClick={() => setPeppolDetailInvoice(invoice)}
+                                        style={{
+                                          padding: '2px 8px', borderRadius: '9999px', fontSize: '10px', fontWeight: 700,
+                                          backgroundColor: invoice.peppol_status === 'delivered' ? '#f0fdf4' : invoice.peppol_status === 'failed' ? '#fff1f2' : '#faf5ff',
+                                          color: invoice.peppol_status === 'delivered' ? '#16a34a' : invoice.peppol_status === 'failed' ? '#dc2626' : '#7c3aed',
+                                          cursor: 'pointer'
+                                        }}>
                                         ⚡ {invoice.peppol_status === 'delivered' ? 'PEPPOL ✓' : invoice.peppol_status === 'failed' ? 'PEPPOL ✗' : 'PEPPOL…'}
                                       </span>
                                     )}
@@ -9029,6 +9203,14 @@ const InvoiceGeneratorApp = () => {
         )}
 
       </div>
+
+      {/* PEPPOL Detail Modal */}
+      {peppolDetailInvoice && (
+        <PeppolDetailModal
+          invoice={peppolDetailInvoice}
+          onClose={() => setPeppolDetailInvoice(null)}
+        />
+      )}
     </div>
   );
 };
