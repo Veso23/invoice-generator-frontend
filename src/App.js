@@ -3716,7 +3716,7 @@ const InvoiceGeneratorApp = () => {
     setPeppolLookupLoading(true);
     try {
       const data = await apiCall(`/peppol/lookup?id=${encodeURIComponent(peppolId)}`);
-      if (data.total > 0) {
+      if (data['total-result-count'] > 0) {
         const entity = data.matches?.[0]?.entities?.[0];
         const name = entity?.name?.[0]?.name || 'Unknown';
         showNotification(`⚡ Found in PEPPOL network: "${name}"`, 'success');
