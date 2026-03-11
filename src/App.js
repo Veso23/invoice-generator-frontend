@@ -1835,7 +1835,8 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
         peppol_environment: settings.peppol_environment || 'mock',
         peppol_provider: settings.peppol_provider || '',
         peppol_api_key: settings.peppol_api_key || '',
-        peppol_sender_id: settings.peppol_sender_id || ''
+        peppol_sender_id: settings.peppol_sender_id || '',
+        country_code: settings.country_code || 'BE'
       });
     }
   }, [isOpen, settings]);
@@ -1966,6 +1967,12 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                     <div>
                       <label style={labelStyle}>Company Email</label>
                       <input type="email" value={formData.company_email} onChange={(e) => setFormData({ ...formData, company_email: e.target.value })} style={inputStyle} />
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Country Code</label>
+                      <input type="text" maxLength="2" placeholder="BE, NL, DE, CZ..." value={formData.country_code || ''} onChange={(e) => setFormData({ ...formData, country_code: e.target.value.toUpperCase() })} style={inputStyle} />
+                      <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>2-letter ISO country code used in PEPPOL XML</p>
                     </div>
 
                     <div>
