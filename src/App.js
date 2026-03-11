@@ -2286,7 +2286,7 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                 </div>
               </div>
 
-              {/* ── PEPPOL SECTION ───────────────────────────────────────── */}
+              {/* PEPPOL SECTION */}
               <div style={{ padding: '28px 32px', borderBottom: '1px solid #f1f5f9' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                   <div>
