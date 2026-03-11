@@ -8012,6 +8012,7 @@ const InvoiceGeneratorApp = () => {
                                   {sendingInvoices.has(invoice.id) ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> : invoice.email_sent ? <CheckCircle style={{ width: '15px', height: '15px' }} /> : <Send style={{ width: '15px', height: '15px' }} />}
                                 </button>
                                 {invoice.invoice_type === 'client' && invoice.invoice_type_detail !== 'credit_note' && companySettings?.peppol_enabled && (
+                                  <>
                                   <button
                                     onClick={() => sendPeppol(invoice)}
                                     disabled={peppolSending.has(invoice.id)}
@@ -8040,6 +8041,21 @@ const InvoiceGeneratorApp = () => {
                                       : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                                     }
                                   </button>
+                                  <button
+                                    onClick={() => {
+                                      const token = localStorage.getItem('token');
+                                      window.open(`${API_BASE}/api/invoices/${invoice.id}/peppol-xml?token=${token}`, '_blank');
+                                    }}
+                                    title="Download UBL XML (for validation)"
+                                    style={{
+                                      width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                      borderRadius: '8px', cursor: 'pointer',
+                                      border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#64748b'
+                                    }}
+                                  >
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                  </button>
+                                  </>
                                 )}
                               </div>
                             </td>
