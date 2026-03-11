@@ -2284,17 +2284,16 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                     <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Show alert banner on Dashboard when a contract is expiring soon</p>
                   </div>
                 </div>
-              </div>
 
-              {/* PEPPOL SECTION */}
-              <div style={{ padding: '28px 32px', borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                  <div>
-                    <h4 style={{ ...sectionTitleStyle, marginBottom: '4px' }}>⚡ PEPPOL Electronic Invoicing</h4>
-                    <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>
-                      Enable for countries where e-invoicing is required (Belgium, Netherlands, Norway, Italy...)
-                    </p>
-                  </div>
+                {/* PEPPOL SECTION */}
+                <div style={{ marginTop: '32px', paddingTop: '28px', borderTop: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                    <div>
+                      <h4 style={{ ...sectionTitleStyle, marginBottom: '4px' }}>PEPPOL Electronic Invoicing</h4>
+                      <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>
+                        Enable for countries where e-invoicing is required (Belgium, Netherlands, Norway, Italy...)
+                      </p>
+                    </div>
                   {/* Toggle */}
                   <div
                     onClick={() => setFormData(f => ({ ...f, peppol_enabled: !f.peppol_enabled }))}
@@ -2311,6 +2310,7 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                       backgroundColor: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
                       transition: 'left 0.2s'
                     }} />
+                  </div>
                   </div>
                 </div>
 
