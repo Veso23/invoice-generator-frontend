@@ -2742,6 +2742,26 @@ const InvoiceGeneratorApp = () => {
   const [selectedInvoices, setSelectedInvoices] = useState([]);
   const [invoiceFilters, setInvoiceFilters] = useState({ type: 'all', status: 'all' });
   const [bulkInvoiceAction, setBulkInvoiceAction] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState(null); // { done, total, label }
+
+  // Run tasks with limited concurrency (e.g. 5 at a time)
+  const runWithConcurrency = async (items, concurrency, taskFn, onProgress) => {
+    let done = 0;
+    const results = [];
+    const queue = [...items];
+    const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+      while (queue.length > 0) {
+        const item = queue.shift();
+        if (item === undefined) break;
+        const result = await taskFn(item);
+        results.push(result);
+        done++;
+        if (onProgress) onProgress(done, items.length);
+      }
+    });
+    await Promise.all(workers);
+    return results;
+  };
   const [chartDrillMonth, setChartDrillMonth] = useState(null); // null = overview, 'Jan 2026' = drill
   const [csvData, setCsvData] = useState([]);
   const [csvUploading, setCsvUploading] = useState(false);
@@ -3470,11 +3490,14 @@ const InvoiceGeneratorApp = () => {
 
   const bulkGeneratePDFs = async (invoiceIds) => {
     setBulkInvoiceAction(true);
+    setBulkProgress({ done: 0, total: invoiceIds.length, label: 'Generating PDFs' });
     let success = 0, failed = 0;
-    for (const id of invoiceIds) {
-      try { await generatePDF(id, true); success++; } catch { failed++; }
-    }
+    await runWithConcurrency(invoiceIds, 5, async (id) => {
+      try { await generatePDF(id, true); success++; }
+      catch { failed++; }
+    }, (done, total) => setBulkProgress({ done, total, label: 'Generating PDFs' }));
     setBulkInvoiceAction(false);
+    setBulkProgress(null);
     setSelectedInvoices([]);
     cacheInvalidate('invoices');
     showNotification(failed === 0 ? `✅ Generated ${success} PDF${success > 1 ? 's' : ''}!` : `Generated ${success}, failed ${failed}`, failed > 0 ? 'error' : 'success');
@@ -3484,22 +3507,22 @@ const InvoiceGeneratorApp = () => {
 
   const bulkSendEmails = async (invoiceIds) => {
     setBulkInvoiceAction(true);
+    setBulkProgress({ done: 0, total: invoiceIds.length, label: 'Sending Emails' });
     let success = 0, failed = 0, skipped = 0;
-    for (const id of invoiceIds) {
+    await runWithConcurrency(invoiceIds, 3, async (id) => {
       try {
         const inv = invoices.find(i => i.id === id);
-        if (!inv) { failed++; continue; }
-        // Skip already sent invoices
-        if (inv.status === 'sent' || inv.status === 'paid') { skipped++; continue; }
+        if (!inv) { failed++; return; }
+        if (inv.status === 'sent' || inv.status === 'paid') { skipped++; return; }
         if (!inv.pdf_url) await generatePDF(id, true);
         await apiCall(`/invoices/${id}/send-email`, { method: 'POST' });
         success++;
       } catch { failed++; }
-    }
+    }, (done, total) => setBulkProgress({ done, total, label: 'Sending Emails' }));
     setBulkInvoiceAction(false);
+    setBulkProgress(null);
     setSelectedInvoices([]);
     cacheInvalidate('invoices');
-    // Refresh invoices state from cache-invalidated source
     loadInvoices(true).catch(console.error);
     const parts = [];
     if (success > 0) parts.push(`Sent ${success}`);
@@ -7977,7 +8000,29 @@ const InvoiceGeneratorApp = () => {
               }}>
                 {/* Invoices Bulk Bar */}
                 {selectedInvoices.length > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 20px', backgroundColor: '#4f46e5', margin: '12px', borderRadius: '12px' }}>
+                  <div style={{ padding: '14px 20px', backgroundColor: '#4f46e5', margin: '12px', borderRadius: '12px' }}>
+                    {bulkProgress ? (
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ color: 'white', fontWeight: 700, fontSize: '14px' }}>
+                            {bulkProgress.label}... {bulkProgress.done}/{bulkProgress.total}
+                          </span>
+                          <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px', fontWeight: 600 }}>
+                            {Math.round((bulkProgress.done / bulkProgress.total) * 100)}%
+                          </span>
+                        </div>
+                        <div style={{ backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '9999px', height: '8px', overflow: 'hidden' }}>
+                          <div style={{
+                            backgroundColor: 'white',
+                            height: '100%',
+                            borderRadius: '9999px',
+                            width: `${Math.round((bulkProgress.done / bulkProgress.total) * 100)}%`,
+                            transition: 'width 0.3s ease'
+                          }} />
+                        </div>
+                      </div>
+                    ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <span style={{ color: 'white', fontWeight: 700, fontSize: '14px' }}>
                       {selectedInvoices.length} invoice{selectedInvoices.length > 1 ? 's' : ''} selected
                     </span>
@@ -8015,6 +8060,8 @@ const InvoiceGeneratorApp = () => {
                       Clear selection
                     </button>
                   </div>
+                  )}
+                </div>
                 )}
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
