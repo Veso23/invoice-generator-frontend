@@ -2692,7 +2692,7 @@ const InvoiceGeneratorApp = () => {
   const loadDataCounterRef = useRef(0);
   const loadedTabsRef = useRef(new Set()); // tracks which tabs have been loaded
   const cacheRef = useRef({}); // simple TTL cache: { key: { data, ts } }
-  const CACHE_TTL = 60000; // 1 minute
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
   const [sendingInvoices, setSendingInvoices] = useState(new Set());
   const [notification, setNotification] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
