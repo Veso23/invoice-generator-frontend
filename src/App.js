@@ -4650,11 +4650,11 @@ const InvoiceGeneratorApp = () => {
         method: 'PUT',
         body: JSON.stringify({ days: parseFloat(newDays) })
       });
-      setTimesheets(prev => prev.map(t => t.id === timesheetId ? { ...t, days: parseFloat(newDays) } : t));
-      cacheInvalidate('timesheets');
-      showNotification('Days updated successfully!');
       setEditingDays(null);
       setEditDaysValue('');
+      cacheInvalidate('timesheets');
+      await loadTimesheets(true);
+      showNotification('Days updated successfully!');
     } catch (error) {
       showNotification('Failed to update days: ' + error.message, 'error');
     }
@@ -4683,11 +4683,11 @@ const InvoiceGeneratorApp = () => {
         method: 'PUT',
         body: JSON.stringify({ month: newMonth })
       });
-      setTimesheets(prev => prev.map(t => t.id === timesheetId ? { ...t, month: newMonth } : t));
-      cacheInvalidate('timesheets');
-      showNotification('Month updated successfully!');
       setEditingMonth(null);
       setEditMonthValue('');
+      cacheInvalidate('timesheets');
+      await loadTimesheets(true);
+      showNotification('Month updated successfully!');
     } catch (error) {
       showNotification('Failed to update month: ' + error.message, 'error');
     }
@@ -7584,10 +7584,35 @@ const InvoiceGeneratorApp = () => {
                                     </div>
                                   )
                                 ) : (
-                                  <span className="text-yellow-600 italic text-sm flex items-center gap-1">
-                                    <AlertCircle className="h-3 w-3" />
-                                    Processing...
-                                  </span>
+                                  editingDays === timesheet.id ? (
+                                    <div className="flex items-center gap-1">
+                                      <input
+                                        type="number"
+                                        step="0.5"
+                                        value={editDaysValue}
+                                        onChange={(e) => setEditDaysValue(e.target.value)}
+                                        className="border border-blue-500 rounded px-2 py-1 w-20 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                                        autoFocus
+                                        onKeyPress={(e) => {
+                                          if (e.key === 'Enter') updateDays(timesheet.id, editDaysValue);
+                                          if (e.key === 'Escape') cancelEditDays();
+                                        }}
+                                      />
+                                      <button onClick={() => updateDays(timesheet.id, editDaysValue)} className="text-green-600 hover:text-green-800 p-1" title="Save">
+                                        <CheckCircle className="h-4 w-4" />
+                                      </button>
+                                      <button onClick={cancelEditDays} className="text-gray-400 hover:text-gray-600 p-1" title="Cancel">×</button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => startEditDays(timesheet)}
+                                      style={{ padding: '4px 10px', borderRadius: '8px', border: '1px solid #f59e0b', backgroundColor: '#fffbeb', color: '#d97706', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                      title="Set days worked"
+                                    >
+                                      <AlertCircle style={{ width: '12px', height: '12px' }} />
+                                      Set Days
+                                    </button>
+                                  )
                                 )}
                               </td>
                               <td className="p-4">
