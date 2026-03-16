@@ -6930,6 +6930,7 @@ const InvoiceGeneratorApp = () => {
                         const unassignedTimesheets = timesheets.filter(ts => {
                           if (ts.flagged_for_review) return false;
                           if (ts.contract_id) return false; // Skip already assigned
+                          if (ts.previously_credited) return false; // Skip credited - goes to Re-invoice tab
                           if (ts.sender_email?.toLowerCase() !== contract.consultant_email?.toLowerCase()) return false;
                           if (ts.month) return ts.month.toLowerCase() === contract.checking_month?.toLowerCase();
                           return false;
@@ -7498,7 +7499,8 @@ const InvoiceGeneratorApp = () => {
                         ts.month && 
                         ts.month.toLowerCase() !== timesheetStatus?.checking_month?.toLowerCase() &&
                         !ts.invoice_generated &&
-                        !ts.flagged_for_review
+                        !ts.flagged_for_review &&
+                        !ts.previously_credited
                       ).length === 0 ? (
                         <tr>
                           <td colSpan="6" className="p-8 text-center text-gray-500">
@@ -7512,7 +7514,8 @@ const InvoiceGeneratorApp = () => {
                           ts.month && 
                           ts.month.toLowerCase() !== timesheetStatus?.checking_month?.toLowerCase() &&
                           !ts.invoice_generated &&
-                          !ts.flagged_for_review
+                          !ts.flagged_for_review &&
+                          !ts.previously_credited
                         ).map((timesheet) => {
                           const consultant = consultants.find(c => 
                             c.email?.toLowerCase() === timesheet.sender_email?.toLowerCase()
@@ -7847,7 +7850,30 @@ const InvoiceGeneratorApp = () => {
                                     <div style={{ fontSize: '12px', color: '#94a3b8' }}>{ts.consultant_company_name}</div>
                                   </td>
                                   <td style={{ padding: '16px', fontSize: '13px', color: '#475569', whiteSpace: 'nowrap' }}>
-                                    {ts.month || '—'}
+                                    {editingMonth === ts.id ? (
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <input
+                                          type="text"
+                                          value={editMonthValue}
+                                          onChange={e => setEditMonthValue(e.target.value)}
+                                          placeholder="e.g. January"
+                                          style={{ border: '1px solid #3b82f6', borderRadius: '4px', padding: '4px 8px', fontSize: '12px', width: '90px', outline: 'none' }}
+                                          autoFocus
+                                          onKeyPress={e => {
+                                            if (e.key === 'Enter') updateMonth(ts.id, editMonthValue);
+                                            if (e.key === 'Escape') cancelEditMonth();
+                                          }}
+                                        />
+                                        <button onClick={() => updateMonth(ts.id, editMonthValue)} style={{ color: '#16a34a', padding: '4px', background: 'none', border: 'none', cursor: 'pointer' }} title="Save">
+                                          <CheckCircle style={{ width: '14px', height: '14px' }} />
+                                        </button>
+                                        <button onClick={cancelEditMonth} style={{ color: '#9ca3af', padding: '4px', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                                      </div>
+                                    ) : (
+                                      <div onClick={() => startEditMonth(ts)} style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', display: 'inline-block', color: ts.month ? '#475569' : '#f59e0b' }} title="Click to edit month">
+                                        {ts.month || '⚠ Set month'}
+                                      </div>
+                                    )}
                                   </td>
                                   <td style={{ padding: '16px', fontWeight: 700, fontSize: '14px', color: '#0f172a' }}>
                                     {editingDays === ts.id ? (
