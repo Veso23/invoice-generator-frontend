@@ -7371,7 +7371,31 @@ const InvoiceGeneratorApp = () => {
                                       <Eye style={{ width: '15px', height: '15px' }} />
                                     </button>
                                   )}
-                                  {/* Unflag */}
+                                  {/* Additional files */}
+                                  {(() => {
+                                    const extras = Array.isArray(timesheet.additional_files)
+                                      ? timesheet.additional_files
+                                      : (typeof timesheet.additional_files === 'string' ? (() => { try { return JSON.parse(timesheet.additional_files); } catch { return []; } })() : []);
+                                    return extras.filter(Boolean).map((url, idx) => (
+                                      <button
+                                        key={idx}
+                                        onClick={() => openPDF(url, `Attachment ${idx + 1} – ${timesheet.person_name || timesheet.sender_email}`)}
+                                        title={`View Attachment ${idx + 1}`}
+                                        style={{
+                                          height: '34px', padding: '0 10px',
+                                          display: 'flex', alignItems: 'center', gap: '4px',
+                                          borderRadius: '10px',
+                                          border: '1px solid #fde68a',
+                                          backgroundColor: '#fffbeb',
+                                          color: '#d97706',
+                                          cursor: 'pointer', fontSize: '11px', fontWeight: 700
+                                        }}
+                                      >
+                                        <FileText style={{ width: '12px', height: '12px' }} />
+                                        File {idx + 1}
+                                      </button>
+                                    ));
+                                  })()}
                                   {timesheet.flagged_for_review && (
                                     <button
                                       onClick={() => unflagForReview(timesheet.id)}
