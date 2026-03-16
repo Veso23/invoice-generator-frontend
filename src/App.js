@@ -7600,6 +7600,23 @@ const InvoiceGeneratorApp = () => {
                                       <Eye style={{ width: '15px', height: '15px' }} />
                                     </button>
                                   )}
+                                  {/* Additional files */}
+                                  {(() => {
+                                    const extras = Array.isArray(timesheet.additional_files)
+                                      ? timesheet.additional_files
+                                      : (typeof timesheet.additional_files === 'string' ? (() => { try { return JSON.parse(timesheet.additional_files); } catch { return []; } })() : []);
+                                    return extras.filter(Boolean).map((url, idx) => (
+                                      <button
+                                        key={idx}
+                                        onClick={() => openPDF(url, `Attachment ${idx + 1} – ${timesheet.person_name || timesheet.sender_email}`)}
+                                        title={`View Attachment ${idx + 1}`}
+                                        style={{ height: '34px', padding: '0 10px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '10px', border: '1px solid #fde68a', backgroundColor: '#fffbeb', color: '#d97706', cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}
+                                      >
+                                        <FileText style={{ width: '12px', height: '12px' }} />
+                                        File {idx + 1}
+                                      </button>
+                                    ));
+                                  })()}
                                   {/* Invoice */}
                                   <button
                                     onClick={() => generateInvoiceForTimesheet(timesheet)}
@@ -7842,6 +7859,7 @@ const InvoiceGeneratorApp = () => {
                                   </td>
                                   <td style={{ padding: '16px', textAlign: 'center' }}>
                                     {ts.timesheet_file_url ? (
+                                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
                                       <button
                                         onClick={() => openPDF(fixTimesheetUrl(ts.timesheet_file_url), `Timesheet – ${ts.person_name || ts.sender_email}`)}
                                         style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#2563eb', cursor: 'pointer' }}
@@ -7849,6 +7867,15 @@ const InvoiceGeneratorApp = () => {
                                       >
                                         <Eye style={{ width: '15px', height: '15px' }} />
                                       </button>
+                                      {(() => {
+                                        const extras = Array.isArray(ts.additional_files) ? ts.additional_files : (typeof ts.additional_files === 'string' ? (() => { try { return JSON.parse(ts.additional_files); } catch { return []; } })() : []);
+                                        return extras.filter(Boolean).map((url, idx) => (
+                                          <button key={idx} onClick={() => openPDF(url, `Attachment ${idx + 1} – ${ts.person_name || ts.sender_email}`)} title={`View Attachment ${idx + 1}`} style={{ height: '32px', padding: '0 8px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '8px', border: '1px solid #fde68a', backgroundColor: '#fffbeb', color: '#d97706', cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}>
+                                            <FileText style={{ width: '12px', height: '12px' }} />File {idx + 1}
+                                          </button>
+                                        ));
+                                      })()}
+                                      </div>
                                     ) : (
                                       <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>—</span>
                                     )}
