@@ -2553,10 +2553,11 @@ const PaginationBar = ({ currentPage, totalPages, totalItems, itemsPerPage, onPa
         <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
           {totalItems === 0 ? 'No results' : `Showing ${from}–${to} of ${totalItems} results`}
         </span>
+        {totalItems > 10 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>Rows per page:</span>
           <div style={{ display: 'flex', gap: '4px' }}>
-            {PAGE_SIZE_OPTIONS.map(size => (
+            {PAGE_SIZE_OPTIONS.filter(size => size <= Math.max(totalItems, 10)).map(size => (
               <button
                 key={size}
                 onClick={() => { onPageSizeChange(size); onPageChange(1); }}
@@ -2575,6 +2576,7 @@ const PaginationBar = ({ currentPage, totalPages, totalItems, itemsPerPage, onPa
             ))}
           </div>
         </div>
+        )}
       </div>
 
       {/* Right: page navigation */}
@@ -2774,10 +2776,10 @@ const InvoiceGeneratorApp = () => {
   const [contractCsvData, setContractCsvData] = useState([]);
   const [contractCsvUploading, setContractCsvUploading] = useState(false);
   const [pageSizes, setPageSizes] = useState({
-    consultants: 25,
-    clients: 25,
-    contracts: 25,
-    invoices: 25
+    consultants: 10,
+    clients: 10,
+    contracts: 10,
+    invoices: 10
   });
   const [serverTotals, setServerTotals] = useState({
     consultants: 0, clients: 0, contracts: 0, invoices: 0
