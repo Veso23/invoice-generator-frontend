@@ -930,12 +930,12 @@ const DEFAULT_USER_PERMISSIONS = {
   admin: {
     can_view_dashboard: true, can_view_contracts: true, can_view_consultants: true,
     can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, 
-    can_manage_users: true, can_delete_timesheets: true
+    can_manage_users: true, can_delete_timesheets: true, can_create_credit_note: true
   },
   operator: {
     can_view_dashboard: false, can_view_contracts: false, can_view_consultants: true,
     can_view_clients: true, can_view_timesheets: true, can_view_invoices: true, 
-    can_manage_users: false, can_delete_timesheets: false
+    can_manage_users: false, can_delete_timesheets: false, can_create_credit_note: false
   }
 };
 
@@ -997,7 +997,8 @@ const UserModal = ({ isOpen, onClose, onSubmit, mode, userData }) => {
     can_view_timesheets: 'View Timesheets',
     can_view_invoices: 'View Invoices',
     can_manage_users: 'Manage Users',
-    can_delete_timesheets: 'Delete Problematic Emails'
+    can_delete_timesheets: 'Delete Problematic Emails',
+    can_create_credit_note: 'Create Credit Notes'
   };
 
   const inputStyle = {
@@ -8317,7 +8318,7 @@ const InvoiceGeneratorApp = () => {
                                 <button onClick={() => downloadPDF(invoice)} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #e2e8f0', backgroundColor: 'white', color: '#16a34a', cursor: 'pointer' }} title={invoice.pdf_url ? "View PDF" : "Generate & View PDF"} disabled={dataLoading}>
                                   <Download style={{ width: '15px', height: '15px' }} />
                                 </button>
-                                {['sent','paid','overdue'].includes(invoice.status) && invoice.invoice_type_detail !== 'credit_note' && (
+                                {['sent','paid','overdue'].includes(invoice.status) && invoice.invoice_type_detail !== 'credit_note' && (user?.role === 'admin' || user?.role === 'super_admin' || user?.permissions?.can_create_credit_note) && (
                                   <button
                                     onClick={() => createCreditNote(invoice)}
                                     style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', border: '1px solid #fecaca', backgroundColor: '#fff1f2', color: '#dc2626', cursor: 'pointer' }}
