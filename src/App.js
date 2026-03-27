@@ -2398,11 +2398,14 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                           <label style={labelStyle}>API Key</label>
                           <input
                             type="password"
-                            placeholder="Provider API key"
+                            placeholder={settings?.peppol_api_key_set ? '••••••••••• (saved)' : 'Provider API key'}
                             value={formData.peppol_api_key}
                             onChange={e => setFormData(f => ({ ...f, peppol_api_key: e.target.value }))}
                             style={inputStyle}
                           />
+                          {settings?.peppol_api_key_set && !formData.peppol_api_key && (
+                            <p style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px' }}>✓ API key saved — leave blank to keep existing</p>
+                          )}
                         </div>
                       </div>
                     )}
