@@ -1840,6 +1840,7 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
         peppol_provider: settings.peppol_provider || '',
         peppol_api_key: settings.peppol_api_key || '',
         peppol_sender_id: settings.peppol_sender_id || '',
+        peppol_legal_entity_id: settings.peppol_legal_entity_id || '',
         country_code: settings.country_code || 'BE'
       });
     }
@@ -2381,6 +2382,17 @@ const SettingsModal = ({ isOpen, onClose, settings, onSubmit }) => {
                             style={inputStyle}
                           />
                           <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Belgian format: 0208 + BTW number</p>
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Legal Entity ID</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 980710"
+                            value={formData.peppol_legal_entity_id}
+                            onChange={e => setFormData(f => ({ ...f, peppol_legal_entity_id: e.target.value }))}
+                            style={inputStyle}
+                          />
+                          <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>Storecove Legal Entity ID</p>
                         </div>
                         <div style={{ gridColumn: '1 / -1' }}>
                           <label style={labelStyle}>API Key</label>
