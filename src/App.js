@@ -3,7 +3,7 @@ import { FileText, Download, Plus, Edit, Users, Building, LogOut, Eye, Send, Che
 import './App.css';
 
 // API Configuration
-const API_BASE_URL = 'https://invoice-generator-api-dak7.onrender.com/api';
+const API_BASE_URL = (process.env.REACT_APP_API_URL || 'https://invoice-generator-api-dak7.onrender.com') + '/api';
 
 // API Helper Functions
 const apiCall = async (endpoint, options = {}) => {
