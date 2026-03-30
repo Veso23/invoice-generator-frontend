@@ -2669,7 +2669,6 @@ const ComparisonBadge = ({ timesheet }) => {
   if (has_invoice === null || has_invoice === undefined || days_match === null) return null;
   
   const allGood = days_match !== false && amount_match !== false;
-  const color = allGood ? '#16a34a' : '#dc2626';
   const icon = allGood ? '✅' : '⚠️';
   const notes = comparison_notes || (allGood ? 'Invoice matches timesheet' : 'Mismatch detected');
   
