@@ -2851,6 +2851,7 @@ const InvoiceGeneratorApp = () => {
   const [superAdminLoading, setSuperAdminLoading] = useState(false);
   const [viewingCompanyId, setViewingCompanyId] = useState(null);
   const [viewingCompanyName, setViewingCompanyName] = useState(null);
+  const [viewingCompanyPlan, setViewingCompanyPlan] = useState(null);
   
   // Contract selection for timesheets with multiple contracts
   const [contractSelectionModal, setContractSelectionModal] = useState({
@@ -4501,6 +4502,72 @@ const InvoiceGeneratorApp = () => {
     return response.json();
   };
   
+  // ====== PLAN / FEATURE FLAGS ======
+  // effectivePlan: plan of the currently-viewed company.
+  // - Normal user: their own company's plan
+  // - Superadmin not impersonating: their own company's plan
+  // - Superadmin impersonating: impersonated company's plan (so UI shows what the client sees)
+  const effectivePlan = viewingCompanyPlan || user?.plan || 'slim';
+
+  // When superadmin selects a company to view, fetch/resolve its plan
+  useEffect(() => {
+    if (!viewingCompanyId) {
+      setViewingCompanyPlan(null);
+      return;
+    }
+    // Try to find in already-loaded list first
+    const cached = superAdminCompanies.find(c => c.id === viewingCompanyId);
+    if (cached && cached.plan) {
+      setViewingCompanyPlan(cached.plan);
+      return;
+    }
+    // Otherwise fetch
+    const token = localStorage.getItem('authToken');
+    fetch(`${API_BASE_URL}/superadmin/companies/${viewingCompanyId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => setViewingCompanyPlan(data?.company?.plan || null))
+      .catch(() => setViewingCompanyPlan(null));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewingCompanyId, superAdminCompanies]);
+
+  // Redirect away from invoice-only tabs when on slim plan
+  useEffect(() => {
+    if (effectivePlan === 'slim' && ['dashboard', 'invoices', 'history'].includes(activeTab)) {
+      setActiveTab('timesheets');
+    }
+  }, [effectivePlan, activeTab]);
+
+  // Superadmin: update a company's plan
+  const updateCompanyPlan = async (companyId, newPlan) => {
+    const token = localStorage.getItem('authToken');
+    try {
+      const resp = await fetch(`${API_BASE_URL}/superadmin/companies/${companyId}/plan`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ plan: newPlan })
+      });
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.error || 'Failed to update plan');
+      }
+      // Update local state
+      setSuperAdminCompanies(prev => prev.map(c =>
+        c.id === companyId ? { ...c, plan: newPlan } : c
+      ));
+      // If this was the viewed company, update viewingCompanyPlan too
+      if (companyId === viewingCompanyId) {
+        setViewingCompanyPlan(newPlan);
+      }
+    } catch (e) {
+      alert(`Failed to update plan: ${e.message}`);
+    }
+  };
+
   const loadSuperAdminData = async () => {
     if (user?.role !== 'superadmin') return;
     
@@ -5403,17 +5470,19 @@ const InvoiceGeneratorApp = () => {
             {/* Navigation Tabs */}
             <div style={{ display: 'flex', gap: '8px' }}>
               {[
-                { id: 'dashboard', label: 'Dashboard', permission: 'can_view_dashboard' },
+                { id: 'dashboard', label: 'Dashboard', permission: 'can_view_dashboard', planOnly: 'full' },
                 { id: 'consultants', label: 'Consultants', permission: 'can_view_consultants' },
                 { id: 'clients', label: 'Clients', permission: 'can_view_clients' },
                 { id: 'contracts', label: 'Contracts', permission: 'can_view_contracts' },
                 { id: 'timesheets', label: 'Timesheets', permission: 'can_view_timesheets' },
-                { id: 'invoices', label: 'Invoices', permission: 'can_view_invoices' },
-                { id: 'history', label: 'History', permission: 'can_view_invoices' },
+                { id: 'invoices', label: 'Invoices', permission: 'can_view_invoices', planOnly: 'full' },
+                { id: 'history', label: 'History', permission: 'can_view_invoices', planOnly: 'full' },
                 { id: 'users', label: 'Users', permission: 'can_manage_users' },
                 { id: 'superadmin', label: '🔐 Super Admin', permission: 'is_superadmin' }
               ]
                 .filter(tab => {
+                  // Plan gate: hide full-only tabs when on slim plan
+                  if (tab.planOnly && tab.planOnly !== effectivePlan) return false;
                   // Super admin tab: show if user is superadmin OR if impersonating (original user was superadmin)
                   if (tab.permission === 'is_superadmin') {
                     return user?.role === 'superadmin';
@@ -6855,7 +6924,7 @@ const InvoiceGeneratorApp = () => {
                     ).length}
                   </span>
                 </button>
-                <button
+                {effectivePlan === 'full' && <button
                   type="button"
                   onClick={() => setActiveTimesheetTab('reinvoice')}
                   style={{
@@ -6885,7 +6954,7 @@ const InvoiceGeneratorApp = () => {
                   }}>
                     {timesheets.filter(ts => ts.previously_credited && !ts.invoice_generated).length}
                   </span>
-                </button>
+                </button>}
               </div>
 
               {/* CURRENT MONTH TAB CONTENT */}
@@ -7159,7 +7228,7 @@ const InvoiceGeneratorApp = () => {
                                   </button>
                                 )}
                                 {/* Invoice */}
-                                {timesheet && !timesheet.invoice_generated && (
+                                {timesheet && !timesheet.invoice_generated && effectivePlan === 'full' && (
                                   <button
                                     onClick={() => generateInvoiceForTimesheet(timesheet)}
                                     disabled={generatingInvoice[timesheet.id]}
@@ -7454,7 +7523,7 @@ const InvoiceGeneratorApp = () => {
                                     </button>
                                   )}
                                   {/* Invoice */}
-                                  {timesheet.month && !timesheet.invoice_generated && (
+                                  {timesheet.month && !timesheet.invoice_generated && effectivePlan === 'full' && (
                                     <button
                                       onClick={() => generateInvoiceForTimesheet(timesheet)}
                                       disabled={generatingInvoice[timesheet.id]}
@@ -7684,7 +7753,7 @@ const InvoiceGeneratorApp = () => {
                                     });
                                   })()}
                                   {/* Invoice */}
-                                  <button
+                                  {effectivePlan === 'full' && (<button
                                     onClick={() => generateInvoiceForTimesheet(timesheet)}
                                     disabled={generatingInvoice[timesheet.id]}
                                     title="Generate Invoice"
@@ -7701,7 +7770,7 @@ const InvoiceGeneratorApp = () => {
                                         Invoice
                                       </>
                                     )}
-                                  </button>
+                                  </button>)}
                                   {/* Flag */}
                                   {!timesheet.flagged_for_review && (
                                     <button
@@ -7973,7 +8042,7 @@ const InvoiceGeneratorApp = () => {
                                     )}
                                   </td>
                                   <td style={{ padding: '16px', textAlign: 'center' }}>
-                                    <button
+                                    {effectivePlan === 'full' && (<button
                                       onClick={() => generateInvoiceForTimesheet(ts)}
                                       disabled={generatingInvoice[ts.id]}
                                       style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '10px', border: 'none', backgroundColor: generatingInvoice[ts.id] ? '#f3f4f6' : '#9d174d', color: generatingInvoice[ts.id] ? '#9ca3af' : 'white', fontSize: '13px', fontWeight: 700, cursor: generatingInvoice[ts.id] ? 'not-allowed' : 'pointer' }}
@@ -7982,7 +8051,7 @@ const InvoiceGeneratorApp = () => {
                                         ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Generating...</>
                                         : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> Generate Invoice</>
                                       }
-                                    </button>
+                                    </button>)}
                                   </td>
                                 </tr>
                               );
@@ -9259,6 +9328,7 @@ const InvoiceGeneratorApp = () => {
                       <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Clients</th>
                       <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Contracts</th>
                       <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Invoices</th>
+                      <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Plan</th>
                       <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Actions</th>
                     </tr>
                   </thead>
@@ -9333,6 +9403,26 @@ const InvoiceGeneratorApp = () => {
                             <span style={{ backgroundColor: '#dcfce7', color: '#16a34a', padding: '4px 10px', borderRadius: '20px', fontSize: '13px', fontWeight: 600 }}>
                               {company.invoice_count}
                             </span>
+                          </td>
+                          <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                            <select
+                              value={company.plan || 'slim'}
+                              onChange={(e) => updateCompanyPlan(company.id, e.target.value)}
+                              style={{
+                                padding: '6px 10px',
+                                borderRadius: '8px',
+                                border: '1px solid #e2e8f0',
+                                fontSize: '12px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                backgroundColor: company.plan === 'full' ? '#ecfdf5' : '#f1f5f9',
+                                color: company.plan === 'full' ? '#059669' : '#475569',
+                                textTransform: 'capitalize'
+                              }}
+                            >
+                              <option value="slim">Slim</option>
+                              <option value="full">Full</option>
+                            </select>
                           </td>
                           <td style={{ padding: '16px 20px', textAlign: 'center' }}>
                             {isCurrentlyViewing ? (
