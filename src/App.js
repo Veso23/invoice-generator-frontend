@@ -2651,6 +2651,24 @@ const PaginationBar = ({ currentPage, totalPages, totalItems, itemsPerPage, onPa
   );
 };
 
+// Normalize additional_files to [{url, type}] — supports legacy ["url1","url2"] too
+const normalizeExtras = (raw) => {
+  let arr = [];
+  try {
+    arr = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : []);
+  } catch (e) { arr = []; }
+  return arr
+    .map(item => typeof item === 'string' ? { url: item, type: null } : item)
+    .filter(item => item && item.url);
+};
+
+// Display config for classified extras — invoice = purple, other = gray, unknown = amber
+const getExtraDisplay = (type, idx) => {
+  if (type === 'invoice') return { label: 'Invoice', bg: '#EEEDFE', fg: '#3C3489', border: '#CECBF6' };
+  if (type === 'other')   return { label: 'Other',   bg: '#F1EFE8', fg: '#444441', border: '#D3D1C7' };
+  return                         { label: `File ${idx + 1}`, bg: '#fffbeb', fg: '#d97706', border: '#fde68a' };
+};
+
 // Main Application
 const InvoiceGeneratorApp = () => {
   const { user, login, register, logout, loading } = useAuth();
@@ -7390,30 +7408,31 @@ const InvoiceGeneratorApp = () => {
                                       <Eye style={{ width: '15px', height: '15px' }} />
                                     </button>
                                   )}
-                                  {/* Additional files */}
+                                  {/* Additional files (classified: invoice / other / unknown) */}
                                   {(() => {
-                                    const extras = Array.isArray(timesheet.additional_files)
-                                      ? timesheet.additional_files
-                                      : (typeof timesheet.additional_files === 'string' ? (() => { try { return JSON.parse(timesheet.additional_files); } catch { return []; } })() : []);
-                                    return extras.filter(Boolean).map((url, idx) => (
-                                      <button
-                                        key={idx}
-                                        onClick={() => openPDF(url, `Attachment ${idx + 1} – ${timesheet.person_name || timesheet.sender_email}`)}
-                                        title={`View Attachment ${idx + 1}`}
-                                        style={{
-                                          height: '34px', padding: '0 10px',
-                                          display: 'flex', alignItems: 'center', gap: '4px',
-                                          borderRadius: '10px',
-                                          border: '1px solid #fde68a',
-                                          backgroundColor: '#fffbeb',
-                                          color: '#d97706',
-                                          cursor: 'pointer', fontSize: '11px', fontWeight: 700
-                                        }}
-                                      >
-                                        <FileText style={{ width: '12px', height: '12px' }} />
-                                        File {idx + 1}
-                                      </button>
-                                    ));
+                                    const extras = normalizeExtras(timesheet.additional_files);
+                                    return extras.map((item, idx) => {
+                                      const d = getExtraDisplay(item.type, idx);
+                                      return (
+                                        <button
+                                          key={idx}
+                                          onClick={() => openPDF(item.url, `${d.label} – ${timesheet.person_name || timesheet.sender_email}`)}
+                                          title={`View ${d.label}`}
+                                          style={{
+                                            height: '34px', padding: '0 10px',
+                                            display: 'flex', alignItems: 'center', gap: '4px',
+                                            borderRadius: '10px',
+                                            border: `1px solid ${d.border}`,
+                                            backgroundColor: d.bg,
+                                            color: d.fg,
+                                            cursor: 'pointer', fontSize: '11px', fontWeight: 700
+                                          }}
+                                        >
+                                          <FileText style={{ width: '12px', height: '12px' }} />
+                                          {d.label}
+                                        </button>
+                                      );
+                                    });
                                   })()}
                                   {timesheet.flagged_for_review && (
                                     <button
@@ -7646,22 +7665,23 @@ const InvoiceGeneratorApp = () => {
                                       <Eye style={{ width: '15px', height: '15px' }} />
                                     </button>
                                   )}
-                                  {/* Additional files */}
+                                  {/* Additional files (classified: invoice / other / unknown) */}
                                   {(() => {
-                                    const extras = Array.isArray(timesheet.additional_files)
-                                      ? timesheet.additional_files
-                                      : (typeof timesheet.additional_files === 'string' ? (() => { try { return JSON.parse(timesheet.additional_files); } catch { return []; } })() : []);
-                                    return extras.filter(Boolean).map((url, idx) => (
-                                      <button
-                                        key={idx}
-                                        onClick={() => openPDF(url, `Attachment ${idx + 1} – ${timesheet.person_name || timesheet.sender_email}`)}
-                                        title={`View Attachment ${idx + 1}`}
-                                        style={{ height: '34px', padding: '0 10px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '10px', border: '1px solid #fde68a', backgroundColor: '#fffbeb', color: '#d97706', cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}
-                                      >
-                                        <FileText style={{ width: '12px', height: '12px' }} />
-                                        File {idx + 1}
-                                      </button>
-                                    ));
+                                    const extras = normalizeExtras(timesheet.additional_files);
+                                    return extras.map((item, idx) => {
+                                      const d = getExtraDisplay(item.type, idx);
+                                      return (
+                                        <button
+                                          key={idx}
+                                          onClick={() => openPDF(item.url, `${d.label} – ${timesheet.person_name || timesheet.sender_email}`)}
+                                          title={`View ${d.label}`}
+                                          style={{ height: '34px', padding: '0 10px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '10px', border: `1px solid ${d.border}`, backgroundColor: d.bg, color: d.fg, cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}
+                                        >
+                                          <FileText style={{ width: '12px', height: '12px' }} />
+                                          {d.label}
+                                        </button>
+                                      );
+                                    });
                                   })()}
                                   {/* Invoice */}
                                   <button
@@ -7937,12 +7957,15 @@ const InvoiceGeneratorApp = () => {
                                         <Eye style={{ width: '15px', height: '15px' }} />
                                       </button>
                                       {(() => {
-                                        const extras = Array.isArray(ts.additional_files) ? ts.additional_files : (typeof ts.additional_files === 'string' ? (() => { try { return JSON.parse(ts.additional_files); } catch { return []; } })() : []);
-                                        return extras.filter(Boolean).map((url, idx) => (
-                                          <button key={idx} onClick={() => openPDF(url, `Attachment ${idx + 1} – ${ts.person_name || ts.sender_email}`)} title={`View Attachment ${idx + 1}`} style={{ height: '32px', padding: '0 8px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '8px', border: '1px solid #fde68a', backgroundColor: '#fffbeb', color: '#d97706', cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}>
-                                            <FileText style={{ width: '12px', height: '12px' }} />File {idx + 1}
-                                          </button>
-                                        ));
+                                        const extras = normalizeExtras(ts.additional_files);
+                                        return extras.map((item, idx) => {
+                                          const d = getExtraDisplay(item.type, idx);
+                                          return (
+                                            <button key={idx} onClick={() => openPDF(item.url, `${d.label} – ${ts.person_name || ts.sender_email}`)} title={`View ${d.label}`} style={{ height: '32px', padding: '0 8px', display: 'flex', alignItems: 'center', gap: '4px', borderRadius: '8px', border: `1px solid ${d.border}`, backgroundColor: d.bg, color: d.fg, cursor: 'pointer', fontSize: '11px', fontWeight: 700 }}>
+                                              <FileText style={{ width: '12px', height: '12px' }} />{d.label}
+                                            </button>
+                                          );
+                                        });
                                       })()}
                                       </div>
                                     ) : (
