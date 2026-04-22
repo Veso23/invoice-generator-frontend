@@ -2651,37 +2651,6 @@ const PaginationBar = ({ currentPage, totalPages, totalItems, itemsPerPage, onPa
   );
 };
 
-// Comparison Badge Component
-const ComparisonBadge = ({ timesheet }) => {
-  if (!timesheet) return null;
-  const { days_match, amount_match, comparison_notes, has_invoice } = timesheet;
-  
-  // No invoice found - show info if there are notes
-  if (has_invoice === false && comparison_notes) {
-    return (
-      <span title={comparison_notes} style={{
-        display: 'inline-flex', alignItems: 'center', gap: '3px',
-        fontSize: '11px', color: '#6366f1', cursor: 'help'
-      }}>📋</span>
-    );
-  }
-  
-  if (has_invoice === null || has_invoice === undefined || days_match === null) return null;
-  
-  const allGood = days_match !== false && amount_match !== false;
-  const icon = allGood ? '✅' : '⚠️';
-  const notes = comparison_notes || (allGood ? 'Invoice matches timesheet' : 'Mismatch detected');
-  
-  return (
-    <span title={notes} style={{
-      display: 'inline-flex', alignItems: 'center',
-      fontSize: '13px', cursor: 'help', marginLeft: '4px'
-    }}>
-      {icon}
-    </span>
-  );
-};
-
 // Main Application
 const InvoiceGeneratorApp = () => {
   const { user, login, register, logout, loading } = useAuth();
@@ -7124,7 +7093,6 @@ const InvoiceGeneratorApp = () => {
                                   ) : (
                                     <div onClick={() => startEditDays(timesheet)} className="cursor-pointer hover:bg-blue-100 px-2 py-1 rounded transition inline-block" title="Click to edit">
                                       <span className="font-bold text-blue-600">{totalDays}</span>
-                                      <ComparisonBadge timesheet={timesheet} />
                                     </div>
                                   )
                                 ) : (
