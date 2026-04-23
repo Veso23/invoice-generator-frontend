@@ -2852,6 +2852,7 @@ const InvoiceGeneratorApp = () => {
   const [viewingCompanyId, setViewingCompanyId] = useState(null);
   const [viewingCompanyName, setViewingCompanyName] = useState(null);
   const [viewingCompanyPlan, setViewingCompanyPlan] = useState(null);
+  const [viewingCompanyShowClients, setViewingCompanyShowClients] = useState(null);
   
   // Contract selection for timesheets with multiple contracts
   const [contractSelectionModal, setContractSelectionModal] = useState({
@@ -3344,11 +3345,12 @@ const InvoiceGeneratorApp = () => {
                 label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
               })) 
           },
-          { 
+          ...(effectiveShowClients ? [{ 
             name: 'clientId', 
-            label: 'Client',
+            label: 'Client (optional)',
             placeholder: 'Select Client', 
             type: 'select',
+            required: false,
             value: item.client_id,
             options: [...clients]
               .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`))
@@ -3356,15 +3358,15 @@ const InvoiceGeneratorApp = () => {
                 value: c.id, 
                 label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
               })) 
-          },
+          }] : []),
           { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date', value: item.from_date },
           { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date', value: item.to_date },
-          { name: 'purchasePrice', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01', value: item.purchase_price },
-          { name: 'sellPrice', placeholder: 'Sell Price (€)', type: 'number', step: '0.01', value: item.sell_price },
+          { name: 'purchasePrice', label: 'Purchase Price (€) — optional', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01', required: false, value: item.purchase_price },
+          { name: 'sellPrice', label: 'Sell Price (€) — optional', placeholder: 'Sell Price (€)', type: 'number', step: '0.01', required: false, value: item.sell_price },
           { name: 'consultantVatEnabled', type: 'checkbox', label: 'Enable VAT for Consultant Invoices', value: item.consultant_vat_enabled },
-          { name: 'consultantVatRate', type: 'number', step: '0.01', label: 'Consultant VAT Rate (%)', value: item.consultant_vat_rate },
+          { name: 'consultantVatRate', type: 'number', step: '0.01', label: 'Consultant VAT Rate (%) — optional', required: false, value: item.consultant_vat_rate },
           { name: 'vatEnabled', type: 'checkbox', label: 'Enable VAT for Client Invoices', value: item.vat_enabled },
-          { name: 'vatRate', type: 'number', step: '0.01', label: 'Client VAT Rate (%)', value: item.vat_rate }
+          { name: 'vatRate', type: 'number', step: '0.01', label: 'Client VAT Rate (%) — optional', required: false, value: item.vat_rate }
         ],
         onSubmit: (data) => updateContract(item.id, data)
       }
@@ -4508,17 +4510,23 @@ const InvoiceGeneratorApp = () => {
   // - Superadmin not impersonating: their own company's plan
   // - Superadmin impersonating: impersonated company's plan (so UI shows what the client sees)
   const effectivePlan = viewingCompanyPlan || user?.plan || 'slim';
+  // effectiveShowClients: whether Clients tab is visible for this company
+  const effectiveShowClients = viewingCompanyShowClients !== null
+    ? viewingCompanyShowClients
+    : (user?.showClients !== false);
 
-  // When superadmin selects a company to view, fetch/resolve its plan
+  // When superadmin selects a company to view, fetch/resolve its plan and show_clients
   useEffect(() => {
     if (!viewingCompanyId) {
       setViewingCompanyPlan(null);
+      setViewingCompanyShowClients(null);
       return;
     }
     // Try to find in already-loaded list first
     const cached = superAdminCompanies.find(c => c.id === viewingCompanyId);
     if (cached && cached.plan) {
       setViewingCompanyPlan(cached.plan);
+      setViewingCompanyShowClients(cached.show_clients !== false);
       return;
     }
     // Otherwise fetch
@@ -4527,8 +4535,14 @@ const InvoiceGeneratorApp = () => {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(r => r.ok ? r.json() : null)
-      .then(data => setViewingCompanyPlan(data?.company?.plan || null))
-      .catch(() => setViewingCompanyPlan(null));
+      .then(data => {
+        setViewingCompanyPlan(data?.company?.plan || null);
+        setViewingCompanyShowClients(data?.company?.show_clients !== false);
+      })
+      .catch(() => {
+        setViewingCompanyPlan(null);
+        setViewingCompanyShowClients(null);
+      });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewingCompanyId, superAdminCompanies]);
 
@@ -4537,7 +4551,11 @@ const InvoiceGeneratorApp = () => {
     if (effectivePlan === 'slim' && ['dashboard', 'invoices', 'history'].includes(activeTab)) {
       setActiveTab('timesheets');
     }
-  }, [effectivePlan, activeTab]);
+    // Redirect away from clients tab if hidden
+    if (!effectiveShowClients && activeTab === 'clients') {
+      setActiveTab('timesheets');
+    }
+  }, [effectivePlan, effectiveShowClients, activeTab]);
 
   // Superadmin: update a company's plan
   const updateCompanyPlan = async (companyId, newPlan) => {
@@ -4565,6 +4583,34 @@ const InvoiceGeneratorApp = () => {
       }
     } catch (e) {
       alert(`Failed to update plan: ${e.message}`);
+    }
+  };
+
+  // Superadmin: toggle a company's show_clients flag
+  const updateCompanyShowClients = async (companyId, newShowClients) => {
+    const token = localStorage.getItem('authToken');
+    try {
+      const resp = await fetch(`${API_BASE_URL}/superadmin/companies/${companyId}/show-clients`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ showClients: newShowClients })
+      });
+      if (!resp.ok) {
+        const err = await resp.json();
+        throw new Error(err.error || 'Failed to update show_clients');
+      }
+      // Update local state
+      setSuperAdminCompanies(prev => prev.map(c =>
+        c.id === companyId ? { ...c, show_clients: newShowClients } : c
+      ));
+      if (companyId === viewingCompanyId) {
+        setViewingCompanyShowClients(newShowClients);
+      }
+    } catch (e) {
+      alert(`Failed to update Clients visibility: ${e.message}`);
     }
   };
 
@@ -4912,26 +4958,27 @@ const InvoiceGeneratorApp = () => {
                 label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
               })) 
           },
-          { 
+          ...(effectiveShowClients ? [{ 
             name: 'clientId', 
-            label: 'Client',
+            label: 'Client (optional)',
             placeholder: 'Select Client', 
             type: 'select', 
+            required: false,
             options: [...clients]
               .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`))
               .map(c => ({ 
                 value: c.id, 
                 label: `${c.first_name} ${c.last_name} - ${c.company_name}` 
               })) 
-          },
+          }] : []),
           { name: 'fromDate', placeholder: 'Contract Start Date', type: 'date', label: 'Contract Start Date' },
           { name: 'toDate', placeholder: 'Contract End Date', type: 'date', label: 'Contract End Date' },
-          { name: 'purchasePrice', label: 'Purchase Price (€)', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01' },
-          { name: 'sellPrice', label: 'Sell Price (€)', placeholder: 'Sell Price (€)', type: 'number', step: '0.01' },
+          { name: 'purchasePrice', label: 'Purchase Price (€) — optional', placeholder: 'Purchase Price (€)', type: 'number', step: '0.01', required: false },
+          { name: 'sellPrice', label: 'Sell Price (€) — optional', placeholder: 'Sell Price (€)', type: 'number', step: '0.01', required: false },
           { name: 'consultantVatEnabled', type: 'checkbox', label: 'Enable VAT for Consultant Invoices' },
-          { name: 'consultantVatRate', type: 'number', step: '0.01', label: 'Consultant VAT Rate (%)' },
+          { name: 'consultantVatRate', type: 'number', step: '0.01', label: 'Consultant VAT Rate (%) — optional', required: false },
           { name: 'vatEnabled', type: 'checkbox', label: 'Enable VAT for Client Invoices' },
-          { name: 'vatRate', type: 'number', step: '0.01', label: 'Client VAT Rate (%)' }
+          { name: 'vatRate', type: 'number', step: '0.01', label: 'Client VAT Rate (%) — optional', required: false }
         ],
         onSubmit: addContract
       },
@@ -5483,6 +5530,8 @@ const InvoiceGeneratorApp = () => {
                 .filter(tab => {
                   // Plan gate: hide full-only tabs when on slim plan
                   if (tab.planOnly && tab.planOnly !== effectivePlan) return false;
+                  // Clients visibility toggle
+                  if (tab.id === 'clients' && !effectiveShowClients) return false;
                   // Super admin tab: show if user is superadmin OR if impersonating (original user was superadmin)
                   if (tab.permission === 'is_superadmin') {
                     return user?.role === 'superadmin';
@@ -6667,11 +6716,13 @@ const InvoiceGeneratorApp = () => {
                                 <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '13px' }}>{contract.consultant_first_name} {contract.consultant_last_name}</div>
                                 <div style={{ fontSize: '12px', color: '#64748b' }}>{contract.consultant_company_name}</div>
                               </div>
-                              <div>
-                                <div style={{ fontSize: '12px', color: '#10b981', fontWeight: 700, marginBottom: '2px' }}>Client</div>
-                                <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '13px' }}>{contract.client_first_name} {contract.client_last_name}</div>
-                                <div style={{ fontSize: '12px', color: '#64748b' }}>{contract.client_company_name}</div>
-                              </div>
+                              {effectiveShowClients && contract.client_id && (
+                                <div>
+                                  <div style={{ fontSize: '12px', color: '#10b981', fontWeight: 700, marginBottom: '2px' }}>Client</div>
+                                  <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '13px' }}>{contract.client_first_name} {contract.client_last_name}</div>
+                                  <div style={{ fontSize: '12px', color: '#64748b' }}>{contract.client_company_name}</div>
+                                </div>
+                              )}
                             </div>
                           </td>
                           <td style={{ padding: '16px 20px' }}>
@@ -6682,11 +6733,15 @@ const InvoiceGeneratorApp = () => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                               <div>
                                 <span style={{ fontSize: '11px', color: '#94a3b8' }}>Buy: </span>
-                                <span style={{ fontSize: '14px', fontWeight: 700, color: '#f59e0b' }}>{formatCurrency(contract.purchase_price)}</span>
+                                <span style={{ fontSize: '14px', fontWeight: 700, color: contract.purchase_price != null ? '#f59e0b' : '#cbd5e1' }}>
+                                  {contract.purchase_price != null ? formatCurrency(contract.purchase_price) : '—'}
+                                </span>
                               </div>
                               <div>
                                 <span style={{ fontSize: '11px', color: '#94a3b8' }}>Sell: </span>
-                                <span style={{ fontSize: '14px', fontWeight: 700, color: '#10b981' }}>{formatCurrency(contract.sell_price)}</span>
+                                <span style={{ fontSize: '14px', fontWeight: 700, color: contract.sell_price != null ? '#10b981' : '#cbd5e1' }}>
+                                  {contract.sell_price != null ? formatCurrency(contract.sell_price) : '—'}
+                                </span>
                               </div>
                             </div>
                           </td>
@@ -9329,6 +9384,7 @@ const InvoiceGeneratorApp = () => {
                       <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Contracts</th>
                       <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Invoices</th>
                       <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Plan</th>
+                      <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Clients Tab</th>
                       <th style={{ padding: '14px 20px', textAlign: 'center', fontWeight: 700, fontSize: '12px', color: '#92400e', textTransform: 'uppercase' }}>Actions</th>
                     </tr>
                   </thead>
@@ -9423,6 +9479,25 @@ const InvoiceGeneratorApp = () => {
                               <option value="slim">Slim</option>
                               <option value="full">Full</option>
                             </select>
+                          </td>
+                          <td style={{ padding: '16px 20px', textAlign: 'center' }}>
+                            <label style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              color: company.show_clients !== false ? '#059669' : '#94a3b8'
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={company.show_clients !== false}
+                                onChange={(e) => updateCompanyShowClients(company.id, e.target.checked)}
+                                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                              />
+                              {company.show_clients !== false ? 'On' : 'Off'}
+                            </label>
                           </td>
                           <td style={{ padding: '16px 20px', textAlign: 'center' }}>
                             {isCurrentlyViewing ? (
